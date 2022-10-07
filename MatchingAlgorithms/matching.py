@@ -23,16 +23,31 @@ class Matching():
             self.supply = supply
         self.multi = multi
         self.graph = None
-        self.result = None
-        self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
+        self.result = None  #saves latest result of the matching
+        self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id']) #saves latest array of pairs
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
 
     def evaluate(self):
         """Populates incidence matrix with weights based on the criteria"""
-        can_match = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height']
+        # TODO add 'Distance'
+        # TODO add 'Price'
+        # TODO add 'Material'
+        # TODO add 'Density'
+        # TODO add 'Imperfections'
+        # TODO add 'Is_column'
+        # TODO add 'Utilisation'
+        # TODO add 'Group'
+        # TODO add 'Quality'
+        # TODO add 'Max_height' ?
+        match_new = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == True
+        match_old = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == False
         for row in self.demand.itertuples():
-            bool_match = self.supply.apply(can_match, axis = 1).tolist()
-            self.incidence.loc[row[0], bool_match] =  calculate_lca(row[1], self.supply.loc[bool_match, 'Area'], is_new=True)
+            bool_match_new = self.supply.apply(match_new, axis = 1).tolist()
+            bool_match_old = self.supply.apply(match_old, axis = 1).tolist()
+            
+            self.incidence.loc[row[0], bool_match_new] = calculate_lca(row[1], self.supply.loc[bool_match_new, 'Area'], is_new=True)
+            self.incidence.loc[row[0], bool_match_old] = calculate_lca(row[1], self.supply.loc[bool_match_old, 'Area'], is_new=False)
+
 
     def add_pair(self, demand_id, supply_id):
         """Execute matrix matching"""
@@ -86,17 +101,40 @@ class Matching():
     def match_bipartite_graph(self):
         """Match using Maximum Bipartite Graphs to find best indyvidual mapping candidates"""
         # TODO multiple assignment won't work.
+
+        # empty result of previous matching:
+        self.result = None  
+        self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
+
         if not self.graph:
             self.add_graph()
         bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
         for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])
-        self.result = sum(matching.edges()["label"])
-        return self.result
+        self.result = sum(bipartite_matching.edges()["label"])
+        return [self.result, self.pairs]
 
     def match_bin_packing(self):
+        # empty result of previous matching:
+        self.result = None  
+        self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
         #TODO
-        pass
+        return [self.result, self.pairs]
+
+    def match_nested_loop(self):
+        # empty result of previous matching:
+        self.result = None  
+        self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
+        #TODO
+        return [self.result, self.pairs]
+
+    def match_knapsacks(self):
+        # empty result of previous matching:
+        self.result = None  
+        self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
+        #TODO
+        return [self.result, self.pairs]
+
 
 # class Elements(pd.DataFrame):
 #     def read_json(self):
@@ -115,34 +153,50 @@ def calculate_lca(length, area, gwp=28.9, is_new=True):
     return lca
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
-# read input arguments
-PATH = sys.argv[0]
-DEMAND_JSON = r"C:\Code\structuralCircle\MatchingAlgorithms\sample_demand_input.json" #sys.argv[1]
-SUPPLY_JSON = r"C:\Code\structuralCircle\MatchingAlgorithms\sample_supply_input.json" #sys.argv[2]
-RESULT_FILE = r"C:\Code\structuralCircle\MatchingAlgorithms\result.csv" #sys.argv[3]
-#DEMAND_JSON = "C:\\Users\\sverremh\\AppData\\Roaming\\Grasshopper\\Libraries\\FirstPython\\Debug\\net48\\Files\\sample_demand_input.json"
-#SUPPLY_JSON = "C:\\Users\\sverremh\\AppData\\Roaming\\Grasshopper\\Libraries\\FirstPython\\Debug\\net48\Files\\sample_supply_input.json"
+    # read input arguments
+    PATH = sys.argv[0]
+    DEMAND_JSON = sys.argv[1]
+    SUPPLY_JSON = sys.argv[2]
+    RESULT_FILE = sys.argv[3]
 
-#read and clean demand df
-demand = pd.read_json(DEMAND_JSON)
-demand_header = demand.iloc[0]
-demand.columns = demand_header
-demand.drop(axis = 1, index= 0, inplace=True)
-demand.reset_index(drop = True, inplace = True)
-#read and clean supply df
-supply = pd.read_json(SUPPLY_JSON)
-supply_header = supply.iloc[0]
-supply.columns = supply_header
-supply.drop(axis = 1, index= 0, inplace=True)
-supply['Is_new'] = False
-supply.reset_index(drop = True, inplace = True)
+    #read and clean demand df
+    demand = pd.read_json(DEMAND_JSON)
+    demand_header = demand.iloc[0]
+    demand.columns = demand_header
+    demand.drop(axis = 1, index= 0, inplace=True)
+    demand.reset_index(drop = True, inplace = True)
+    demand.Length *=0.01
+    demand.Area *=0.0001
+    demand.Inertia_moment *=0.00000001
+    demand.Height *=0.01
 
-matching = Matching(demand, supply, add_new=True, multi=False)
-matching.evaluate()
-matching.match_bipartite_graph()
+    #read and clean supply df
+    supply = pd.read_json(SUPPLY_JSON)
+    supply_header = supply.iloc[0]
+    supply.columns = supply_header
+    supply.drop(axis = 1, index= 0, inplace=True)
+    supply['Is_new'] = False
+    supply.reset_index(drop = True, inplace = True)
+    supply.Length *=0.01
+    supply.Area *=0.0001
+    supply.Inertia_moment *=0.00000001
+    supply.Height *=0.01
 
-matching.pairs.to_csv(RESULT_FILE)
-# print(matching.result)
-# matching.display_graph()
+    import time
+
+    matching = Matching(demand, supply, add_new=True, multi=False)
+    
+    start = time.time()
+    matching.evaluate()
+    end = time.time()
+    print("Weight evaluation execution time: "+str(round(end - start,3))+"sec")
+
+    start = time.time()
+    matching.match_bipartite_graph()
+    end = time.time()
+    print(f"Matched: {len(matching.pairs['Supply_id'].unique())} to {matching.pairs['Supply_id'].count()} elements ({100*matching.pairs['Supply_id'].count()/len(demand)}%), resulting in LCA (GWP): {round(matching.result, 2)}kgCO2eq, in: {round(end - start,3)}sec.")
+
+    matching.pairs.to_csv(RESULT_FILE)
+    # matching.display_graph()

@@ -152,7 +152,12 @@ def calculate_lca(length, area, gwp=28.9, is_new=True):
     lca = length * area * gwp
     return lca
 
+def testGit():
+    return "New Commit"
 
+
+def Test3():
+    return "Excluded"
 if __name__ == "__main__":
 
     # read input arguments

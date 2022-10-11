@@ -6,8 +6,24 @@ import pandas as pd
 import numpy as np
 import igraph as ig
 import matplotlib.pyplot as plt
+import logging
 # import random
 # import math
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s_%(asctime)s_%(message)s',
+    datefmt='%H:%M:%S',
+    # filename='log.log',
+    # filemode='w'
+    )
+
+# logging.debug('This is a debug message')
+# logging.info('This is an info message')
+# logging.warning('This is a warning message')
+# logging.error('This is an error message')
+# logging.critical('This is a critical message')
 
 
 class Matching():

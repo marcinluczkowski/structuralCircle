@@ -18,10 +18,12 @@ demand.loc['D3'] = {'Length': 5.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Hei
 supply.loc['R3'] = {'Length': 5.20, 'Area': 0.042, 'Inertia_moment':0.00015, 'Height': 0.22, 'Is_new':False}
 supply.loc['R4'] = {'Length': 5.10, 'Area': 0.041, 'Inertia_moment':0.00014, 'Height': 0.21, 'Is_new':False}
 
+# create constraint dictionary
+constraint_dict = {'Area' : '>', 'Inertia_moment' : '>', 'Length' : '>'}
 
 import time
 
-matching = Matching(demand, supply, add_new=True, multi=False)
+matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
 start = time.time()
 matching.evaluate()

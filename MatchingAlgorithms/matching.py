@@ -42,9 +42,11 @@ class Matching():
         self.result = None  #saves latest result of the matching
         self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id']) #saves latest array of pairs
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
-
+        logging.info("Matching object created with %d demand, and %s supply elements", len(demand), len(supply))
+        
     def evaluate(self):
         """Populates incidence matrix with weights based on the criteria"""
+        # TODO optimize the evaluation.
         # TODO add 'Distance'
         # TODO add 'Price'
         # TODO add 'Material'
@@ -63,7 +65,6 @@ class Matching():
             
             self.incidence.loc[row[0], bool_match_new] = calculate_lca(row[1], self.supply.loc[bool_match_new, 'Area'], is_new=True)
             self.incidence.loc[row[0], bool_match_old] = calculate_lca(row[1], self.supply.loc[bool_match_old, 'Area'], is_new=False)
-
 
     def add_pair(self, demand_id, supply_id):
         """Execute matrix matching"""
@@ -98,6 +99,8 @@ class Matching():
 
     def display_graph(self):
         """Plot the graph and matching result"""
+        if not self.graph:
+            self.add_graph()
         if self.graph:
             # TODO add display of matching
             fig, ax = plt.subplots(figsize=(20, 10))
@@ -170,49 +173,7 @@ def calculate_lca(length, area, gwp=28.9, is_new=True):
 
 
 if __name__ == "__main__":
-
-    # read input arguments
     PATH = sys.argv[0]
     DEMAND_JSON = sys.argv[1]
     SUPPLY_JSON = sys.argv[2]
     RESULT_FILE = sys.argv[3]
-
-    #read and clean demand df
-    demand = pd.read_json(DEMAND_JSON)
-    demand_header = demand.iloc[0]
-    demand.columns = demand_header
-    demand.drop(axis = 1, index= 0, inplace=True)
-    demand.reset_index(drop = True, inplace = True)
-    demand.Length *=0.01
-    demand.Area *=0.0001
-    demand.Inertia_moment *=0.00000001
-    demand.Height *=0.01
-
-    #read and clean supply df
-    supply = pd.read_json(SUPPLY_JSON)
-    supply_header = supply.iloc[0]
-    supply.columns = supply_header
-    supply.drop(axis = 1, index= 0, inplace=True)
-    supply['Is_new'] = False
-    supply.reset_index(drop = True, inplace = True)
-    supply.Length *=0.01
-    supply.Area *=0.0001
-    supply.Inertia_moment *=0.00000001
-    supply.Height *=0.01
-
-    import time
-
-    matching = Matching(demand, supply, add_new=True, multi=False)
-    
-    start = time.time()
-    matching.evaluate()
-    end = time.time()
-    print("Weight evaluation execution time: "+str(round(end - start,3))+"sec")
-
-    start = time.time()
-    matching.match_bipartite_graph()
-    end = time.time()
-    print(f"Matched: {len(matching.pairs['Supply_id'].unique())} to {matching.pairs['Supply_id'].count()} elements ({100*matching.pairs['Supply_id'].count()/len(demand)}%), resulting in LCA (GWP): {round(matching.result, 2)}kgCO2eq, in: {round(end - start,3)}sec.")
-
-    matching.pairs.to_csv(RESULT_FILE)
-    # matching.display_graph()

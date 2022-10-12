@@ -31,6 +31,10 @@ matching = Matching(demand, supply, add_new=True, multi=False, constraints = con
 start = time.time()
 
 
+
+# create constraint dictionary
+constraint_dict = {'Area' : '>', 'Inertia_moment' : '>', 'Length' : '>'}
+
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
 matching.match_bipartite_graph()
@@ -39,7 +43,10 @@ matching.match_nested_loop(plural_assign=True)
 matching.match_bin_packing()
 matching.match_knapsacks()
 
+
 ### Test from JSON files with Slettelokka data 
+
+matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
 DEMAND_JSON = r".\sample_demand_input.json"
 SUPPLY_JSON = r".\sample_supply_input.json"

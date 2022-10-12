@@ -309,7 +309,6 @@ class Matching():
 
         return [self.result, self.pairs]
 
-
 # class Elements(pd.DataFrame):
 #     def read_json(self):
 #         super().read_json()

@@ -129,11 +129,12 @@ class Matching():
             func(self, *args, **kwargs)
             # After:
             end = time.time()
-            logging.info("Matched: %s to %s (%s %%) of %s elements using Nested Loops, resulting in LCA (GWP): %s kgCO2eq, in: %s sec.",
+            logging.info("Matched: %s to %s (%s %%) of %s elements using %s, resulting in LCA (GWP): %s kgCO2eq, in: %s sec.",
                 len(self.pairs['Supply_id'].unique()),
                 self.pairs['Supply_id'].count(),
                 100*self.pairs['Supply_id'].count()/len(self.demand),
                 self.supply.shape[0],
+                func.__name__,
                 round(self.result, 2),
                 round(end - start,3)
             )                

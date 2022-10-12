@@ -22,35 +22,29 @@ demand.loc['D4'] = {'Length': 8.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Heigh
 supply.loc['R5'] = {'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 
 # create constraint dictionary
-constraint_dict = {'Area' : '>', 'Inertia_moment' : '>', 'Length' : '>'}
+constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>=', 'Height': '>='}
+
 
 import time
-
+# create matching object
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
-start = time.time()
-
-
-
-# create constraint dictionary
-constraint_dict = {'Area' : '>', 'Inertia_moment' : '>', 'Length' : '>'}
-
-matching = Matching(demand, supply, add_new=True, multi=False)
-matching.evaluate()
+test_array = matching.evaluate()
+matching.evaluate2()
 matching.match_bipartite_graph()
 matching.match_nested_loop(plural_assign=False)
 matching.match_nested_loop(plural_assign=True)
-matching.match_bin_packing()
-matching.match_knapsacks()
+#matching.match_bin_packing()
+#matching.match_knapsacks()
 
-
+"""
 ### Test from JSON files with Slettelokka data 
 
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
-DEMAND_JSON = r".\sample_demand_input.json"
-SUPPLY_JSON = r".\sample_supply_input.json"
-RESULT_FILE = r".\result.csv"
+DEMAND_JSON = r".\MatchingAlgorithms\sample_demand_input.json"
+SUPPLY_JSON = r".\MatchingAlgorithms\sample_supply_input.json"
+RESULT_FILE = r".\MatchingAlgorithms\result.csv"
 #read and clean demand df
 demand = pd.read_json(DEMAND_JSON)
 demand_header = demand.iloc[0]
@@ -74,12 +68,13 @@ supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
 
 matching = Matching(demand, supply, add_new=True, multi=False)
-matching.evaluate()
+test_array = matching.evaluate()
+matching.evaluate2()
 matching.match_bipartite_graph()
 matching.match_nested_loop(plural_assign=False)
 matching.match_nested_loop(plural_assign=True)
-matching.match_bin_packing()
-matching.match_knapsacks()
+#matching.match_bin_packing()
+#matching.match_knapsacks()
 
 
 ### Test with random generated elements
@@ -144,3 +139,5 @@ matching.match_nested_loop(plural_assign=False)
 matching.match_nested_loop(plural_assign=True)
 matching.match_bin_packing()
 matching.match_knapsacks()
+
+"""

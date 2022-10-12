@@ -45,8 +45,32 @@ class Matching():
         self.constraints = constraints
 
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
-        
+    
     def evaluate(self):
+        """Populates incidence matrix with true values where the element fit constraint criteria"""    
+        
+        #TODO Where to add weights to this incidence matrix
+        start = time.time()
+        bool_array = np.full((self.demand.shape[0], self.supply.shape[0]), True) # initiate empty array
+        for param, compare in self.constraints.items():
+            cond_list = []
+            for var in self.supply[param]:
+                demand_array = self.demand[param]
+                bool_col = ne.evaluate(f"{var} {compare} demand_array") # numpy array of boolean
+                cond_list.append(bool_col)
+            cond_array = np.column_stack(cond_list) #create new 2D-array of conditionals
+            bool_array = ne.evaluate("cond_array & bool_array") # is this working
+            #bool_array = np.logical_and(bool_array, cond_array)
+        bool_df = pd.DataFrame(bool_array, columns= self.incidence.columns, index= self.incidence.index)
+
+        end = time.time()
+        #self.incidence = bool_array
+        logging.info("Weight evaluation NEW METHODexecution time: %s sec", round(end - start,3))
+        return bool_df
+
+
+
+    def evaluate2(self):
         """Populates incidence matrix with weights based on the criteria"""
         # TODO optimize the evaluation.
         # TODO add 'Distance'
@@ -203,7 +227,7 @@ class Matching():
             """Construct the constraint array"""
             rows = self.demand.shape[0]
             cols = self.supply.shape[0]
-            bool_arrray = np.full((rows, cols), False)
+            bool_array = np.full((rows, cols), False)
 
             # iterate through constraints
             for key, val in self.constraints.items():

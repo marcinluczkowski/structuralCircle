@@ -1,6 +1,6 @@
-from matching import Matching, logging
+from matching import Matching
 import pandas as pd
-
+import random
 
 ### Test with just few elements
 
@@ -13,18 +13,21 @@ supply.loc['R1'] = {'Length': 7.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Hei
 demand.loc['D2'] = {'Length': 13.00, 'Area': 0.001, 'Inertia_moment':0.00001, 'Height': 0.05}
 # Add non-matchable supply
 supply.loc['R2'] = {'Length': 0.1, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Is_new':False}
-# Add one with two good matches, where second slighlty better
+# Add element with two good matches, where second slighlty better
 demand.loc['D3'] = {'Length': 5.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20}
 supply.loc['R3'] = {'Length': 5.20, 'Area': 0.042, 'Inertia_moment':0.00015, 'Height': 0.22, 'Is_new':False}
 supply.loc['R4'] = {'Length': 5.10, 'Area': 0.041, 'Inertia_moment':0.00014, 'Height': 0.21, 'Is_new':False}
-# Define the problem to solve
-matching = Matching(demand, supply, add_new=True, multi=False)
-# evaluate weights
-matching.evaluate()
-# apply matching
-matching.match_bipartite_graph()
-# matching.display_graph()
+# Add element with much bigger match
+demand.loc['D4'] = {'Length': 8.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
+supply.loc['R5'] = {'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 
+matching = Matching(demand, supply, add_new=True, multi=False)
+matching.evaluate()
+matching.match_bipartite_graph()
+matching.match_nested_loop(plural_assign=False)
+matching.match_nested_loop(plural_assign=True)
+matching.match_bin_packing()
+matching.match_knapsacks()
 
 ### Test from JSON files with Slettelokka data 
 
@@ -52,19 +55,17 @@ supply.Length *=0.01
 supply.Area *=0.0001
 supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
-# Define the problem to solve
-matching = Matching(demand, supply, add_new=True, multi=False)
-# evaluate weights
-matching.evaluate()
-# apply matching
-matching.match_bipartite_graph()
 
-# matching.display_graph()
+matching = Matching(demand, supply, add_new=True, multi=False)
+matching.evaluate()
+matching.match_bipartite_graph()
+matching.match_nested_loop(plural_assign=False)
+matching.match_nested_loop(plural_assign=True)
+matching.match_bin_packing()
+matching.match_knapsacks()
 
 
 ### Test with random generated elements
-
-import random
 
 random.seed(3)
 
@@ -86,11 +87,43 @@ supply['Area'] = supply.apply(lambda row: round((random.choice(range(0, int(MAX_
 supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
 supply['Height'] = supply.apply(lambda row: row['Area']**(0.5), axis=1)   # derived from area assuming square section
 supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
-# Define the problem to solve
-matching = Matching(demand, supply, add_new=True, multi=False)
-# evaluate weights
-matching.evaluate()
-# apply matching
-matching.match_bipartite_graph()
 
-# matching.display_graph()
+matching = Matching(demand, supply, add_new=True, multi=False)
+matching.evaluate()
+matching.match_bipartite_graph()
+matching.match_nested_loop(plural_assign=False)
+matching.match_nested_loop(plural_assign=True)
+matching.match_bin_packing()
+matching.match_knapsacks()
+
+
+### Test with random generated elements
+
+random.seed(3)
+
+DEMAND_COUNT = 100
+SUPPLY_COUNT = 10000
+MIN_LENGTH = 1.0
+MAX_LENGTH = 10.0
+MIN_AREA = 0.0025   # 5x5cm
+MAX_AREA = 0.25     # 50x50cm
+
+demand = pd.DataFrame()
+demand['Length'] = [x/10 for x in random.choices(range(int(MIN_LENGTH*10), int(MAX_LENGTH*10)), k=DEMAND_COUNT)]        # [m], random between the range
+demand['Area'] = demand.apply(lambda row: round((random.choice(range(0, int(MAX_AREA*10000)-int(MIN_AREA*10000))) /10000 /MAX_LENGTH * row['Length'] + MIN_AREA) * 10000)/10000, axis=1)        # [m2], random between the range but dependent on the length of the element
+demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+demand['Height'] = demand.apply(lambda row: row['Area']**(0.5), axis=1)   # derived from area assuming square section
+supply = pd.DataFrame()
+supply['Length'] = [x/10 for x in random.choices(range(int(MIN_LENGTH*10), int(MAX_LENGTH*10)), k=SUPPLY_COUNT)]        # [m], random between the range
+supply['Area'] = supply.apply(lambda row: round((random.choice(range(0, int(MAX_AREA*10000)-int(MIN_AREA*10000))) /10000 /MAX_LENGTH * row['Length'] + MIN_AREA) * 10000)/10000, axis=1)        # [m2], random between the range but dependent on the length of the element
+supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+supply['Height'] = supply.apply(lambda row: row['Area']**(0.5), axis=1)   # derived from area assuming square section
+supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
+
+matching = Matching(demand, supply, add_new=True, multi=False)
+matching.evaluate()
+matching.match_bipartite_graph()
+matching.match_nested_loop(plural_assign=False)
+matching.match_nested_loop(plural_assign=True)
+matching.match_bin_packing()
+matching.match_knapsacks()

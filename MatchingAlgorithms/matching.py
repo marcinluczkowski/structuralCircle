@@ -18,12 +18,6 @@ logging.basicConfig(
     # filemode='w'
     )
 
-# logging.debug('This is a debug message')
-# logging.info('This is an info message')
-# logging.warning('This is a warning message')
-# logging.error('This is an error message')
-# logging.critical('This is a critical message')
-
 
 class Matching():
     """Class describing the matching problem, with its constituent parts"""
@@ -33,7 +27,11 @@ class Matching():
             # add perfectly matching new elements to supply
             demand_copy = demand.copy(deep = True)
             demand_copy['Is_new'] = True # set them as new elements
-            self.supply = pd.concat((supply, demand_copy), ignore_index=True)
+            try:
+                demand_copy.rename(index=dict(zip(demand.index.values.tolist(), [sub.replace('D', 'N') for sub in demand.index.values.tolist()] )), inplace=True)
+            except AttributeError:
+                pass
+            self.supply = pd.concat((supply, demand_copy), ignore_index=False)
         else:
             self.supply = supply
         self.multi = multi
@@ -119,49 +117,80 @@ class Matching():
             )
             plt.show()
 
+    def _matching_decorator(func):
+        """Set of repetitive tasks for all matching methods"""
+        def wrapper(self, *args, **kwargs):
+            # Before:
+            start = time.time()
+            # empty result of previous matching:
+            self.result = 0  
+            self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
+            # The actual method:
+            func(self, *args, **kwargs)
+            # After:
+            end = time.time()
+            logging.info("Matched: %s to %s (%s %%) of %s elements using Nested Loops, resulting in LCA (GWP): %s kgCO2eq, in: %s sec.",
+                len(self.pairs['Supply_id'].unique()),
+                self.pairs['Supply_id'].count(),
+                100*self.pairs['Supply_id'].count()/len(self.demand),
+                self.supply.shape[0],
+                round(self.result, 2),
+                round(end - start,3)
+            )                
+            return [self.result, self.pairs]
+        return wrapper
+
+    @_matching_decorator
+    def match_nested_loop(self, plural_assign=False):
+        """Simplest brute force matching that iterates all elemnts."""
+        demand_sorted = self.demand.sort_values(by=['Length', 'Area'], axis=0, ascending=False)
+        supply_sorted = self.supply.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)
+        for demand_index, demand_row in demand_sorted.iterrows():
+            match=False
+            logging.debug("-- Attempt to find a match for %s", demand_index)                
+            for supply_index, supply_row in supply_sorted.iterrows():
+                # TODO replace constraints with evalute string
+                if demand_row.Length <= supply_row.Length and demand_row.Area <= supply_row.Area and demand_row.Inertia_moment <= supply_row.Inertia_moment and demand_row.Height <= supply_row.Height:
+                    match=True
+                    self.add_pair(demand_index, supply_index)
+                if match:
+                    if plural_assign:
+                        # shorten the supply element:
+                        supply_row.Length = supply_row.Length - demand_row.Length
+                        # sort the supply list
+                        supply_sorted = supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)  # TODO move this element instead of sorting whole list
+                        self.result += calculate_lca(demand_row.Length, supply_row.Area, is_new=supply_row.Is_new)
+                        logging.debug("---- %s is a match, that results in %s m cut.", supply_index, supply_row.Length)
+                    else:
+                        self.result += calculate_lca(supply_row.Length, supply_row.Area, is_new=supply_row.Is_new)
+                        logging.debug("---- %s is a match and will be utilized fully.", supply_index)
+                        supply_sorted.drop(supply_index)
+                    break
+                else:
+                    logging.debug("---- %s is not matching.", supply_index)
+
+    @_matching_decorator
     def match_bipartite_graph(self):
-        """Match using Maximum Bipartite Graphs to find best indyvidual mapping candidates"""
+        """Match using Maximum Bipartite Graphs"""
         # TODO multiple assignment won't work OOTB.
-        start = time.time()
-        # empty result of previous matching:
-        self.result = None  
-        self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
         if not self.graph:
             self.add_graph()
         bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
         for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])
         self.result = sum(bipartite_matching.edges()["label"])
-        end = time.time()
-        logging.info("Matched: %s to %s elements (%s %%) using Maximum Bipartite Graphs, resulting in LCA (GWP): %s kgCO2eq, in: %s sec.",
-            len(self.pairs['Supply_id'].unique()),
-            self.pairs['Supply_id'].count(),
-            100*self.pairs['Supply_id'].count()/len(self.demand),
-            round(self.result, 2),
-            round(end - start,3)
-        )
-        return [self.result, self.pairs]
 
+    @_matching_decorator
     def match_bin_packing(self):
-        # empty result of previous matching:
-        self.result = None  
-        self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
+        """Match using Bin Packing"""
         #TODO
-        return [self.result, self.pairs]
+        pass
 
-    def match_nested_loop(self):
-        # empty result of previous matching:
-        self.result = None  
-        self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
-        #TODO
-        return [self.result, self.pairs]
-
+    @_matching_decorator
     def match_knapsacks(self):
-        # empty result of previous matching:
-        self.result = None  
-        self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
+        """Match using Knapsacks"""
         #TODO
-        return [self.result, self.pairs]
+        pass
 
 
 # class Elements(pd.DataFrame):
@@ -186,3 +215,4 @@ if __name__ == "__main__":
     DEMAND_JSON = sys.argv[1]
     SUPPLY_JSON = sys.argv[2]
     RESULT_FILE = sys.argv[3]
+

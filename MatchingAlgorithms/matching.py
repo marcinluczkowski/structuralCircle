@@ -7,8 +7,7 @@ import numpy as np
 import igraph as ig
 import matplotlib.pyplot as plt
 import logging
-# import random
-# import math
+import time
 
 
 logging.basicConfig(
@@ -42,7 +41,7 @@ class Matching():
         self.result = None  #saves latest result of the matching
         self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id']) #saves latest array of pairs
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
-        logging.info("Matching object created with %d demand, and %s supply elements", len(demand), len(supply))
+        logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
         
     def evaluate(self):
         """Populates incidence matrix with weights based on the criteria"""
@@ -57,6 +56,7 @@ class Matching():
         # TODO add 'Group'
         # TODO add 'Quality'
         # TODO add 'Max_height' ?
+        start = time.time()
         match_new = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == True
         match_old = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == False
         for row in self.demand.itertuples():
@@ -65,6 +65,8 @@ class Matching():
             
             self.incidence.loc[row[0], bool_match_new] = calculate_lca(row[1], self.supply.loc[bool_match_new, 'Area'], is_new=True)
             self.incidence.loc[row[0], bool_match_old] = calculate_lca(row[1], self.supply.loc[bool_match_old, 'Area'], is_new=False)
+        end = time.time()
+        logging.info("Weight evaluation execution time: %s sec", round(end - start,3))
 
     def add_pair(self, demand_id, supply_id):
         """Execute matrix matching"""
@@ -119,18 +121,25 @@ class Matching():
 
     def match_bipartite_graph(self):
         """Match using Maximum Bipartite Graphs to find best indyvidual mapping candidates"""
-        # TODO multiple assignment won't work.
-
+        # TODO multiple assignment won't work OOTB.
+        start = time.time()
         # empty result of previous matching:
         self.result = None  
         self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
-
         if not self.graph:
             self.add_graph()
         bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
         for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])
         self.result = sum(bipartite_matching.edges()["label"])
+        end = time.time()
+        logging.info("Matched: %s to %s elements (%s %%) using Maximum Bipartite Graphs, resulting in LCA (GWP): %s kgCO2eq, in: %s sec.",
+            len(self.pairs['Supply_id'].unique()),
+            self.pairs['Supply_id'].count(),
+            100*self.pairs['Supply_id'].count()/len(self.demand),
+            round(self.result, 2),
+            round(end - start,3)
+        )
         return [self.result, self.pairs]
 
     def match_bin_packing(self):

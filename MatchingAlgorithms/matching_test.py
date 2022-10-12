@@ -1,6 +1,5 @@
 from matching import Matching, logging
 import pandas as pd
-import time
 
 
 ### Test with just few elements
@@ -21,16 +20,9 @@ supply.loc['R4'] = {'Length': 5.10, 'Area': 0.041, 'Inertia_moment':0.00014, 'He
 # Define the problem to solve
 matching = Matching(demand, supply, add_new=True, multi=False)
 # evaluate weights
-start = time.time()
 matching.evaluate()
-end = time.time()
-logging.info("Weight evaluation execution time: "+str(round(end - start,3))+"sec")
 # apply matching
-start = time.time()
 matching.match_bipartite_graph()
-end = time.time()
-logging.info(f"Matched: {len(matching.pairs['Supply_id'].unique())} to {matching.pairs['Supply_id'].count()} elements ({100*matching.pairs['Supply_id'].count()/len(demand)}%), resulting in LCA (GWP): {round(matching.result, 2)}kgCO2eq, in: {round(end - start,3)}sec.")
-
 # matching.display_graph()
 
 
@@ -62,17 +54,10 @@ supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
 # Define the problem to solve
 matching = Matching(demand, supply, add_new=True, multi=False)
-
 # evaluate weights
-start = time.time()
 matching.evaluate()
-end = time.time()
-logging.info("Weight evaluation execution time: "+str(round(end - start,3))+"sec")
 # apply matching
-start = time.time()
 matching.match_bipartite_graph()
-end = time.time()
-logging.info(f"Matched: {len(matching.pairs['Supply_id'].unique())} to {matching.pairs['Supply_id'].count()} elements ({100*matching.pairs['Supply_id'].count()/len(demand)}%), resulting in LCA (GWP): {round(matching.result, 2)}kgCO2eq, in: {round(end - start,3)}sec.")
 
 # matching.display_graph()
 
@@ -83,7 +68,7 @@ import random
 
 random.seed(3)
 
-DEMAND_COUNT = 100
+DEMAND_COUNT = 200
 SUPPLY_COUNT = 2000
 MIN_LENGTH = 1.0
 MAX_LENGTH = 10.0
@@ -104,14 +89,8 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 # Define the problem to solve
 matching = Matching(demand, supply, add_new=True, multi=False)
 # evaluate weights
-start = time.time()
 matching.evaluate()
-end = time.time()
-logging.info("Weight evaluation execution time: "+str(round(end - start,3))+"sec")
 # apply matching
-start = time.time()
 matching.match_bipartite_graph()
-end = time.time()
-logging.info(f"Matched: {len(matching.pairs['Supply_id'].unique())} to {matching.pairs['Supply_id'].count()} elements ({100*matching.pairs['Supply_id'].count()/len(demand)}%), resulting in LCA (GWP): {round(matching.result, 2)}kgCO2eq, in: {round(end - start,3)}sec.")
 
 # matching.display_graph()

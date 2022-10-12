@@ -21,6 +21,10 @@ supply.loc['R4'] = {'Length': 5.10, 'Area': 0.041, 'Inertia_moment':0.00014, 'He
 demand.loc['D4'] = {'Length': 8.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
 supply.loc['R5'] = {'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 
+
+# create constraint dictionary
+constraint_dict = {'Area' : '>', 'Inertia_moment' : '>', 'Length' : '>'}
+
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
 matching.match_bipartite_graph()
@@ -29,7 +33,10 @@ matching.match_nested_loop(plural_assign=True)
 matching.match_bin_packing()
 matching.match_knapsacks()
 
+
 ### Test from JSON files with Slettelokka data 
+
+matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
 DEMAND_JSON = r".\sample_demand_input.json"
 SUPPLY_JSON = r".\sample_supply_input.json"

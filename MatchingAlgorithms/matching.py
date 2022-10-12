@@ -6,6 +6,11 @@ import pandas as pd
 import numpy as np
 import igraph as ig
 import matplotlib.pyplot as plt
+from ortools.linear_solver import pywraplp
+import numexpr as ne
+# import random
+# import math
+
 import logging
 import time
 
@@ -21,7 +26,7 @@ logging.basicConfig(
 
 class Matching():
     """Class describing the matching problem, with its constituent parts"""
-    def __init__(self, demand, supply, add_new=False, multi=False):
+    def __init__(self, demand, supply, add_new=False, multi=False, constraints = {}):
         self.demand = demand
         if add_new:
             # add perfectly matching new elements to supply
@@ -39,8 +44,11 @@ class Matching():
         self.result = None  #saves latest result of the matching
         self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id']) #saves latest array of pairs
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
+        self.constraints = constraints
+
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
         
+
     def evaluate(self):
         """Populates incidence matrix with weights based on the criteria"""
         # TODO optimize the evaluation.
@@ -54,7 +62,9 @@ class Matching():
         # TODO add 'Group'
         # TODO add 'Quality'
         # TODO add 'Max_height' ?
+
         start = time.time()
+
         match_new = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == True
         match_old = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == False
         for row in self.demand.itertuples():
@@ -191,8 +201,116 @@ class Matching():
     def match_knapsacks(self):
         """Match using Knapsacks"""
         #TODO
-        pass
 
+        def constraint_inds():
+            """Construct the constraint array"""
+            rows = self.demand.shape[0]
+            cols = self.supply.shape[0]
+            bool_arrray = np.full((rows, cols), False)
+
+            # iterate through constraints
+            for key, val in self.constraints.items():
+                cond_list = []
+                for var in self.supply[key]:
+                    array = self.demand[key]
+                    col = ne.evaluate(f'array {val} var')
+                    cond_list.append(col) # add results to cond_list
+                conds = np.column_stack(cond_list) # create 2d array of tests
+                bool_array = np.logical_or(bool_array, conds)
+
+            constraint_inds = np.transpose(np.where(bool_array)) # convert to nested list if [i,j] indices
+            return constraint_inds
+
+        data = {}
+        data ['lengths'] = demand.Length.astype(float)
+        data['values'] = demand.Area.astype(float)
+        
+        assert len(data['lengths']) == len(data['values']) # The same check is done indirectly in the dataframe
+        data['num_items'] = len(data['values'])
+        data['all_items'] = range(data['num_items'])
+        data['areas'] = demand.Area
+
+        data['bin_capacities'] = supply.Length # these would be the bins
+        data['bin_areas'] = supply.Area.to_numpy(dtype = int)
+        data['num_bins'] = len(data['bin_capacities'])
+        data['all_bins'] = range(data['num_bins'])
+
+        #get constraint ids
+        c_inds = constraint_inds()
+
+        # create solver
+        solver = pywraplp.Solver.CreateSolver('SCIP')
+        if solver is None:
+            print('SCIP Solver is unavailable')
+            return
+
+        # --- Variables ---
+        # x[i,j] = 1 if item i is backed in bin j. 0 else
+        x = {}
+        for i in data['all_items']:
+            for j in data['all_bins']:
+                x[i,j] = solver.BoolVar(f'x_{i}_{j}') 
+  
+        print(f'Number of variables = {solver.NumVariables()}') 
+
+        # --- Constraints ---
+        # each item can only be assigned to one bin
+        for i in data['all_items']:
+            solver.Add(sum(x[i,j] for j in data['all_bins']) <= 1)
+
+        # the amount packed in each bin cannot exceed its capacity.
+        for j in data['all_bins']:
+            solver.Add(
+                sum(x[i,j] * data['lengths'][i] for i in data['all_items'])
+                    <= data['bin_capacities'][j])
+
+        # fix the variables where the area of the element is too small to fit
+        # in this case it is the supply element 0 which has an area of 10
+        for inds in c_inds:
+            i = int(inds[0])
+            j = int(inds[1])
+            solver.Add(x[i,j] == 0)
+
+        print(f'Number of contraints = {solver.NumConstraints()}')
+        # --- Objective ---
+        # maximise total value of packed items
+        objective = solver.Objective()
+        for i in data['all_items']:
+            for j in data['all_bins']:
+              objective.SetCoefficient(x[i,j], float(data['areas'][i]))      
+        objective.SetMaximization()
+        # Starting solver
+        print('Starting solver')
+        status = solver.Solve()
+        print('Computation done')
+        if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
+
+            results = {}
+            print('Solution found! \n ------RESULTS-------\n')
+            total_length = 0
+            for j in data['all_bins']:
+                results[j] = []
+                print(f'Bin {j}')
+                bin_length = 0
+                bin_value = 0
+                for i in data['all_items']:
+                    if x[i, j].solution_value() > 0:
+                        results[j].append(i)
+                        print(
+                            f"Item {i} Length: {data['lengths'][i]} area: {data['areas'][i]}"
+                        )
+                        bin_length += data['lengths'][i]
+                        bin_value += data['areas'][i]
+                print(f'Packed bin lengths: {bin_length}')
+                print(f'Packed bin value: {bin_value}')
+                total_length += bin_length
+                print(f'Total packed Lenghtst: {total_length}\n')
+
+        # return the results as a DataFrame like the bin packing problem
+        # Or a dictionary. One key per bin/supply, and a list of ID's for the
+        # elements which should go within that bin. 
+
+        return [self.result, self.pairs]
 
 # class Elements(pd.DataFrame):
 #     def read_json(self):
@@ -213,7 +331,11 @@ def calculate_lca(length, area, gwp=28.9, is_new=True):
 
 if __name__ == "__main__":
     PATH = sys.argv[0]
-    DEMAND_JSON = sys.argv[1]
-    SUPPLY_JSON = sys.argv[2]
-    RESULT_FILE = sys.argv[3]
+    #DEMAND_JSON = sys.argv[1]
+    #SUPPLY_JSON = sys.argv[2]
+    #RESULT_FILE = sys.argv[3]
+
+    DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
+    SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
+    RESULT_FILE = r"MatchingAlgorithms\result.csv"
 

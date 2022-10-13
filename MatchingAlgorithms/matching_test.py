@@ -29,15 +29,16 @@ import time
 # create matching object
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
-test_array = matching.evaluate()
-matching.evaluate2()
+matching.evaluate()
+matching.weigth_incidence() # This should only be done for the methods needing it. 
+#matching.evaluate2() #TODO Delete this method if the above methods work
 matching.match_bipartite_graph()
 matching.match_nested_loop(plural_assign=False)
 matching.match_nested_loop(plural_assign=True)
 #matching.match_bin_packing()
 #matching.match_knapsacks()
 
-"""
+
 ### Test from JSON files with Slettelokka data 
 
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
@@ -76,7 +77,7 @@ matching.match_nested_loop(plural_assign=True)
 #matching.match_bin_packing()
 #matching.match_knapsacks()
 
-
+"""
 ### Test with random generated elements
 
 random.seed(3)

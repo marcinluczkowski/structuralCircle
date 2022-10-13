@@ -61,17 +61,26 @@ class Matching():
             cond_array = np.column_stack(cond_list) #create new 2D-array of conditionals
             bool_array = ne.evaluate("cond_array & bool_array") # is this working
             #bool_array = np.logical_and(bool_array, cond_array)
-        bool_df = pd.DataFrame(bool_array, columns= self.incidence.columns, index= self.incidence.index)
-
+        self.incidence = pd.DataFrame(bool_array, columns= self.incidence.columns, index= self.incidence.index)
         end = time.time()
         #self.incidence = bool_array
-        logging.info("Weight evaluation NEW METHODexecution time: %s sec", round(end - start,3))
-        return bool_df
+        logging.info("Create incidence matrix from constraints: %s sec", round(end - start,3))
 
-
+    def weigth_incidence(self):
+        """Assign wegihts to elements in the incidence matrix. At the moment only LCA is taken into\
+        account. This method should replace the last step in the original evaluate method."""
+        start = time.time()
+        self.incidence = self.incidence.apply(lambda el: np.where(el, \
+            calculate_lca(self.demand.loc[el.index, "Length"], \
+                self.supply.loc[el.name, "Area"], \
+                is_new = self.supply.loc[el.name, "Is_new"]), \
+                np.nan))
+        end = time.time()
+        logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
 
     def evaluate2(self):
-        """Populates incidence matrix with weights based on the criteria"""
+        """Populates incidence matrix with weights based on the criteria
+        This is the original method which should be replace by two smaller methods."""
         # TODO optimize the evaluation.
         # TODO add 'Distance'
         # TODO add 'Price'
@@ -341,7 +350,7 @@ class Matching():
 #         self.reset_index(drop = True, inplace = True)
 
 
-def calculate_lca(length, area, gwp=28.9, is_new=True):
+def calculate_lca(length, area, is_new=True, gwp=28.9, ):
     """ Calculate Life Cycle Assessment """
     # TODO add distance, processing and other impact categories than GWP
     if not is_new:

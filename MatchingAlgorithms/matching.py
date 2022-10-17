@@ -31,10 +31,12 @@ class Matching():
             demand_copy = demand.copy(deep = True)
             demand_copy['Is_new'] = True # set them as new elements
             try:
+                # This works only when the indices are already named "D"
                 demand_copy.rename(index=dict(zip(demand.index.values.tolist(), [sub.replace('D', 'N') for sub in demand.index.values.tolist()] )), inplace=True)
+                self.supply = pd.concat((supply, demand_copy), ignore_index=False)
             except AttributeError:
-                pass
-            self.supply = pd.concat((supply, demand_copy), ignore_index=False)
+                self.supply = pd.concat((supply, demand_copy), ignore_index=True) # if we cannot rename. Reset indices to avoid duplicate indices. 
+            
         else:
             self.supply = supply
         self.multi = multi
@@ -55,27 +57,45 @@ class Matching():
         for param, compare in self.constraints.items():
             cond_list = []
             for var in self.supply[param]:
-                demand_array = self.demand[param]
-                bool_col = ne.evaluate(f"{var} {compare} demand_array") # numpy array of boolean
+                demand_array = self.demand[param].to_list()
+                bool_col = ne.evaluate(f'{var} {compare} demand_array') # numpy array of boolean
                 cond_list.append(bool_col)
             cond_array = np.column_stack(cond_list) #create new 2D-array of conditionals
-            bool_array = ne.evaluate("cond_array & bool_array") # is this working
+            bool_array = ne.evaluate("cond_array & bool_array") # 
             #bool_array = np.logical_and(bool_array, cond_array)
         self.incidence = pd.DataFrame(bool_array, columns= self.incidence.columns, index= self.incidence.index)
         end = time.time()
-        #self.incidence = bool_array
         logging.info("Create incidence matrix from constraints: %s sec", round(end - start,3))
 
     def weigth_incidence(self):
         """Assign wegihts to elements in the incidence matrix. At the moment only LCA is taken into\
         account. This method should replace the last step in the original evaluate method."""
         start = time.time()
+        el_locs0 = np.where(self.incidence) # tuple of rows and columns as list
+        el_locs = np.transpose(el_locs0) # array of row-column pairs where incidence matrix is true. 
+        areas = self.supply.Area.iloc[el_locs[:, 1]].to_list() # array of areas 
+        lenghts = self.demand.Length.iloc[el_locs[:, 0]].to_list() # array of element lenghts
+        el_new = self.supply.Is_new.iloc[el_locs[:,1]].to_list() # array of booleans for element condition.  
+        gwp = 28.9
+        gwp_array = np.where(el_new, gwp, gwp * 0.0778)
+        #get_gwp = ne.evaluate("gwp if el_new else gwp*0.0778")
+        #gwp = [7.28 if tr else ]
+        lca_array = ne.evaluate("areas * lenghts * gwp_array")
+       
+        
+        lca_mat = np.empty(shape = (self.incidence.shape[0], self.incidence.shape[1]))
+        lca_mat[:] = np.nan
+        lca_mat[el_locs0[0], el_locs0[1]] = lca_array
+        self.incidence = pd.DataFrame(lca_mat, index = self.incidence.index, columns = self.incidence.columns)
+        """
         self.incidence = self.incidence.apply(lambda el: np.where(el, \
-            calculate_lca(self.demand.loc[el.index, "Length"], \
-                self.supply.loc[el.name, "Area"], \
+            calculate_lca(self.demand[el.index, "Length"], \
+                self.supply[el.name, "Area"], \
                 is_new = self.supply.loc[el.name, "Is_new"]), \
                 np.nan))
-        end = time.time()
+        """
+        end = time.time()  
+        logging.info(f"Sum of all weights: {self.incidence.sum().sum()}")    
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
 
     def evaluate2(self):
@@ -105,6 +125,7 @@ class Matching():
             self.incidence.loc[row[0], bool_match_old] = calculate_lca(row[1], self.supply.loc[bool_match_old, 'Area'], is_new=False)
         end = time.time()
         logging.info("Weight evaluation execution time: %s sec", round(end - start,3))
+        logging.info(f"Sum of all weights: {self.incidence.sum().sum()}")
 
     def add_pair(self, demand_id, supply_id):
         """Execute matrix matching"""
@@ -355,6 +376,7 @@ def calculate_lca(length, area, is_new=True, gwp=28.9, ):
     # TODO add distance, processing and other impact categories than GWP
     if not is_new:
         gwp = gwp * 0.0778
+    #gwp_array = np.where(is_new, gwp, gwp * 0.0778)
     lca = length * area * gwp
     return lca
 

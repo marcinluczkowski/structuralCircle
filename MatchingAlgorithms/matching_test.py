@@ -26,6 +26,7 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>=', 'Hei
 
 
 import time
+"""
 # create matching object
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
@@ -38,7 +39,7 @@ matching.match_nested_loop(plural_assign=True)
 #matching.match_bin_packing()
 #matching.match_knapsacks()
 
-
+"""
 ### Test from JSON files with Slettelokka data 
 
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
@@ -68,18 +69,19 @@ supply.Area *=0.0001
 supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
 
-matching = Matching(demand, supply, add_new=True, multi=False)
-test_array = matching.evaluate()
-matching.evaluate2()
+#--- CREATE AND EVALUATE ---
+matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
+matching.evaluate()
+matching.weigth_incidence()
+#matching.evaluate2()
 matching.match_bipartite_graph()
 matching.match_nested_loop(plural_assign=False)
 matching.match_nested_loop(plural_assign=True)
 #matching.match_bin_packing()
 #matching.match_knapsacks()
 
-"""
 ### Test with random generated elements
-
+"""
 random.seed(3)
 
 DEMAND_COUNT = 200

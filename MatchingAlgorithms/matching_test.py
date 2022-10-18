@@ -4,6 +4,7 @@ import random
 
 ### Test with just few elements
 
+
 demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
 supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
 # Add a perfect matching pair
@@ -24,22 +25,23 @@ supply.loc['R5'] = {'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Heig
 # create constraint dictionary
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>=', 'Height': '>='}
 
-
 import time
-"""
+
+
 # create matching object
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
-matching.evaluate()
-matching.weigth_incidence() # This should only be done for the methods needing it. 
-#matching.evaluate2() #TODO Delete this method if the above methods work
-matching.match_bipartite_graph()
-matching.match_nested_loop(plural_assign=False)
-matching.match_nested_loop(plural_assign=True)
-#matching.match_bin_packing()
-#matching.match_knapsacks()
-
 """
+matching.evaluate()
+matching.get_weights() # This should only be done for the methods needing it. 
+#matching.match_bipartite_graph()
+#matching.match_nested_loop(plural_assign=False)
+#matching.match_nested_loop(plural_assign=True)
+#matching.match_bin_packing()
+matching.match_knapsacks()
+matching.match_cp_solver()
+"""
+
 ### Test from JSON files with Slettelokka data 
 
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
@@ -70,18 +72,20 @@ supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
 
 #--- CREATE AND EVALUATE ---
-matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
+matching = Matching(demand, supply, add_new=False, multi=True, constraints = constraint_dict)
 matching.evaluate()
-matching.weigth_incidence()
-#matching.evaluate2()
-matching.match_bipartite_graph()
-matching.match_nested_loop(plural_assign=False)
-matching.match_nested_loop(plural_assign=True)
+matching.get_weights() #TODO Move into methods which needs weighting
+#matching.match_bipartite_graph()
+#matching.match_nested_loop(plural_assign=False)
+#matching.match_nested_loop(plural_assign=True)
 #matching.match_bin_packing()
 #matching.match_knapsacks()
+matching.match_cp_solver()
 
-### Test with random generated elements
+
 """
+### Test with random generated elements
+
 random.seed(3)
 
 DEMAND_COUNT = 200
@@ -105,11 +109,12 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
-matching.match_bipartite_graph()
-matching.match_nested_loop(plural_assign=False)
-matching.match_nested_loop(plural_assign=True)
-matching.match_bin_packing()
-matching.match_knapsacks()
+matching.get_weights()
+#matching.match_bipartite_graph()
+#matching.match_nested_loop(plural_assign=False)
+#matching.match_nested_loop(plural_assign=True)
+#matching.match_bin_packing()
+#matching.match_knapsacks()
 
 
 ### Test with random generated elements
@@ -137,10 +142,10 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
+matching.weigth_incidence()
 matching.match_bipartite_graph()
 matching.match_nested_loop(plural_assign=False)
 matching.match_nested_loop(plural_assign=True)
-matching.match_bin_packing()
-matching.match_knapsacks()
-
+#matching.match_bin_packing()
+#matching.match_knapsacks()
 """

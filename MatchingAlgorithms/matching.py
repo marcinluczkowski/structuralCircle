@@ -7,6 +7,7 @@ import numpy as np
 import igraph as ig
 import matplotlib.pyplot as plt
 from ortools.linear_solver import pywraplp
+from ortools.sat.python import cp_model
 import numexpr as ne
 # import random
 # import math
@@ -44,6 +45,7 @@ class Matching():
         self.result = None  #saves latest result of the matching
         self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id']) #saves latest array of pairs
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
+        self.weights = None
         self.constraints = constraints
 
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
@@ -67,7 +69,7 @@ class Matching():
         end = time.time()
         logging.info("Create incidence matrix from constraints: %s sec", round(end - start,3))
 
-    def weigth_incidence(self):
+    def get_weights(self):
         """Assign wegihts to elements in the incidence matrix. At the moment only LCA is taken into\
         account. This method should replace the last step in the original evaluate method."""
         start = time.time()
@@ -86,7 +88,7 @@ class Matching():
         lca_mat = np.empty(shape = (self.incidence.shape[0], self.incidence.shape[1]))
         lca_mat[:] = np.nan
         lca_mat[el_locs0[0], el_locs0[1]] = lca_array
-        self.incidence = pd.DataFrame(lca_mat, index = self.incidence.index, columns = self.incidence.columns)
+        self.weights = pd.DataFrame(lca_mat, index = self.incidence.index, columns = self.incidence.columns)
         """
         self.incidence = self.incidence.apply(lambda el: np.where(el, \
             calculate_lca(self.demand[el.index, "Length"], \
@@ -95,12 +97,10 @@ class Matching():
                 np.nan))
         """
         end = time.time()  
-        logging.info(f"Sum of all weights: {self.incidence.sum().sum()}")    
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
 
     def evaluate2(self):
-        """Populates incidence matrix with weights based on the criteria
-        This is the original method which should be replace by two smaller methods."""
+        """OBSOLETE"""
         # TODO optimize the evaluation.
         # TODO add 'Distance'
         # TODO add 'Price'
@@ -121,11 +121,11 @@ class Matching():
             bool_match_new = self.supply.apply(match_new, axis = 1).tolist()
             bool_match_old = self.supply.apply(match_old, axis = 1).tolist()
             
-            self.incidence.loc[row[0], bool_match_new] = calculate_lca(row[1], self.supply.loc[bool_match_new, 'Area'], is_new=True)
-            self.incidence.loc[row[0], bool_match_old] = calculate_lca(row[1], self.supply.loc[bool_match_old, 'Area'], is_new=False)
+            self.weights.loc[row[0], bool_match_new] = calculate_lca(row[1], self.supply.loc[bool_match_new, 'Area'], is_new=True)
+            self.weights.loc[row[0], bool_match_old] = calculate_lca(row[1], self.supply.loc[bool_match_old, 'Area'], is_new=False)
         end = time.time()
         logging.info("Weight evaluation execution time: %s sec", round(end - start,3))
-        logging.info(f"Sum of all weights: {self.incidence.sum().sum()}")
+        logging.info(f"Sum of all weights: {self.weights.sum().sum()}")
 
     def add_pair(self, demand_id, supply_id):
         """Execute matrix matching"""
@@ -133,8 +133,8 @@ class Matching():
         self.pairs.loc[demand_id, 'Supply_id'] = supply_id
         # remove already used:
         try:
-            self.incidence.drop(demand_id, inplace=True)
-            self.incidence.drop(supply_id, axis=1, inplace=True)
+            self.weights.drop(demand_id, inplace=True)
+            self.weights.drop(supply_id, axis=1, inplace=True)
         except KeyError:
             pass
 
@@ -144,14 +144,14 @@ class Matching():
         edges = []
         weights = []
 
-        is_na = self.incidence.isna()
-        row_inds = np.arange(self.incidence.shape[0]).tolist()
-        col_inds = np.arange(len(self.demand.index), len(self.demand.index)+ self.incidence.shape[1]).tolist()
+        is_na = self.weights.isna()
+        row_inds = np.arange(self.weights.shape[0]).tolist()
+        col_inds = np.arange(len(self.demand.index), len(self.demand.index)+ self.weights.shape[1]).tolist()
         for i in row_inds:
             combs = list(product([i], col_inds) )
             mask =  ~is_na.iloc[i]
             edges.extend( (list(compress(combs, mask) ) ) )
-            weights.extend(list(compress(self.incidence.iloc[i], mask)))
+            weights.extend(list(compress(self.weights.iloc[i], mask)))
         weights = 1 / np.array(weights)
         graph = ig.Graph.Bipartite(vertices,  edges)
         graph.es["label"] = weights
@@ -190,15 +190,23 @@ class Matching():
             func(self, *args, **kwargs)
             # After:
             end = time.time()
-            logging.info("Matched: %s to %s (%s %%) of %s elements using %s, resulting in LCA (GWP): %s kgCO2eq, in: %s sec.",
-                len(self.pairs['Supply_id'].unique()),
-                self.pairs['Supply_id'].count(),
-                100*self.pairs['Supply_id'].count()/len(self.demand),
-                self.supply.shape[0],
+            #logging.info("Matched: %s to %s (%s %%) of %s elements using %s, resulting in LCA (GWP): %s kgCO2eq, in: %s sec.",
+            #    len(self.pairs['Supply_id'].unique()),
+            #    self.pairs['Supply_id'].count(),
+            #    round( 100 * (len(self.pairs['Supply_id'].unique()) / len(self.demand) ) , 2),
+            #    self.supply.shape[0],
+            #    func.__name__,
+            #    round(self.result, 2),
+            #    round(end - start,3)
+            #)   
+            logging.info("Matching result: %s %%. Mapped %s demand elements to %s supply elements using %s, resulting in LCA (GWP) %s kgCO2eq in %s sec.", 
+                round( 100 * self.pairs["Supply_id"].count() / self.pairs.shape[0], 2), 
+                self.pairs["Supply_id"].count(), 
+                self.pairs["Supply_id"].nunique(),
                 func.__name__,
                 round(self.result, 2),
-                round(end - start,3)
-            )                
+                round(end - start, 3)
+            )          
             return [self.result, self.pairs]
         return wrapper
 
@@ -251,28 +259,9 @@ class Matching():
     @_matching_decorator
     def match_knapsacks(self):
         """Match using Knapsacks"""
-        #TODO
 
-        def constraint_inds():
-            """Construct the constraint array"""
-            rows = self.demand.shape[0]
-            cols = self.supply.shape[0]
-            bool_array = np.full((rows, cols), False)
-
-            # iterate through constraints
-            for key, val in self.constraints.items():
-                cond_list = []
-                for var in self.supply[key]:
-                    array = self.demand[key]
-                    col = ne.evaluate(f'array {val} var')
-                    cond_list.append(col) # add results to cond_list
-                conds = np.column_stack(cond_list) # create 2d array of tests
-                bool_array = np.logical_or(bool_array, conds)
-
-            constraint_inds = np.transpose(np.where(bool_array)) # convert to nested list if [i,j] indices
-            return constraint_inds
-
-        data = {}
+        # --- Create the data needed for the solver ---        
+        data = {} # initiate empty dictionary
         data ['lengths'] = self.demand.Length.astype(float)
         data['values'] = self.demand.Area.astype(float)
         
@@ -287,8 +276,8 @@ class Matching():
         data['all_bins'] = range(data['num_bins'])
 
         #get constraint ids
-        c_inds = constraint_inds()
-
+        #c_inds = constraint_inds()
+        c_inds = np.transpose(np.where(~self.incidence)) # get the position of the element which cannot be used
         # create solver
         solver = pywraplp.Solver.CreateSolver('SCIP')
         if solver is None:
@@ -297,12 +286,13 @@ class Matching():
 
         # --- Variables ---
         # x[i,j] = 1 if item i is backed in bin j. 0 else
+        var_array = np.full((self.incidence.shape), 0)
         x = {}
         for i in data['all_items']:
             for j in data['all_bins']:
                 x[i,j] = solver.BoolVar(f'x_{i}_{j}') 
   
-        print(f'Number of variables = {solver.NumVariables()}') 
+        #print(f'Number of variables = {solver.NumVariables()}') 
 
         # --- Constraints ---
         # each item can only be assigned to one bin
@@ -315,27 +305,42 @@ class Matching():
                 sum(x[i,j] * data['lengths'][i] for i in data['all_items'])
                     <= data['bin_capacities'][j])
 
-        # fix the variables where the area of the element is too small to fit
-        # in this case it is the supply element 0 which has an area of 10
+        # from the already calculated incidence matrix we add constraints to the elements i we know
+        # cannot fit into bin j.
         for inds in c_inds:
             i = int(inds[0])
             j = int(inds[1])
             solver.Add(x[i,j] == 0)
 
-        print(f'Number of contraints = {solver.NumConstraints()}')
+        #print(f'Number of contraints = {solver.NumConstraints()}')
         # --- Objective ---
         # maximise total value of packed items
+        # coefficients
+        coeff_array = self.weights.replace(np.nan, self.weights.max().max() * 1000).to_numpy() # play with different values here. 
+
         objective = solver.Objective()
         for i in data['all_items']:
             for j in data['all_bins']:
-              objective.SetCoefficient(x[i,j], float(data['areas'][i]))      
+                objective.SetCoefficient(x[i,j], 1 / coeff_array[i,j]) # maximise the sum of 1/sum(weights)
+                #objective.SetCoefficient(x[i,j], float(data['areas'][i]))      
         objective.SetMaximization()
+        #objective.SetMinimization()
+        
+        
+        
         # Starting solver
-        print('Starting solver')
         status = solver.Solve()
-        print('Computation done')
+        
         if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
-
+            gwp_sum = 0
+            for i in data['all_items']:
+                for j in data['all_bins']:
+                    if x[i,j].solution_value() > 0: 
+                        self.pairs.iloc[i] = j # add the matched pair. 
+                        gwp_sum += coeff_array[i, j]
+                        continue # only one x[0, j] can be 1. the rest are 0. Continue
+            self.result = gwp_sum           
+            """
             results = {}
             print('Solution found! \n ------RESULTS-------\n')
             total_length = 0
@@ -360,9 +365,99 @@ class Matching():
         # return the results as a DataFrame like the bin packing problem
         # Or a dictionary. One key per bin/supply, and a list of ID's for the
         # elements which should go within that bin. 
-
+        """
         return [self.result, self.pairs]
 
+    @_matching_decorator
+    def match_cp_solver(self):
+        """This method is the same as the previous one, but uses a CP model instead of a MIP model in order to stop at a given number of 
+        feasible solutions. """
+
+        # the CP Solver works only on integers. Consequently, all values are multiplied by 1000 before solving the
+        m_fac = 10000
+        # --- Create the data needed for the solver ---        
+        data = {} # initiate empty dictionary
+        data ['lengths'] = (self.demand.Length * m_fac).astype(int)
+        data['values'] = (self.demand.Area * m_fac).astype(int)
+        
+        assert len(data['lengths']) == len(data['values']) # The same check is done indirectly in the dataframe
+        data['num_items'] = len(data['values']) # don't need this. TODO Delete it. 
+        data['all_items'] = range(data['num_items'])
+        #data['areas'] = self.demand.Area
+
+        data['bin_capacities'] = (self.supply.Length * m_fac).astype(int)  # these would be the bins
+        #data['bin_areas'] = self.supply.Area.to_numpy(dtype = int)
+        data['num_bins'] = len(data['bin_capacities'])
+        data['all_bins'] = range(data['num_bins'])
+
+        #get constraint ids
+        #c_inds = constraint_inds()
+        c_inds = np.transpose(np.where(~self.incidence)) # get the position of the element which cannot be used
+        
+        # create model
+        model = cp_model.CpModel()
+
+        # --- Variables ---
+        # x[i,j] = 1 if item i is backed in bin j. 0 else
+        var_array = np.full((self.incidence.shape), 0) #TODO Implement this for faster extraction of results later. Try to avoid nested loops
+        x = {}
+        for i in data['all_items']:
+            for j in data['all_bins']:
+                x[i,j] = model.NewBoolVar(f'x_{i}_{j}')   
+        #print(f'Number of variables = {solver.NumVariables()}') 
+
+        # --- Constraints ---
+        # each item can only be assigned to one bin
+        for i in data['all_items']:
+            model.AddAtMostOne(x[i, j] for j in data['all_bins'])
+            
+        # the amount packed in each bin cannot exceed its capacity.
+        for j in data['all_bins']:
+            model.Add(sum(x[i, j] * data['lengths'][i]
+            for i in data['all_items']) <= data['bin_capacities'][j])
+
+        # from the already calculated incidence matrix we add constraints to the elements i we know
+        # cannot fit into bin j.
+        for inds in c_inds:
+            i = int(inds[0])
+            j = int(inds[1])
+            model.Add(x[i,j] == 0)
+            model.AddHint(x[i,j], 0)
+
+        
+
+
+        # --- Objective ---
+        # maximise total inverse of total gwp
+        # coefficients
+        coeff_array = self.weights * m_fac
+        coeff_array = coeff_array.replace(np.nan, coeff_array.max().max() * 1000).to_numpy() # play with different values here. 
+        coeff_array = coeff_array.astype(int)
+        objective = []
+        for i in data['all_items']:
+            for j in data['all_bins']:
+                objective.append(
+                    cp_model.LinearExpr.Term(x[i,j], 1 / coeff_array[i,j]))
+                                
+        model.Maximize(cp_model.LinearExpr.Sum(objective))
+        
+        # --- Solve ---
+        solver = cp_model.CpSolver()
+        solver.parameters.max_time_in_seconds = 60
+        status = solver.Solve(model)
+        test = solver.ObjectiveValue()
+        # --- RESULTS ---
+        if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+            gwp_sum = 0
+            for i in data['all_items']:
+                for j in data['all_bins']:
+                    if solver.Value(x[i,j]) > 0: 
+                        self.pairs.iloc[i] = j # add the matched pair. 
+                        gwp_sum += self.weights.iloc[i, j]
+                        continue # only one x[0, j] can be 1. the rest are 0. Continue
+            self.result = gwp_sum
+
+        return [self.pairs, self.result]
 # class Elements(pd.DataFrame):
 #     def read_json(self):
 #         super().read_json()
@@ -379,7 +474,7 @@ def calculate_lca(length, area, is_new=True, gwp=28.9, ):
     #gwp_array = np.where(is_new, gwp, gwp * 0.0778)
     lca = length * area * gwp
     return lca
-
+    
 
 if __name__ == "__main__":
     PATH = sys.argv[0]

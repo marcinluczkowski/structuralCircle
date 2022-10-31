@@ -212,7 +212,7 @@ class Matching():
 
     @_matching_decorator
     def match_nested_loop(self, plural_assign=False):
-        """Simplest brute force matching that iterates all elemnts."""
+        """Simplest brute force matching that iterates all elements."""
         demand_sorted = self.demand.sort_values(by=['Length', 'Area'], axis=0, ascending=False)
         supply_sorted = self.supply.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)
         for demand_index, demand_row in demand_sorted.iterrows():
@@ -223,21 +223,23 @@ class Matching():
                 if demand_row.Length <= supply_row.Length and demand_row.Area <= supply_row.Area and demand_row.Inertia_moment <= supply_row.Inertia_moment and demand_row.Height <= supply_row.Height:
                     match=True
                     self.add_pair(demand_index, supply_index)
-                if match:
-                    if plural_assign:
-                        # shorten the supply element:
-                        supply_row.Length = supply_row.Length - demand_row.Length
-                        # sort the supply list
-                        supply_sorted = supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)  # TODO move this element instead of sorting whole list
-                        self.result += calculate_lca(demand_row.Length, supply_row.Area, is_new=supply_row.Is_new)
-                        logging.debug("---- %s is a match, that results in %s m cut.", supply_index, supply_row.Length)
-                    else:
-                        self.result += calculate_lca(supply_row.Length, supply_row.Area, is_new=supply_row.Is_new)
-                        logging.debug("---- %s is a match and will be utilized fully.", supply_index)
-                        supply_sorted.drop(supply_index)
                     break
+            if match:
+                if plural_assign:
+                    # shorten the supply element:
+                    supply_sorted.at[supply_index, 'Length'] = supply_row.Length - demand_row.Length
+                    # sort the supply list
+                    supply_sorted = supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)  # TODO move this element instead of sorting whole list
+                    self.result += calculate_lca(demand_row.Length, supply_row.Area, is_new=supply_row.Is_new)
+                    logging.debug("---- %s is a match, that results in %s m cut.", supply_index, supply_row.Length)
+                        
                 else:
-                    logging.debug("---- %s is not matching.", supply_index)
+                    self.result += calculate_lca(supply_row.Length, supply_row.Area, is_new=supply_row.Is_new)
+                    logging.debug("---- %s is a match and will be utilized fully.", supply_index)
+                    supply_sorted.drop(supply_index, inplace = True)
+                        
+            else:
+                logging.debug("---- %s is not matching.", supply_index)
 
     @_matching_decorator
     def match_bipartite_graph(self):
@@ -443,7 +445,7 @@ class Matching():
         
         # --- Solve ---
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = 60
+        solver.parameters.max_time_in_seconds = 5000
         status = solver.Solve(model)
         test = solver.ObjectiveValue()
         # --- RESULTS ---

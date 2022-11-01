@@ -73,12 +73,10 @@ matching.get_weights() #TODO Move into methods which needs weighting
 #matching.match_bipartite_graph()
 #matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
-#matching.match_scip()
-#matching.match_genetic_algorithm()
-#matching.match_cp_solver()
 
+# matching.match_cp_solver()
+# ERROR matching.match_scip()
 
-"""
 ### Test with random generated elements
 
 random.seed(3)
@@ -104,12 +102,10 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
-matching.get_weights()
-#matching.match_bipartite_graph()
-#matching.match_greedy_algorithm(plural_assign=False)
-#matching.match_greedy_algorithm(plural_assign=True)
-#matching.match_scip()
-#matching.match_genetic_algorithm()
+matching.match_bipartite_graph()
+matching.match_greedy_algorithm(plural_assign=False)
+matching.match_greedy_algorithm(plural_assign=True)
+# ERROR matching.match_scip()
 
 
 ### Test with random generated elements
@@ -141,8 +137,3 @@ matching.weigth_incidence()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
-#matching.match_scip()
-#matching.match_genetic_algorithm()
-
-
-"""

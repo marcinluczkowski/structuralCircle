@@ -34,7 +34,7 @@ matching.evaluate()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
-# ERROR matching.match_scip()
+matching.match_scip()
 
 
 ### Test from JSON files with Slettelokka data 

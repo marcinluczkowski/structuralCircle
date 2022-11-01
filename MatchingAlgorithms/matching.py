@@ -249,7 +249,7 @@ class Matching():
         self.result = sum(bipartite_matching.edges()["label"])
 
     @_matching_decorator
-    def match_scip(self):
+    def match_mixed_integer_programming(self):
         """Match using SCIP - Solving Constraint Integer Programs, branch-and-cut algorithm, type of mixed integer programming (MIP)"""
 
         def constraint_inds():

@@ -90,7 +90,6 @@ class Matching():
         vertices = [0]*len(self.demand.index) + [1]*len(self.supply.index)
         edges = []
         weights = []
-
         is_na = self.incidence.isna()
         row_inds = np.arange(self.incidence.shape[0]).tolist()
         col_inds = np.arange(len(self.demand.index), len(self.demand.index)+ self.incidence.shape[1]).tolist()

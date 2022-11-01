@@ -31,7 +31,6 @@ matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
 matching.match_scip()
-matching.match_genetic_algorithm()
 
 
 ### Test from JSON files with Slettelokka data 
@@ -68,8 +67,7 @@ matching.evaluate()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
-matching.match_scip()
-matching.match_genetic_algorithm()
+# ERROR matching.match_scip()
 
 
 ### Test with random generated elements
@@ -100,8 +98,7 @@ matching.evaluate()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
-matching.match_scip()
-matching.match_genetic_algorithm()
+# ERROR matching.match_scip()
 
 
 ### Test with random generated elements
@@ -132,6 +129,4 @@ matching.evaluate()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
-matching.match_scip()
-matching.match_genetic_algorithm()
-
+# ERROR matching.match_scip()

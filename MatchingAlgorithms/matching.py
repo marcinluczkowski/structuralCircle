@@ -91,7 +91,6 @@ class Matching():
         vertices = [0]*len(self.demand.index) + [1]*len(self.supply.index)
         edges = []
         weights = []
-
         is_na = self.incidence.isna()
         row_inds = np.arange(self.incidence.shape[0]).tolist()
         col_inds = np.arange(len(self.demand.index), len(self.demand.index)+ self.incidence.shape[1]).tolist()
@@ -260,7 +259,7 @@ class Matching():
 
 
     @_matching_decorator
-    def match_scip(self):
+    def match_mixed_integer_programming(self):
         """Match using SCIP - Solving Constraint Integer Programs, branch-and-cut algorithm, type of mixed integer programming (MIP)"""
 
         def constraint_inds():

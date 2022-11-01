@@ -25,13 +25,13 @@ supply.loc['R5'] = {'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Heig
 # create constraint dictionary
 constraint_dict = {'Area' : '>', 'Inertia_moment' : '>', 'Length' : '>'}
 
-matching = Matching(demand, supply, add_new=True, multi=False)
+matching = Matching(demand, supply, add_new=False, multi=False, constraints=constraint_dict)
 matching.evaluate()
 matching.match_bipartite_graph()
-matching.match_nested_loop(plural_assign=False)
-matching.match_nested_loop(plural_assign=True)
-matching.match_bin_packing()
-matching.match_knapsacks()
+matching.match_greedy_algorithm(plural_assign=False)
+matching.match_greedy_algorithm(plural_assign=True)
+matching.match_scip()
+matching.match_genetic_algorithm()
 
 
 ### Test from JSON files with Slettelokka data 
@@ -66,10 +66,10 @@ supply.Height *=0.01
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
 matching.match_bipartite_graph()
-matching.match_nested_loop(plural_assign=False)
-matching.match_nested_loop(plural_assign=True)
-matching.match_bin_packing()
-matching.match_knapsacks()
+matching.match_greedy_algorithm(plural_assign=False)
+matching.match_greedy_algorithm(plural_assign=True)
+matching.match_scip()
+matching.match_genetic_algorithm()
 
 
 ### Test with random generated elements
@@ -98,10 +98,10 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
 matching.match_bipartite_graph()
-matching.match_nested_loop(plural_assign=False)
-matching.match_nested_loop(plural_assign=True)
-matching.match_bin_packing()
-matching.match_knapsacks()
+matching.match_greedy_algorithm(plural_assign=False)
+matching.match_greedy_algorithm(plural_assign=True)
+matching.match_scip()
+matching.match_genetic_algorithm()
 
 
 ### Test with random generated elements
@@ -130,7 +130,8 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
 matching.match_bipartite_graph()
-matching.match_nested_loop(plural_assign=False)
-matching.match_nested_loop(plural_assign=True)
-matching.match_bin_packing()
-matching.match_knapsacks()
+matching.match_greedy_algorithm(plural_assign=False)
+matching.match_greedy_algorithm(plural_assign=True)
+matching.match_scip()
+matching.match_genetic_algorithm()
+

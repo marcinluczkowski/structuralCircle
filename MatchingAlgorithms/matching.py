@@ -8,11 +8,9 @@ import igraph as ig
 import matplotlib.pyplot as plt
 from ortools.linear_solver import pywraplp
 import numexpr as ne
-# import random
-# import math
-
 import logging
 import time
+import random
 
 
 logging.basicConfig(
@@ -25,7 +23,7 @@ logging.basicConfig(
 
 
 class Matching():
-    """Class describing the matching problem, with its constituent parts"""
+    """Class describing the matching problem, with its constituent parts."""
     def __init__(self, demand, supply, add_new=False, multi=False, constraints = {}):
         self.demand = demand
         if add_new:
@@ -152,8 +150,8 @@ class Matching():
         return wrapper
 
     @_matching_decorator
-    def match_nested_loop(self, plural_assign=False):
-        """Simplest brute force matching that iterates all elemnts."""
+    def match_greedy_algorithm(self, plural_assign=False):
+        """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
         demand_sorted = self.demand.sort_values(by=['Length', 'Area'], axis=0, ascending=False)
         supply_sorted = self.supply.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)
         for demand_index, demand_row in demand_sorted.iterrows():
@@ -192,21 +190,16 @@ class Matching():
         self.result = sum(bipartite_matching.edges()["label"])
 
     @_matching_decorator
-    def match_bin_packing(self):
-        """Match using Bin Packing"""
-        #TODO
-        pass
 
     @_matching_decorator
-    def match_knapsacks(self):
-        """Match using Knapsacks"""
-        #TODO
+    def match_scip(self):
+        """Match using SCIP - Solving Constraint Integer Programs, branch-and-cut algorithm, type of mixed integer programming (MIP)"""
 
         def constraint_inds():
             """Construct the constraint array"""
             rows = self.demand.shape[0]
             cols = self.supply.shape[0]
-            bool_arrray = np.full((rows, cols), False)
+            bool_array = np.full((rows, cols), False)
 
             # iterate through constraints
             for key, val in self.constraints.items():
@@ -222,16 +215,16 @@ class Matching():
             return constraint_inds
 
         data = {}
-        data ['lengths'] = demand.Length.astype(float)
-        data['values'] = demand.Area.astype(float)
+        data ['lengths'] = self.demand.Length.astype(float)
+        data['values'] =  self.demand.Area.astype(float)
         
         assert len(data['lengths']) == len(data['values']) # The same check is done indirectly in the dataframe
         data['num_items'] = len(data['values'])
         data['all_items'] = range(data['num_items'])
-        data['areas'] = demand.Area
+        data['areas'] = self.demand.Area
 
-        data['bin_capacities'] = supply.Length # these would be the bins
-        data['bin_areas'] = supply.Area.to_numpy(dtype = int)
+        data['bin_capacities'] = self.supply.Length # these would be the bins
+        data['bin_areas'] = self.supply.Area.to_numpy(dtype = int)
         data['num_bins'] = len(data['bin_capacities'])
         data['all_bins'] = range(data['num_bins'])
 
@@ -241,7 +234,7 @@ class Matching():
         # create solver
         solver = pywraplp.Solver.CreateSolver('SCIP')
         if solver is None:
-            print('SCIP Solver is unavailable')
+            logging.debug('SCIP Solver is unavailable')
             return
 
         # --- Variables ---
@@ -251,7 +244,7 @@ class Matching():
             for j in data['all_bins']:
                 x[i,j] = solver.BoolVar(f'x_{i}_{j}') 
   
-        print(f'Number of variables = {solver.NumVariables()}') 
+        logging.debug('Number of variables = %s', solver.NumVariables()) 
 
         # --- Constraints ---
         # each item can only be assigned to one bin
@@ -271,7 +264,7 @@ class Matching():
             j = int(inds[1])
             solver.Add(x[i,j] == 0)
 
-        print(f'Number of contraints = {solver.NumConstraints()}')
+        logging.debug('Number of contraints = %s', solver.NumConstraints())
         # --- Objective ---
         # maximise total value of packed items
         objective = solver.Objective()
@@ -280,36 +273,36 @@ class Matching():
               objective.SetCoefficient(x[i,j], float(data['areas'][i]))      
         objective.SetMaximization()
         # Starting solver
-        print('Starting solver')
+        logging.debug('Starting solver')
         status = solver.Solve()
-        print('Computation done')
+        logging.debug('Computation done')
         if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
 
             results = {}
-            print('Solution found! \n ------RESULTS-------\n')
+            logging.debug('Solution found! \n ------RESULTS-------\n')
             total_length = 0
             for j in data['all_bins']:
                 results[j] = []
-                print(f'Bin {j}')
+                logging.debug('Bin %s', j)
                 bin_length = 0
                 bin_value = 0
                 for i in data['all_items']:
                     if x[i, j].solution_value() > 0:
                         results[j].append(i)
-                        print(
-                            f"Item {i} Length: {data['lengths'][i]} area: {data['areas'][i]}"
-                        )
+                        logging.debug("Item %s Length: %s area: %s", i, data['lengths'][i], data['areas'][i])
                         bin_length += data['lengths'][i]
                         bin_value += data['areas'][i]
-                print(f'Packed bin lengths: {bin_length}')
-                print(f'Packed bin value: {bin_value}')
+                logging.debug('Packed bin lengths: %s', bin_length)
+                logging.debug('Packed bin value: %s', bin_value)
                 total_length += bin_length
-                print(f'Total packed Lenghtst: {total_length}\n')
+                logging.debug('Total packed Lenghtst: %s\n', total_length)
 
         # return the results as a DataFrame like the bin packing problem
         # Or a dictionary. One key per bin/supply, and a list of ID's for the
         # elements which should go within that bin. 
-
+        
+        # TODO temp result:
+        self.result += 1234
         return [self.result, self.pairs]
 
 # class Elements(pd.DataFrame):

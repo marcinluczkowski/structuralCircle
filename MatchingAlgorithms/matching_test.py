@@ -1,10 +1,8 @@
 from matching import Matching
 import pandas as pd
 import random
-import time
 
 ### Test with just few elements
-
 
 demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
 supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
@@ -23,27 +21,26 @@ supply.loc['R4'] = {'Length': 5.10, 'Area': 0.041, 'Inertia_moment':0.00014, 'He
 demand.loc['D4'] = {'Length': 8.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
 supply.loc['R5'] = {'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 
+
 # create constraint dictionary
-constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>=', 'Height': '>='}
+constraint_dict = {'Area' : '>', 'Inertia_moment' : '>', 'Length' : '>'}
 
-
-# create matching object
-matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
-
+matching = Matching(demand, supply, add_new=False, multi=False, constraints=constraint_dict)
 matching.evaluate()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
-# ERROR matching.match_mixed_integer_programming()
+matching.match_scip()
+matching.match_genetic_algorithm()
 
 
 ### Test from JSON files with Slettelokka data 
 
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
-DEMAND_JSON = r".\MatchingAlgorithms\sample_demand_input.json"
-SUPPLY_JSON = r".\MatchingAlgorithms\sample_supply_input.json"
-RESULT_FILE = r".\MatchingAlgorithms\result.csv"
+DEMAND_JSON = r".\sample_demand_input.json"
+SUPPLY_JSON = r".\sample_supply_input.json"
+RESULT_FILE = r".\result.csv"
 #read and clean demand df
 demand = pd.read_json(DEMAND_JSON)
 demand_header = demand.iloc[0]
@@ -66,16 +63,14 @@ supply.Area *=0.0001
 supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
 
-#--- CREATE AND EVALUATE ---
-matching = Matching(demand, supply, add_new=True, multi=True, constraints = constraint_dict)
+matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
-matching.get_weights() #TODO Move into methods which needs weighting
-#matching.match_bipartite_graph()
-#matching.match_greedy_algorithm(plural_assign=False)
+matching.match_bipartite_graph()
+matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
+matching.match_scip()
+matching.match_genetic_algorithm()
 
-# matching.match_cp_solver()
-# ERROR matching.match_mixed_integer_programming()
 
 ### Test with random generated elements
 
@@ -105,7 +100,8 @@ matching.evaluate()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
-# ERROR matching.match_mixed_integer_programming()
+matching.match_scip()
+matching.match_genetic_algorithm()
 
 
 ### Test with random generated elements
@@ -133,7 +129,9 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
-matching.weigth_incidence()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
+matching.match_scip()
+matching.match_genetic_algorithm()
+

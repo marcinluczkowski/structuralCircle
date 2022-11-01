@@ -111,8 +111,6 @@ class Matching():
         # TODO add 'Group'
         # TODO add 'Quality'
         # TODO add 'Max_height' ?
-        
-        
         start = time.time()
         match_new = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == True
         match_old = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == False
@@ -142,7 +140,6 @@ class Matching():
         vertices = [0]*len(self.demand.index) + [1]*len(self.supply.index)
         edges = []
         weights = []
-
         is_na = self.weights.isna()
         row_inds = np.arange(self.weights.shape[0]).tolist()
         col_inds = np.arange(len(self.demand.index), len(self.demand.index)+ self.weights.shape[1]).tolist()
@@ -252,8 +249,6 @@ class Matching():
         self.result = sum(bipartite_matching.edges()["label"])
 
     @_matching_decorator
-
-    @_matching_decorator
     def match_scip(self):
         """Match using SCIP - Solving Constraint Integer Programs, branch-and-cut algorithm, type of mixed integer programming (MIP)"""
 
@@ -341,9 +336,7 @@ class Matching():
                 #objective.SetCoefficient(x[i,j], float(data['areas'][i]))      
         objective.SetMaximization()
         #objective.SetMinimization()
-        
-        
-        
+
         # Starting solver
         print('Starting solver')
         status = solver.Solve()
@@ -357,7 +350,7 @@ class Matching():
                         gwp_sum += coeff_array[i, j]
                         continue # only one x[0, j] can be 1. the rest are 0. Continue
             self.result = gwp_sum           
-            """
+            
             results = {}
             logging.debug('Solution found! \n ------RESULTS-------\n')
             total_length = 0
@@ -383,14 +376,12 @@ class Matching():
 
         return [self.result, self.pairs]
 
-        return [self.pairs, self.result]
 # class Elements(pd.DataFrame):
 #     def read_json(self):
 #         super().read_json()
 #         self.columns = self.iloc[0]
 #         self.drop(axis = 1, index= 0, inplace=True)
 #         self.reset_index(drop = True, inplace = True)
-
 
 def calculate_lca(length, area, is_new=True, gwp=28.9, ):
     """ Calculate Life Cycle Assessment """

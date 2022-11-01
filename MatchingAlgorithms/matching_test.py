@@ -1,6 +1,7 @@
 from matching import Matching
 import pandas as pd
 import random
+import time
 
 ### Test with just few elements
 
@@ -25,19 +26,15 @@ supply.loc['R5'] = {'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Heig
 # create constraint dictionary
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>=', 'Height': '>='}
 
-import time
-
 
 # create matching object
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
-"""
 matching.evaluate()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
 matching.match_scip()
-matching.match_genetic_algorithm()
 
 
 ### Test from JSON files with Slettelokka data 

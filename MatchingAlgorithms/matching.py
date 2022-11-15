@@ -68,7 +68,7 @@ class Matching():
         end = time.time()
         logging.info("Create incidence matrix from constraints: %s sec", round(end - start,3))
 
-    def get_weights(self):
+    def weight_incidence(self):
         """Assign wegihts to elements in the incidence matrix. At the moment only LCA is taken into\
         account. This method should replace the last step in the original evaluate method."""
         start = time.time()

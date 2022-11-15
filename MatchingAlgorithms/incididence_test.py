@@ -28,23 +28,31 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>=', 'Hei
 
 # --- Old incidence matrix --- 
 # create matching object
+
 matching0 = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
+
+matching0.weight_incidence()
 matching0.evaluate2() #TODO Delete this method if the above methods work
+
 incidence0 = matching0.incidence.copy()
+weights0 = matching0.weights.copy(deep=True)
 matching0.match_bipartite_graph()
-matching0.match_nested_loop(plural_assign=False)
-matching0.match_nested_loop(plural_assign=True)
+matching0.match_greedy_algorithm(plural_assign=False)
+matching0.match_greedy_algorithm(plural_assign=True)
 
 
 
 # --- New incidence analysis matrix ---
 matching1 = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 matching1.evaluate() #TODO Delete this method if the above methods work
-matching1.weigth_incidence()
+matching1.weight_incidence()
+weights1 = matching1.weights.copy(deep=True)
 incidence1 = matching1.incidence.copy()
 matching1.match_bipartite_graph()
-matching1.match_nested_loop(plural_assign=False)
-matching1.match_nested_loop(plural_assign=True)
+matching1.match_greedy_algorithm(plural_assign=False)
+matching1.match_greedy_algorithm(plural_assign=True)
 
 
-print(incidence0 == incidence1)
+test = weights0 == weights1
+
+print(test.sum().sum())

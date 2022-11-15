@@ -80,11 +80,12 @@ class Matching():
         # add to match_map:
         self.pairs.loc[demand_id, 'Supply_id'] = supply_id
         # remove already used:
-        try:
-            self.incidence.drop(demand_id, inplace=True)
-            self.incidence.drop(supply_id, axis=1, inplace=True)
-        except KeyError:
-            pass
+        # TODO not change the initial incidence...
+        # try:
+        #     self.incidence.drop(demand_id, inplace=True)
+        #     self.incidence.drop(supply_id, axis=1, inplace=True)
+        # except KeyError:
+        #     pass
 
     def add_graph(self):
         """Add a graph notation based on incidence matrix"""
@@ -152,6 +153,7 @@ class Matching():
     @_matching_decorator
     def match_greedy_algorithm(self, plural_assign=False):
         """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
+        # TODO not change incidence!
         demand_sorted = self.demand.sort_values(by=['Length', 'Area'], axis=0, ascending=False)
         supply_sorted = self.supply.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)
         for demand_index, demand_row in demand_sorted.iterrows():
@@ -182,6 +184,7 @@ class Matching():
     def match_bipartite_graph(self):
         """Match using Maximum Bipartite Graphs"""
         # TODO multiple assignment won't work OOTB.
+        # TODO not change incidence!
         if not self.graph:
             self.add_graph()
         bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])

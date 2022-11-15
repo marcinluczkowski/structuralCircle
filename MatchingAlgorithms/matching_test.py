@@ -72,7 +72,7 @@ supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
 
 #--- CREATE AND EVALUATE ---
-matching = Matching(demand, supply, add_new=True, multi=True, constraints = constraint_dict)
+matching = Matching(demand, supply, add_new=False, multi=True, constraints = constraint_dict)
 matching.evaluate()
 matching.get_weights() #TODO Move into methods which needs weighting
 #matching.match_bipartite_graph()

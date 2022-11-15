@@ -445,7 +445,7 @@ class Matching():
         
         # --- Solve ---
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = 5000
+        solver.parameters.max_time_in_seconds = 100
         status = solver.Solve(model)
         test = solver.ObjectiveValue()
         # --- RESULTS ---

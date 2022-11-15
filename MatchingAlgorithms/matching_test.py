@@ -23,33 +23,44 @@ supply.loc['R4'] = {'Length': 5.10, 'Area': 0.041, 'Inertia_moment':0.00014, 'He
 demand.loc['D4'] = {'Length': 8.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
 supply.loc['R5'] = {'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 
+
 # create constraint dictionary
-constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>=', 'Height': '>='}
+constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
-
-# create matching object
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
-
 matching.evaluate()
+matching.weight_incidence()
 matching.match_bipartite_graph()
-matching.match_greedy_algorithm(plural_assign=False)
-matching.match_greedy_algorithm(plural_assign=True)
-matching.match_mixed_integer_programming()
+weight_bi = matching.weights.copy(deep = True).sum().sum()
+pairs_bi = matching.pairs.copy(deep = True)
 
+matching.match_greedy_algorithm(plural_assign=False)
+weight_g0 = matching.weights.copy(deep = True).sum().sum()
+greedy0 = matching.pairs.copy(deep = True)
+
+matching.match_greedy_algorithm(plural_assign=True)
+weight_g1 = matching.weights.copy(deep = True).sum().sum()
+greedy1 = matching.pairs.copy(deep = True)
+#matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
+#milp = matching.pairs.copy(deep=True)
+
+test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the assignments are working.
 
 ### Test from JSON files with Slettelokka data 
 
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
-DEMAND_JSON = r".\MatchingAlgorithms\sample_demand_input.json"
-SUPPLY_JSON = r".\MatchingAlgorithms\sample_supply_input.json"
-RESULT_FILE = r".\MatchingAlgorithms\result.csv"
+DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
+SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
+RESULT_FILE = r"MatchingAlgorithms\result.csv"
 #read and clean demand df
 demand = pd.read_json(DEMAND_JSON)
 demand_header = demand.iloc[0]
 demand.columns = demand_header
 demand.drop(axis = 1, index= 0, inplace=True)
 demand.reset_index(drop = True, inplace = True)
+demand.index = ['D' + str(num) for num in demand.index]
+
 demand.Length *=0.01
 demand.Area *=0.0001
 demand.Inertia_moment *=0.00000001
@@ -61,22 +72,26 @@ supply.columns = supply_header
 supply.drop(axis = 1, index= 0, inplace=True)
 supply['Is_new'] = False
 supply.reset_index(drop = True, inplace = True)
+supply.index = ['R' + str(num) for num in supply.index]
+
+# scale input from mm to m
 supply.Length *=0.01
 supply.Area *=0.0001
 supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
 
 #--- CREATE AND EVALUATE ---
-matching = Matching(demand, supply, add_new=False, multi=True, constraints = constraint_dict)
+matching = Matching(demand, supply, add_new=True, multi=True, constraints = constraint_dict)
 matching.evaluate()
-matching.get_weights() #TODO Move into methods which needs weighting
-#matching.match_bipartite_graph()
-#matching.match_greedy_algorithm(plural_assign=False)
+matching.weight_incidence()
+matching.match_bipartite_graph()
+matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
 # ERROR matching.match_mixed_integer_programming()
 
 # matching.match_cp_solver()
 # ERROR matching.match_mixed_integer_programming()
+
 
 ### Test with random generated elements
 

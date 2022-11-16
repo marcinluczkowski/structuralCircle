@@ -3,6 +3,8 @@ import pandas as pd
 import random
 import time
 
+
+print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")
 ### Test with just few elements
 
 
@@ -23,13 +25,18 @@ supply.loc['R4'] = {'Material': 1, 'Length': 5.10, 'Area': 0.041, 'Inertia_momen
 demand.loc['D4'] = {'Material': 1, 'Length': 8.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
 supply.loc['R5'] = {'Material': 1, 'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 # Add supply that can after cut fits perfectly
-demand.loc['D5'] = {'Material': 1, 'Length': 3.50, 'Area': 0.19, 'Inertia_moment':0.0008, 'Height': 0.80}
-demand.loc['D6'] = {'Material': 1, 'Length': 5.50, 'Area': 0.18, 'Inertia_moment':0.00076, 'Height': 0.75}
-supply.loc['R6'] = {'Material': 1, 'Length': 9.00, 'Area': 0.20, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
+#demand.loc['D5'] = {'Material': 1, 'Length': 3.50, 'Area': 0.19, 'Inertia_moment':0.0008, 'Height': 0.80}
+#demand.loc['D6'] = {'Material': 1, 'Length': 5.50, 'Area': 0.18, 'Inertia_moment':0.00076, 'Height': 0.75}
+#supply.loc['R6'] = {'Material': 1, 'Length': 9.00, 'Area': 0.20, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
+# Add element that fits the cut from D4 when allowing multiple assignment
+demand.loc['D5'] = {'Length': 4.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
+
 
 # create constraint dictionary
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 # TODO add 'Material': '=='
+
+print_header("Simple Study Case")
 
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 matching.evaluate()
@@ -46,19 +53,28 @@ matching.match_greedy_algorithm(plural_assign=True)
 weight_g1 = matching.weights.copy(deep = True).sum().sum()
 greedy1 = matching.pairs.copy(deep = True)
 #matching.match_genetic_algorithm()
-# matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
+#matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
+matching.match_cp_solver()
+weight_cp = matching.weights.copy(deep = True).sum().sum()
+cp = matching.pairs.copy(deep = True)
 #milp = matching.pairs.copy(deep=True)
 
-test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the assignments are working.
-test.columns = ['pairs_bi', 'greedy0', 'greedy1']
-print("")
+weight_g1 = matching.weights.copy(deep = True).sum().sum()
+greedy1 = matching.pairs.copy(deep = True)
+#matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
+#milp = matching.pairs.copy(deep=True)
+# matching.match_genetic_algorithm()
+test = pd.concat([pairs_bi, greedy0, greedy1, cp], axis = 1) # look at how all the assignments are working.
+test.columns = ["Bipartite", "Greedy_single", "Greedy_multiple", "MILP"]
 
+"""
 ### Test from JSON files with Slettelokka data 
+print_header("SLETTELØKKA MATCHING")
+matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
 DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
 SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
 RESULT_FILE = r"MatchingAlgorithms\result.csv"
-
 #read and clean demand df
 demand = pd.read_json(DEMAND_JSON)
 demand_header = demand.iloc[0]
@@ -105,19 +121,20 @@ matching.match_greedy_algorithm(plural_assign=True)
 weight_g1 = matching.weights.copy(deep = True).sum().sum()
 greedy1 = matching.pairs.copy(deep = True)
 incidence_shapes.append(matching.incidence.shape)
-# ERROR matching.match_mixed_integer_programming()
+
+matching.match_cp_solver()
+"""
 test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the assignments are working.
 # matching.match_cp_solver()
 # ERROR matching.match_mixed_integer_programming()
 
-print("")
 
 ### Test with random generated elements
-
+print_header("RANDOM ELEMENTS n_D = 100, n_S = 200")
 random.seed(3)
 
-DEMAND_COUNT = 200
-SUPPLY_COUNT = 2000
+DEMAND_COUNT = 100
+SUPPLY_COUNT = 200
 MIN_LENGTH = 1.0
 MAX_LENGTH = 10.0
 MIN_AREA = 0.0025   # 5x5cm
@@ -144,12 +161,12 @@ matching.weight_incidence()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
+matching.match_cp_solver()
 # ERROR matching.match_mixed_integer_programming()
 
-print("")
-
+"""
 ### Test with random generated elements
-
+print_header("RANDOM ELEMENTS n_D = 200, n_S = 10000")
 random.seed(3)
 
 DEMAND_COUNT = 100
@@ -181,3 +198,6 @@ matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
 # ERROR matching.match_mixed_integer_programming()
+
+
+"""

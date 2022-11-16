@@ -139,6 +139,7 @@ class Matching():
 
     def add_graph(self):
         """Add a graph notation based on incidence matrix"""
+        #FIXME The method assigns new elements to demand items although there should be available old elemements.  
         vertices = [0]*len(self.demand.index) + [1]*len(self.supply.index)
         edges = []
         weights = []
@@ -190,6 +191,8 @@ class Matching():
             self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
             # The actual method:
             func(self, *args, **kwargs)
+            #Calculate the result of the matching
+            self.calculate_result()
             # After:
             end = time.time()
             # logging.info("Matched: %s to %s (%s %%) of %s elements using %s, resulting in LCA (GWP): %s kgCO2eq, in: %s sec.",
@@ -201,13 +204,26 @@ class Matching():
             #     round(self.result, 2),
             #     round(end - start,3)
             all_string_series = self.pairs.fillna('nan') # have all entries as string before search
-            num_old = len(all_string_series.loc[all_string_series.Supply_id.str.contains('R')])
-            num_new = len(all_string_series.loc[all_string_series.Supply_id.str.contains('N')])
+            num_old = len(all_string_series.loc[all_string_series.Supply_id.str.contains('R')].Supply_id.unique())
+            num_new = len(all_string_series.loc[all_string_series.Supply_id.str.contains('N')].Supply_id.unique())
             num_matched = len(self.pairs.dropna())
-            logging.info((f"Matched {num_old} old and {num_new} new elements to {num_matched} demand elements ({100 * num_matched / len(self.pairs)}%) using {func.__name__}. Resulting in LCA (GWP) {round(self.result, 2)} kgCO2eq, in {round(end - start,3)}."))
+            logging.info(f"""Matched {num_old} old and {num_new} new elements to {num_matched} demand elements ({100 * num_matched / len(self.pairs)}%) 
+            using {func.__name__}. Resulting in LCA (GWP) {round(self.result, 2)} kgCO2eq, in {round(end - start,3)} seconds.""")
 
             return [self.result, self.pairs]
         return wrapper
+
+    def calculate_result(self):
+        """Evaluates the result based on the final matching of elements"""
+        # if rows without pairing, remove those    
+        local_pairs = self.pairs.dropna()
+
+        #get the index of columns in weight df which are paired
+        #TODO Make the supply and demand id_s numerical 
+        col_inds = local_pairs.Supply_id.apply(lambda label: self.weights.columns.get_loc(label))
+        row_inds = list( map(lambda name: self.weights.index.get_loc(name), local_pairs.index) )
+        #row_inds = np.arange(0, local_pairs.shape[0], 1) # the row inds are the same here and in the weights
+        self.result = (self.weights.to_numpy()[row_inds, col_inds]).sum()
 
     @_matching_decorator
     def match_greedy_algorithm(self, plural_assign=False):
@@ -245,7 +261,6 @@ class Matching():
                         
             else:
                 logging.debug("---- %s is not matching.", supply_index)
-        calculate_result(self) #TODO move to wrapper
 
 
     @_matching_decorator
@@ -256,8 +271,7 @@ class Matching():
             self.add_graph()
         bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
         for match_edge in bipartite_matching.edges():
-            self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])
-        calculate_result(self)
+            self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])  
         #self.result = sum(bipartite_matching.edges()["label"]) #TODO Remove this if new method works.
 
 
@@ -459,6 +473,97 @@ class Matching():
         # TODO temp result:
         return [self.result, self.pairs]
 
+    @_matching_decorator
+    def match_cp_solver(self):
+        """This method is the same as the previous one, but uses a CP model instead of a MIP model in order to stop at a given number of 
+        feasible solutions. """
+
+        # the CP Solver works only on integers. Consequently, all values are multiplied by 1000 before solving the
+        m_fac = 10000
+        # --- Create the data needed for the solver ---        
+        data = {} # initiate empty dictionary
+        data ['lengths'] = (self.demand.Length * m_fac).astype(int)
+        data['values'] = (self.demand.Area * m_fac).astype(int)
+        
+        assert len(data['lengths']) == len(data['values']) # The same check is done indirectly in the dataframe
+        data['num_items'] = len(data['values']) # don't need this. TODO Delete it. 
+        data['all_items'] = range(data['num_items'])
+        #data['areas'] = self.demand.Area
+
+        data['bin_capacities'] = (self.supply.Length * m_fac).astype(int)  # these would be the bins
+        #data['bin_areas'] = self.supply.Area.to_numpy(dtype = int)
+        data['num_bins'] = len(data['bin_capacities'])
+        data['all_bins'] = range(data['num_bins'])
+
+        #get constraint ids
+        #c_inds = constraint_inds()
+        c_inds = np.transpose(np.where(~self.incidence)) # get the position of the element which cannot be used
+        
+        # create model
+        model = cp_model.CpModel()
+
+        # --- Variables ---
+        # x[i,j] = 1 if item i is backed in bin j. 0 else
+        var_array = np.full((self.incidence.shape), 0) #TODO Implement this for faster extraction of results later. Try to avoid nested loops
+        x = {}
+        for i in data['all_items']:
+            for j in data['all_bins']:
+                x[i,j] = model.NewBoolVar(f'x_{i}_{j}')   
+        #print(f'Number of variables = {solver.NumVariables()}') 
+
+        # --- Constraints ---
+        # each item can only be assigned to one bin
+        for i in data['all_items']:
+            model.AddAtMostOne(x[i, j] for j in data['all_bins'])
+            
+        # the amount packed in each bin cannot exceed its capacity.
+        for j in data['all_bins']:
+            model.Add(sum(x[i, j] * data['lengths'][i]
+            for i in data['all_items']) <= data['bin_capacities'][j])
+
+        # from the already calculated incidence matrix we add constraints to the elements i we know
+        # cannot fit into bin j.
+        for inds in c_inds:
+            i = int(inds[0])
+            j = int(inds[1])
+            model.Add(x[i,j] == 0)
+            #model.AddHint(x[i,j], 0)    
+
+        # --- Objective ---
+        # maximise total inverse of total gwp
+        # coefficients
+        coeff_array = self.weights * m_fac
+        coeff_array = coeff_array.replace(np.nan, coeff_array.max().max() * 1000).to_numpy() # play with different values here. 
+        coeff_array = coeff_array.astype(int)
+        objective = []
+        for i in data['all_items']:
+            for j in data['all_bins']:
+                objective.append(
+                    cp_model.LinearExpr.Term(x[i,j], 1 / coeff_array[i,j]))
+                                
+        model.Maximize(cp_model.LinearExpr.Sum(objective))
+        
+        # --- Solve ---
+        solver = cp_model.CpSolver()
+        solver.parameters.max_time_in_seconds = 100
+        status = solver.Solve(model)
+        test = solver.ObjectiveValue()
+        index_series = self.supply.index
+        # --- RESULTS ---
+        if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+            gwp_sum = 0
+            for i in data['all_items']:
+                for j in data['all_bins']:
+                    if solver.Value(x[i,j]) > 0: 
+                        self.pairs.iloc[i] = index_series[j] # add the matched pair.                         
+                        break # only one x[0, j] can be 1. the rest are 0. Continue or break?
+            
+    @_matching_decorator
+    def match_scipy_milp(self):
+        #TODO Try using scipy for computational speed
+        pass
+      
+
 # class Elements(pd.DataFrame):
 #     def read_json(self):
 #         super().read_json()
@@ -475,17 +580,7 @@ def calculate_lca(length, area, is_new=True, gwp=28.9):
     lca = length * area * gwp
     return lca
 
-def calculate_result(self):
-    """Calculate the the total LCA based on the matched pairs and weight indices"""    
-    # if rows without pairing, remove those    
-    local_pairs = self.pairs.dropna()
 
-    #get the index of columns in weight df which are paired
-    col_inds = local_pairs.Supply_id.apply(lambda label: self.weights.columns.get_loc(label))
-    row_inds = list( map(lambda name: self.weights.index.get_loc(name), local_pairs.index) )
-    #row_inds = np.arange(0, local_pairs.shape[0], 1) # the row inds are the same here and in the weights
-
-    self.result = (self.weights.to_numpy()[row_inds, col_inds]).sum()
     
 
 

@@ -154,7 +154,7 @@ class Matching():
             weights.extend(list(compress(self.weights.iloc[i], mask)))
         weights = 1 / np.array(weights)
         graph = ig.Graph.Bipartite(vertices,  edges)
-        graph.es["label"] = weights
+        graph.es["label"] = 1 / weights # TODO fix this
         graph.vs["label"] = list(self.demand.index)+list(self.supply.index) #vertice names
         self.graph = graph
 
@@ -200,10 +200,11 @@ class Matching():
                 round(self.result, 2),
                 round(end - start,3)
             )"""
-            num_old = len(self.pairs.loc[self.pairs.Supply_id.str.contains('R')])
-            num_new = len(self.pairs.loc[self.pairs.Supply_id.str.contains('N')])
+            all_string_series = self.pairs.fillna('nan') # have all entries as string before search
+            num_old = len(all_string_series.loc[all_string_series.Supply_id.str.contains('R')])
+            num_new = len(all_string_series.loc[all_string_series.Supply_id.str.contains('N')])
             num_matched = len(self.pairs.dropna())
-            logging.info((f"Matched {num_old} old and {num_new} new element to {num_matched} demand elements ({100 * num_matched / len(self.pairs)}%) using {func.__name__}. Resulting in LCA (GWP) {round(self.result, 2)} kgCO2eq, in {round(end - start,3)}."))
+            logging.info((f"Matched {num_old} old and {num_new} new elements to {num_matched} demand elements ({100 * num_matched / len(self.pairs)}%) using {func.__name__}. Resulting in LCA (GWP) {round(self.result, 2)} kgCO2eq, in {round(end - start,3)}."))
 
             return [self.result, self.pairs]
         return wrapper
@@ -214,6 +215,8 @@ class Matching():
         # TODO not change incidence!
         demand_sorted = self.demand.sort_values(by=['Length', 'Area'], axis=0, ascending=False)
         supply_sorted = self.supply.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)
+
+        min_length = demand_sorted.iloc[-1].Length # the minimum lenght of a demand element
         for demand_index, demand_row in demand_sorted.iterrows():
             match=False
             logging.debug("-- Attempt to find a match for %s", demand_index)                
@@ -223,10 +226,12 @@ class Matching():
                     match=True
                     self.add_pair(demand_index, supply_index)
                 if match:
-                    if plural_assign:
+                    new_length = supply_row.Length - demand_row.Length
+                    if plural_assign and new_length >= min_length:
                         # shorten the supply element:
                         #supply_row.Length = supply_row.Length - demand_row.Length # this does not do anything to the dataframe?
-                        supply_sorted.loc[supply_index, "Length"] = supply_row.Length - demand_row.Length
+                        
+                        supply_sorted.loc[supply_index, "Length"] = new_length
                         # if the total length becomes zero, then we should remove it.
                         # sort the supply list
                         supply_sorted = supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)  # TODO move this element instead of sorting whole list
@@ -240,7 +245,7 @@ class Matching():
                         
             else:
                 logging.debug("---- %s is not matching.", supply_index)
-        calculate_result(self)
+        calculate_result(self) #TODO move to wrapper
 
 
     @_matching_decorator

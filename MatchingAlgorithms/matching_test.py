@@ -81,14 +81,26 @@ supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
 
 #--- CREATE AND EVALUATE ---
-matching = Matching(demand, supply, add_new=True, multi=True, constraints = constraint_dict)
+incidence_shapes = []
+matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 matching.evaluate()
 matching.weight_incidence()
 matching.match_bipartite_graph()
-matching.match_greedy_algorithm(plural_assign=False)
-matching.match_greedy_algorithm(plural_assign=True)
-# ERROR matching.match_mixed_integer_programming()
+incidence_shapes.append(matching.incidence.shape)
+weight_bi = matching.weights.copy(deep = True).sum().sum()
+pairs_bi = matching.pairs.copy(deep = True)
 
+matching.match_greedy_algorithm(plural_assign=False)
+weight_g0 = matching.weights.copy(deep = True).sum().sum()
+greedy0 = matching.pairs.copy(deep = True)
+incidence_shapes.append(matching.incidence.shape)
+
+matching.match_greedy_algorithm(plural_assign=True)
+weight_g1 = matching.weights.copy(deep = True).sum().sum()
+greedy1 = matching.pairs.copy(deep = True)
+incidence_shapes.append(matching.incidence.shape)
+# ERROR matching.match_mixed_integer_programming()
+test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the assignments are working.
 # matching.match_cp_solver()
 # ERROR matching.match_mixed_integer_programming()
 

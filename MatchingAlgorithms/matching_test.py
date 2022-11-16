@@ -37,8 +37,8 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 print_header("Simple Study Case")
 
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
-matching.evaluate()
-matching.weight_incidence()
+#matching.evaluate()
+#matching.weight_incidence()
 matching.match_bipartite_graph()
 weight_bi = matching.weights.copy(deep = True).sum().sum()
 pairs_bi = matching.pairs.copy(deep = True)
@@ -160,8 +160,8 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 supply.index = ['R' + str(num) for num in supply.index]
 
 matching = Matching(demand, supply, add_new=True, multi=False)
-matching.evaluate()
-matching.weight_incidence()
+#matching.evaluate() #TODO Delete
+#matching.weight_incidence() #TODO Delete
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
@@ -196,8 +196,8 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 supply.index = ['R' + str(num) for num in supply.index]
 
 matching = Matching(demand, supply, add_new=True, multi=False)
-matching.evaluate()
-matching.weight_incidence()
+#matching.evaluate() #TODO Delete
+#matching.weight_incidence() #TODO Delete
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)

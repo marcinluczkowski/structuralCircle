@@ -50,7 +50,6 @@ class Matching():
         self.constraints = constraints
 
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
-        
 
     def evaluate(self):
         """Populates incidence matrix with true values where the element fit constraint criteria"""    
@@ -70,6 +69,31 @@ class Matching():
         self.incidence = pd.DataFrame(bool_array, columns= self.incidence.columns, index= self.incidence.index)
         end = time.time()
         logging.info("Create incidence matrix from constraints: %s sec", round(end - start,3))
+
+    # def evaluate2(self):
+    #     """OBSOLETE"""
+    #     # TODO optimize the evaluation.
+    #     # TODO add 'Distance'
+    #     # TODO add 'Price'
+    #     # TODO add 'Material'
+    #     # TODO add 'Density'
+    #     # TODO add 'Imperfections'
+    #     # TODO add 'Is_column'
+    #     # TODO add 'Utilisation'
+    #     # TODO add 'Group'
+    #     # TODO add 'Quality'
+    #     # TODO add 'Max_height' ?
+    #     start = time.time()
+    #     match_new = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == True
+    #     match_old = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == False
+    #     for row in self.demand.itertuples():
+    #         bool_match_new = self.supply.apply(match_new, axis = 1).tolist()
+    #         bool_match_old = self.supply.apply(match_old, axis = 1).tolist()
+            
+    #         self.incidence.loc[row[0], bool_match_new] = calculate_lca(row[1], self.supply.loc[bool_match_new, 'Area'], is_new=True)
+    #         self.incidence.loc[row[0], bool_match_old] = calculate_lca(row[1], self.supply.loc[bool_match_old, 'Area'], is_new=False)
+    #     end = time.time()
+    #     logging.info("Weight evaluation execution time: %s sec", round(end - start,3))
 
     def weight_incidence(self):
         """Assign wegihts to elements in the incidence matrix. At the moment only LCA is taken into\
@@ -101,7 +125,6 @@ class Matching():
         end = time.time()  
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
 
-   
     def add_pair(self, demand_id, supply_id):
         """Execute matrix matching"""
         # add to match_map:
@@ -135,10 +158,13 @@ class Matching():
         graph.vs["label"] = list(self.demand.index)+list(self.supply.index) #vertice names
         self.graph = graph
 
-    def display_graph(self):
+    def display_graph(self, show_weight=True):
         """Plot the graph and matching result"""
         if not self.graph:
             self.add_graph()
+        weight = None
+        if show_weight:
+            weight = [round(1/w,2) for w in self.graph.es["label"]]  # invert weight, to see real LCA
         if self.graph:
             # TODO add display of matching
             fig, ax = plt.subplots(figsize=(20, 10))
@@ -151,7 +177,7 @@ class Matching():
                 palette=ig.RainbowPalette(),
                 vertex_color=[v*80+50 for v in self.graph.vs["type"]],
                 edge_width=self.graph.es["label"],
-                edge_label=[round(1/w,2) for w in self.graph.es["label"]]  # invert weight, to see real LCA
+                edge_label=weight
             )
             plt.show()
 
@@ -169,16 +195,14 @@ class Matching():
             self.calculate_result()
             # After:
             end = time.time()
-            """
-            logging.info("Matched: %s to %s (%s %%) of %s elements using %s, resulting in LCA (GWP): %s kgCO2eq, in: %s sec.",
-                len(self.pairs['Supply_id'].unique()),
-                self.pairs['Supply_id'].count(),
-                100*self.pairs['Supply_id'].count()/len(self.demand),
-                self.supply.shape[0],
-                func.__name__,
-                round(self.result, 2),
-                round(end - start,3)
-            )"""
+            # logging.info("Matched: %s to %s (%s %%) of %s elements using %s, resulting in LCA (GWP): %s kgCO2eq, in: %s sec.",
+            #     len(self.pairs['Supply_id'].unique()),
+            #     self.pairs['Supply_id'].count(),
+            #     100*self.pairs['Supply_id'].count()/len(self.demand),
+            #     self.supply.shape[0],
+            #     func.__name__,
+            #     round(self.result, 2),
+            #     round(end - start,3)
             all_string_series = self.pairs.fillna('nan') # have all entries as string before search
             num_old = len(all_string_series.loc[all_string_series.Supply_id.str.contains('R')].Supply_id.unique())
             num_new = len(all_string_series.loc[all_string_series.Supply_id.str.contains('N')].Supply_id.unique())
@@ -204,7 +228,7 @@ class Matching():
     @_matching_decorator
     def match_greedy_algorithm(self, plural_assign=False):
         """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
-        # TODO not change incidence!
+        # TODO consider opposite sorting (as we did in Gh), small chance but better result my occur
         demand_sorted = self.demand.sort_values(by=['Length', 'Area'], axis=0, ascending=False)
         supply_sorted = self.supply.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)
 
@@ -242,7 +266,6 @@ class Matching():
     @_matching_decorator
     def match_bipartite_graph(self):
         """Match using Maximum Bipartite Graphs"""
-        # TODO multiple assignment won't work OOTB.
         # TODO multiple assignment won't work OOTB.
         if not self.graph:
             self.add_graph()

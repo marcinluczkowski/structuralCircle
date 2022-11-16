@@ -101,31 +101,7 @@ class Matching():
         end = time.time()  
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
 
-    def evaluate2(self):
-        """OBSOLETE"""
-        # TODO optimize the evaluation.
-        # TODO add 'Distance'
-        # TODO add 'Price'
-        # TODO add 'Material'
-        # TODO add 'Density'
-        # TODO add 'Imperfections'
-        # TODO add 'Is_column'
-        # TODO add 'Utilisation'
-        # TODO add 'Group'
-        # TODO add 'Quality'
-        # TODO add 'Max_height' ?
-        start = time.time()
-        match_new = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == True
-        match_old = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == False
-        for row in self.demand.itertuples():
-            bool_match_new = self.supply.apply(match_new, axis = 1).tolist()
-            bool_match_old = self.supply.apply(match_old, axis = 1).tolist()
-            
-            self.incidence.loc[row[0], bool_match_new] = calculate_lca(row[1], self.supply.loc[bool_match_new, 'Area'], is_new=True)
-            self.incidence.loc[row[0], bool_match_old] = calculate_lca(row[1], self.supply.loc[bool_match_old, 'Area'], is_new=False)
-        end = time.time()
-        logging.info("Weight evaluation execution time: %s sec", round(end - start,3))
-
+   
     def add_pair(self, demand_id, supply_id):
         """Execute matrix matching"""
         # add to match_map:
@@ -140,6 +116,7 @@ class Matching():
 
     def add_graph(self):
         """Add a graph notation based on incidence matrix"""
+        #FIXME The method assigns new elements to demand items although there should be available old elemements.  
         vertices = [0]*len(self.demand.index) + [1]*len(self.supply.index)
         edges = []
         weights = []
@@ -188,6 +165,8 @@ class Matching():
             self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
             # The actual method:
             func(self, *args, **kwargs)
+            #Calculate the result of the matching
+            self.calculate_result()
             # After:
             end = time.time()
             """
@@ -208,6 +187,18 @@ class Matching():
 
             return [self.result, self.pairs]
         return wrapper
+
+    def calculate_result(self):
+        """Evaluates the result based on the final matching of elements"""
+        # if rows without pairing, remove those    
+        local_pairs = self.pairs.dropna()
+
+        #get the index of columns in weight df which are paired
+        #TODO Make the supply and demand id_s numerical 
+        col_inds = local_pairs.Supply_id.apply(lambda label: self.weights.columns.get_loc(label))
+        row_inds = list( map(lambda name: self.weights.index.get_loc(name), local_pairs.index) )
+        #row_inds = np.arange(0, local_pairs.shape[0], 1) # the row inds are the same here and in the weights
+        self.result = (self.weights.to_numpy()[row_inds, col_inds]).sum()
 
     @_matching_decorator
     def match_greedy_algorithm(self, plural_assign=False):
@@ -245,7 +236,6 @@ class Matching():
                         
             else:
                 logging.debug("---- %s is not matching.", supply_index)
-        calculate_result(self) #TODO move to wrapper
 
 
     @_matching_decorator
@@ -257,8 +247,7 @@ class Matching():
             self.add_graph()
         bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
         for match_edge in bipartite_matching.edges():
-            self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])
-        calculate_result(self)
+            self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])  
         #self.result = sum(bipartite_matching.edges()["label"]) #TODO Remove this if new method works.
 
 
@@ -476,17 +465,7 @@ def calculate_lca(length, area, is_new=True, gwp=28.9, ):
     lca = length * area * gwp
     return lca
 
-def calculate_result(self):
-    """Calculate the the total LCA based on the matched pairs and weight indices"""    
-    # if rows without pairing, remove those    
-    local_pairs = self.pairs.dropna()
 
-    #get the index of columns in weight df which are paired
-    col_inds = local_pairs.Supply_id.apply(lambda label: self.weights.columns.get_loc(label))
-    row_inds = list( map(lambda name: self.weights.index.get_loc(name), local_pairs.index) )
-    #row_inds = np.arange(0, local_pairs.shape[0], 1) # the row inds are the same here and in the weights
-
-    self.result = (self.weights.to_numpy()[row_inds, col_inds]).sum()
     
 
 

@@ -3,6 +3,8 @@ import pandas as pd
 import random
 import time
 
+
+print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")
 ### Test with just few elements
 
 
@@ -23,10 +25,15 @@ supply.loc['R4'] = {'Length': 5.10, 'Area': 0.041, 'Inertia_moment':0.00014, 'He
 demand.loc['D4'] = {'Length': 8.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
 supply.loc['R5'] = {'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 
+# Add element that fits the cut from D4 when allowing multiple assignment
+demand.loc['D5'] = {'Length': 4.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
+
 
 # create constraint dictionary
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 # TODO add 'Material': '=='
+
+print_header("Simple Study Case")
 
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 matching.evaluate()
@@ -52,14 +59,16 @@ greedy1 = matching.pairs.copy(deep = True)
 #milp = matching.pairs.copy(deep=True)
 # matching.match_genetic_algorithm()
 test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the assignments are working.
-print("\n")
+test.columns = ["Bipartite", "Greedy_single", "Greedy_multiple"]
 
+"""
 ### Test from JSON files with Slettelokka data 
+print_header("SLETTELØKKA MATCHING")
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
-DEMAND_JSON = r".\sample_demand_input.json"
-SUPPLY_JSON = r".\sample_supply_input.json"
-RESULT_FILE = r".\result.csv"
+DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
+SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
+RESULT_FILE = r"MatchingAlgorithms\result.csv"
 #read and clean demand df
 demand = pd.read_json(DEMAND_JSON)
 demand_header = demand.iloc[0]
@@ -111,10 +120,9 @@ test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the a
 # matching.match_cp_solver()
 # ERROR matching.match_mixed_integer_programming()
 
-print("\n")
 
 ### Test with random generated elements
-
+print_header("RANDOM ELEMENTS n_D = 200, n_S = 2000")
 random.seed(3)
 
 DEMAND_COUNT = 200
@@ -150,7 +158,7 @@ matching.match_greedy_algorithm(plural_assign=True)
 print("\n")
 
 ### Test with random generated elements
-
+print_header("RANDOM ELEMENTS n_D = 200, n_S = 10000")
 random.seed(3)
 
 DEMAND_COUNT = 100
@@ -182,3 +190,6 @@ matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
 # ERROR matching.match_mixed_integer_programming()
+
+
+"""

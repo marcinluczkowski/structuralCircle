@@ -157,12 +157,12 @@ class Matching():
         graph.vs["label"] = list(self.demand.index)+list(self.supply.index) #vertice names
         self.graph = graph
 
-    def display_graph(self, show_weight=True):
+    def display_graph(self, show_weights=True):
         """Plot the graph and matching result"""
         if not self.graph:
             self.add_graph()
         weight = None
-        if show_weight:
+        if show_weights:
             weight = [round(1/w,2) for w in self.graph.es["label"]]  # invert weight, to see real LCA
         if self.graph:
             # TODO add display of matching
@@ -466,7 +466,7 @@ class Matching():
 #         self.drop(axis = 1, index= 0, inplace=True)
 #         self.reset_index(drop = True, inplace = True)
 
-def calculate_lca(length, area, is_new=True, gwp=28.9, ):
+def calculate_lca(length, area, is_new=True, gwp=28.9):
     """ Calculate Life Cycle Assessment """
     # TODO add distance, processing and other impact categories than GWP
     if not is_new:

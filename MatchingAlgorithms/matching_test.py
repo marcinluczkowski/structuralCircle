@@ -1,8 +1,10 @@
 from matching import Matching
 import pandas as pd
 import random
+import time
 
 ### Test with just few elements
+
 
 demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
 supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
@@ -23,29 +25,42 @@ supply.loc['R5'] = {'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Heig
 
 
 # create constraint dictionary
-constraint_dict = {'Area' : '>', 'Inertia_moment' : '>', 'Length' : '>'}
+constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
-matching = Matching(demand, supply, add_new=False, multi=False, constraints=constraint_dict)
+matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 matching.evaluate()
+matching.weight_incidence()
 matching.match_bipartite_graph()
-matching.match_greedy_algorithm(plural_assign=False)
-matching.match_greedy_algorithm(plural_assign=True)
-matching.match_mixed_integer_programming()
+weight_bi = matching.weights.copy(deep = True).sum().sum()
+pairs_bi = matching.pairs.copy(deep = True)
 
+matching.match_greedy_algorithm(plural_assign=False)
+weight_g0 = matching.weights.copy(deep = True).sum().sum()
+greedy0 = matching.pairs.copy(deep = True)
+
+matching.match_greedy_algorithm(plural_assign=True)
+weight_g1 = matching.weights.copy(deep = True).sum().sum()
+greedy1 = matching.pairs.copy(deep = True)
+#matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
+#milp = matching.pairs.copy(deep=True)
+
+test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the assignments are working.
 
 ### Test from JSON files with Slettelokka data 
 
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
-DEMAND_JSON = r".\sample_demand_input.json"
-SUPPLY_JSON = r".\sample_supply_input.json"
-RESULT_FILE = r".\result.csv"
+DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
+SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
+RESULT_FILE = r"MatchingAlgorithms\result.csv"
 #read and clean demand df
 demand = pd.read_json(DEMAND_JSON)
 demand_header = demand.iloc[0]
 demand.columns = demand_header
 demand.drop(axis = 1, index= 0, inplace=True)
 demand.reset_index(drop = True, inplace = True)
+demand.index = ['D' + str(num) for num in demand.index]
+
 demand.Length *=0.01
 demand.Area *=0.0001
 demand.Inertia_moment *=0.00000001
@@ -57,16 +72,36 @@ supply.columns = supply_header
 supply.drop(axis = 1, index= 0, inplace=True)
 supply['Is_new'] = False
 supply.reset_index(drop = True, inplace = True)
+supply.index = ['R' + str(num) for num in supply.index]
+
+# scale input from mm to m
 supply.Length *=0.01
 supply.Area *=0.0001
 supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
 
-matching = Matching(demand, supply, add_new=True, multi=False)
+#--- CREATE AND EVALUATE ---
+incidence_shapes = []
+matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 matching.evaluate()
+matching.weight_incidence()
 matching.match_bipartite_graph()
+incidence_shapes.append(matching.incidence.shape)
+weight_bi = matching.weights.copy(deep = True).sum().sum()
+pairs_bi = matching.pairs.copy(deep = True)
+
 matching.match_greedy_algorithm(plural_assign=False)
+weight_g0 = matching.weights.copy(deep = True).sum().sum()
+greedy0 = matching.pairs.copy(deep = True)
+incidence_shapes.append(matching.incidence.shape)
+
 matching.match_greedy_algorithm(plural_assign=True)
+weight_g1 = matching.weights.copy(deep = True).sum().sum()
+greedy1 = matching.pairs.copy(deep = True)
+incidence_shapes.append(matching.incidence.shape)
+# ERROR matching.match_mixed_integer_programming()
+test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the assignments are working.
+# matching.match_cp_solver()
 # ERROR matching.match_mixed_integer_programming()
 
 
@@ -126,6 +161,7 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
+matching.weigth_incidence()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)

@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
+import logging
+import random
 import sys
-from itertools import product, compress
-import pandas as pd
-import numpy as np
+import time
+from itertools import compress, product
+
 import igraph as ig
 import matplotlib.pyplot as plt
+import numexpr as ne
+import numpy as np
+import pandas as pd
+import pygad
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
-import pygad
-import numexpr as ne
-import logging
-import time
-import random
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,11 +49,26 @@ class Matching():
         self.weights = None
         self.constraints = constraints
 
+                    
+        # create incidence and weight for the method
+        self.evaluate()
+        self.weight_incidence()
+
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
 
     def evaluate(self):
         """Populates incidence matrix with true values where the element fit constraint criteria"""    
-        
+        # TODO optimize the evaluation.
+        # TODO add 'Distance'
+        # TODO add 'Price'
+        # TODO add 'Material'
+        # TODO add 'Density'
+        # TODO add 'Imperfections'
+        # TODO add 'Is_column'
+        # TODO add 'Utilisation'
+        # TODO add 'Group'
+        # TODO add 'Quality'
+        # TODO add 'Max_height' ?
         #TODO Where to add weights to this incidence matrix
         start = time.time()
         bool_array = np.full((self.demand.shape[0], self.supply.shape[0]), True) # initiate empty array
@@ -70,30 +85,7 @@ class Matching():
         end = time.time()
         logging.info("Create incidence matrix from constraints: %s sec", round(end - start,3))
 
-    # def evaluate2(self):
-    #     """OBSOLETE"""
-    #     # TODO optimize the evaluation.
-    #     # TODO add 'Distance'
-    #     # TODO add 'Price'
-    #     # TODO add 'Material'
-    #     # TODO add 'Density'
-    #     # TODO add 'Imperfections'
-    #     # TODO add 'Is_column'
-    #     # TODO add 'Utilisation'
-    #     # TODO add 'Group'
-    #     # TODO add 'Quality'
-    #     # TODO add 'Max_height' ?
-    #     start = time.time()
-    #     match_new = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == True
-    #     match_old = lambda sup_row : row[1] <= sup_row['Length'] and row[2] <= sup_row['Area'] and row[3] <= sup_row['Inertia_moment'] and row[4] <= sup_row['Height'] and sup_row['Is_new'] == False
-    #     for row in self.demand.itertuples():
-    #         bool_match_new = self.supply.apply(match_new, axis = 1).tolist()
-    #         bool_match_old = self.supply.apply(match_old, axis = 1).tolist()
-            
-    #         self.incidence.loc[row[0], bool_match_new] = calculate_lca(row[1], self.supply.loc[bool_match_new, 'Area'], is_new=True)
-    #         self.incidence.loc[row[0], bool_match_old] = calculate_lca(row[1], self.supply.loc[bool_match_old, 'Area'], is_new=False)
-    #     end = time.time()
-    #     logging.info("Weight evaluation execution time: %s sec", round(end - start,3))
+
 
     def weight_incidence(self):
         """Assign wegihts to elements in the incidence matrix. At the moment only LCA is taken into\
@@ -189,6 +181,7 @@ class Matching():
             # empty result of previous matching:
             self.result = 0  
             self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id'])
+
             # The actual method:
             func(self, *args, **kwargs)
             #Calculate the result of the matching
@@ -208,7 +201,7 @@ class Matching():
             num_new = len(all_string_series.loc[all_string_series.Supply_id.str.contains('N')].Supply_id.unique())
             num_matched = len(self.pairs.dropna())
             logging.info(f"""Matched {num_old} old and {num_new} new elements to {num_matched} demand elements ({100 * num_matched / len(self.pairs)}%) 
-            using {func.__name__}. Resulting in LCA (GWP) {round(self.result, 2)} kgCO2eq, in {round(end - start,3)} seconds.""")
+using {func.__name__}. Resulting in LCA (GWP) {round(self.result, 2)} kgCO2eq, in {round(end - start,3)} seconds.""")
 
             return [self.result, self.pairs]
         return wrapper

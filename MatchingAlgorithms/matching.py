@@ -558,7 +558,10 @@ class Matching():
                         self.pairs.iloc[i] = index_series[j] # add the matched pair.                         
                         break # only one x[0, j] can be 1. the rest are 0. Continue or break?
             
-
+    @_matching_decorator
+    def match_scipy_milp(self):
+        #TODO Try using scipy for computational speed
+        pass
       
 
 # class Elements(pd.DataFrame):

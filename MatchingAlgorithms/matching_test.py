@@ -9,14 +9,14 @@ import time
 demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
 supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
 # Add a perfect matching pair
-demand.loc['D1'] = {'Length': 7.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20}
-supply.loc['R1'] = {'Length': 7.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Is_new':False}
+demand.loc['D1'] = {'Material': 1, 'Length': 7.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20}
+supply.loc['R1'] = {'Material': 2, 'Length': 7.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Is_new':False}
 # Add non-matchable demand
-demand.loc['D2'] = {'Length': 13.00, 'Area': 0.001, 'Inertia_moment':0.00001, 'Height': 0.05}
+demand.loc['D2'] = {'Material': 1, 'Length': 13.00, 'Area': 0.001, 'Inertia_moment':0.00001, 'Height': 0.05}
 # Add non-matchable supply
 supply.loc['R2'] = {'Length': 0.1, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Is_new':False}
 # Add element with two good matches, where second slighlty better
-demand.loc['D3'] = {'Length': 5.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20}
+demand.loc['D3'] = {'Material': 2, 'Length': 5.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20}
 supply.loc['R3'] = {'Length': 5.20, 'Area': 0.042, 'Inertia_moment':0.00015, 'Height': 0.22, 'Is_new':False}
 supply.loc['R4'] = {'Length': 5.10, 'Area': 0.041, 'Inertia_moment':0.00014, 'Height': 0.21, 'Is_new':False}
 # Add element with much bigger match
@@ -26,6 +26,7 @@ supply.loc['R5'] = {'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Heig
 
 # create constraint dictionary
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
+# TODO add 'Material': '=='
 
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 matching.evaluate()
@@ -41,18 +42,24 @@ greedy0 = matching.pairs.copy(deep = True)
 matching.match_greedy_algorithm(plural_assign=True)
 weight_g1 = matching.weights.copy(deep = True).sum().sum()
 greedy1 = matching.pairs.copy(deep = True)
-#matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
+#matching.match_genetic_algorithm()
+# matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
 #milp = matching.pairs.copy(deep=True)
 
+weight_g1 = matching.weights.copy(deep = True).sum().sum()
+greedy1 = matching.pairs.copy(deep = True)
+#matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
+#milp = matching.pairs.copy(deep=True)
+# matching.match_genetic_algorithm()
 test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the assignments are working.
+print("\n")
 
 ### Test from JSON files with Slettelokka data 
-
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 
-DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
-SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
-RESULT_FILE = r"MatchingAlgorithms\result.csv"
+DEMAND_JSON = r".\sample_demand_input.json"
+SUPPLY_JSON = r".\sample_supply_input.json"
+RESULT_FILE = r".\result.csv"
 #read and clean demand df
 demand = pd.read_json(DEMAND_JSON)
 demand_header = demand.iloc[0]
@@ -104,6 +111,7 @@ test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the a
 # matching.match_cp_solver()
 # ERROR matching.match_mixed_integer_programming()
 
+print("\n")
 
 ### Test with random generated elements
 
@@ -121,20 +129,25 @@ demand['Length'] = [x/10 for x in random.choices(range(int(MIN_LENGTH*10), int(M
 demand['Area'] = demand.apply(lambda row: round((random.choice(range(0, int(MAX_AREA*10000)-int(MIN_AREA*10000))) /10000 /MAX_LENGTH * row['Length'] + MIN_AREA) * 10000)/10000, axis=1)        # [m2], random between the range but dependent on the length of the element
 demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
 demand['Height'] = demand.apply(lambda row: row['Area']**(0.5), axis=1)   # derived from area assuming square section
+demand.index = ['D' + str(num) for num in demand.index]
+
 supply = pd.DataFrame()
 supply['Length'] = [x/10 for x in random.choices(range(int(MIN_LENGTH*10), int(MAX_LENGTH*10)), k=SUPPLY_COUNT)]        # [m], random between the range
 supply['Area'] = supply.apply(lambda row: round((random.choice(range(0, int(MAX_AREA*10000)-int(MIN_AREA*10000))) /10000 /MAX_LENGTH * row['Length'] + MIN_AREA) * 10000)/10000, axis=1)        # [m2], random between the range but dependent on the length of the element
 supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
 supply['Height'] = supply.apply(lambda row: row['Area']**(0.5), axis=1)   # derived from area assuming square section
 supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
+supply.index = ['R' + str(num) for num in supply.index]
 
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
+matching.weight_incidence()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
 # ERROR matching.match_mixed_integer_programming()
 
+print("\n")
 
 ### Test with random generated elements
 
@@ -152,16 +165,19 @@ demand['Length'] = [x/10 for x in random.choices(range(int(MIN_LENGTH*10), int(M
 demand['Area'] = demand.apply(lambda row: round((random.choice(range(0, int(MAX_AREA*10000)-int(MIN_AREA*10000))) /10000 /MAX_LENGTH * row['Length'] + MIN_AREA) * 10000)/10000, axis=1)        # [m2], random between the range but dependent on the length of the element
 demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
 demand['Height'] = demand.apply(lambda row: row['Area']**(0.5), axis=1)   # derived from area assuming square section
+demand.index = ['D' + str(num) for num in demand.index]
+
 supply = pd.DataFrame()
 supply['Length'] = [x/10 for x in random.choices(range(int(MIN_LENGTH*10), int(MAX_LENGTH*10)), k=SUPPLY_COUNT)]        # [m], random between the range
 supply['Area'] = supply.apply(lambda row: round((random.choice(range(0, int(MAX_AREA*10000)-int(MIN_AREA*10000))) /10000 /MAX_LENGTH * row['Length'] + MIN_AREA) * 10000)/10000, axis=1)        # [m2], random between the range but dependent on the length of the element
 supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
 supply['Height'] = supply.apply(lambda row: row['Area']**(0.5), axis=1)   # derived from area assuming square section
 supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
+supply.index = ['R' + str(num) for num in supply.index]
 
 matching = Matching(demand, supply, add_new=True, multi=False)
 matching.evaluate()
-matching.weigth_incidence()
+matching.weight_incidence()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)

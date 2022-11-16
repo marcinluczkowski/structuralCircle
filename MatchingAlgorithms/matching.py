@@ -154,7 +154,7 @@ class Matching():
             weights.extend(list(compress(self.weights.iloc[i], mask)))
         weights = 1 / np.array(weights)
         graph = ig.Graph.Bipartite(vertices,  edges)
-        graph.es["label"] = 1 / weights # TODO fix this
+        graph.es["label"] = weights
         graph.vs["label"] = list(self.demand.index)+list(self.supply.index) #vertice names
         self.graph = graph
 

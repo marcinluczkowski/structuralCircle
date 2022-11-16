@@ -50,7 +50,10 @@ matching.match_greedy_algorithm(plural_assign=True)
 weight_g1 = matching.weights.copy(deep = True).sum().sum()
 greedy1 = matching.pairs.copy(deep = True)
 #matching.match_genetic_algorithm()
-# matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
+#matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
+matching.match_cp_solver()
+weight_cp = matching.weights.copy(deep = True).sum().sum()
+cp = matching.pairs.copy(deep = True)
 #milp = matching.pairs.copy(deep=True)
 
 weight_g1 = matching.weights.copy(deep = True).sum().sum()
@@ -58,8 +61,8 @@ greedy1 = matching.pairs.copy(deep = True)
 #matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
 #milp = matching.pairs.copy(deep=True)
 # matching.match_genetic_algorithm()
-test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the assignments are working.
-test.columns = ["Bipartite", "Greedy_single", "Greedy_multiple"]
+test = pd.concat([pairs_bi, greedy0, greedy1, cp], axis = 1) # look at how all the assignments are working.
+test.columns = ["Bipartite", "Greedy_single", "Greedy_multiple", "MILP"]
 
 """
 ### Test from JSON files with Slettelokka data 
@@ -115,18 +118,20 @@ matching.match_greedy_algorithm(plural_assign=True)
 weight_g1 = matching.weights.copy(deep = True).sum().sum()
 greedy1 = matching.pairs.copy(deep = True)
 incidence_shapes.append(matching.incidence.shape)
-# ERROR matching.match_mixed_integer_programming()
+
+matching.match_cp_solver()
+"""
 test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the assignments are working.
 # matching.match_cp_solver()
 # ERROR matching.match_mixed_integer_programming()
 
 
 ### Test with random generated elements
-print_header("RANDOM ELEMENTS n_D = 200, n_S = 2000")
+print_header("RANDOM ELEMENTS n_D = 100, n_S = 200")
 random.seed(3)
 
-DEMAND_COUNT = 200
-SUPPLY_COUNT = 2000
+DEMAND_COUNT = 100
+SUPPLY_COUNT = 200
 MIN_LENGTH = 1.0
 MAX_LENGTH = 10.0
 MIN_AREA = 0.0025   # 5x5cm
@@ -153,10 +158,10 @@ matching.weight_incidence()
 matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
+matching.match_cp_solver()
 # ERROR matching.match_mixed_integer_programming()
 
-print("\n")
-
+"""
 ### Test with random generated elements
 print_header("RANDOM ELEMENTS n_D = 200, n_S = 10000")
 random.seed(3)

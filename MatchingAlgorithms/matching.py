@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
+import logging
+import random
 import sys
-from itertools import product, compress
-import pandas as pd
-import numpy as np
+import time
+from itertools import compress, product
+
 import igraph as ig
 import matplotlib.pyplot as plt
+import numexpr as ne
+import numpy as np
+import pandas as pd
+import pygad
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
-import pygad
-import numexpr as ne
-import logging
-import time
-import random
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,6 +23,8 @@ logging.basicConfig(
     # filemode='w'
     )
 
+TIMBER_GWP = 10     # 28.9
+REUSE_GWP_RATIO = 0.1  # 0.0778
 
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
@@ -104,9 +106,9 @@ class Matching():
         areas = self.supply.Area.iloc[el_locs[:, 1]].to_list() # array of areas 
         lenghts = self.demand.Length.iloc[el_locs[:, 0]].to_list() # array of element lenghts
         el_new = self.supply.Is_new.iloc[el_locs[:,1]].to_list() # array of booleans for element condition.  
-        gwp = 28.9
-        gwp_array = np.where(el_new, gwp, gwp * 0.0778)
-        #get_gwp = ne.evaluate("gwp if el_new else gwp*0.0778")
+        gwp = TIMBER_GWP
+        gwp_array = np.where(el_new, gwp, gwp * REUSE_GWP_RATIO)
+        #get_gwp = ne.evaluate("gwp if el_new else gwp*REUSE_GWP_RATIO")
         #gwp = [7.28 if tr else ]
         lca_array = ne.evaluate("areas * lenghts * gwp_array")
        
@@ -152,32 +154,65 @@ class Matching():
             mask =  ~is_na.iloc[i] # invert the booleans
             edges.extend( (list(compress(combs, mask) ) ) )
             weights.extend(list(compress(self.weights.iloc[i], mask)))
-        weights = 1 / np.array(weights)
-        graph = ig.Graph.Bipartite(vertices,  edges)
+        weights = max(weights) - np.array(weights)
+        graph = ig.Graph.Bipartite(vertices, edges)
         graph.es["label"] = weights
         graph.vs["label"] = list(self.demand.index)+list(self.supply.index) #vertice names
         self.graph = graph
 
-    def display_graph(self, show_weights=True):
+    def display_graph(self, graph_type='rows', show_weights=True, show_result=True):
         """Plot the graph and matching result"""
         if not self.graph:
             self.add_graph()
         weight = None
         if show_weights:
-            weight = [round(1/w,2) for w in self.graph.es["label"]]  # invert weight, to see real LCA
+            weight = list(np.absolute(np.array(self.graph.es["label"]) - 8).round(decimals=2)) 
+        edge_color = None
+        edge_width = self.graph.es["label"]
+        if show_result and not self.pairs.empty:
+            edge_color = ["gray"] * len(self.graph.es)
+            edge_width = [0.7] * len(self.graph.es)
+            # TODO could be reformatted like this https://igraph.readthedocs.io/en/stable/tutorials/bipartite_matching.html#tutorials-bipartite-matching
+            not_found = 0
+            for index, pair in self.pairs.iterrows():
+                source = self.graph.vs.find(label=index) 
+                try:
+                    target = self.graph.vs.find(label=pair['Supply_id'])
+                    edge = self.graph.es.select(_between = ([source.index], [target.index]))
+                except ValueError:
+                    not_found+=1
+                edge_color[edge.indices[0]] = "red"
+                edge_width[edge.indices[0]] = 2.5
+            if not_found > 0:
+                logging.error("%s elements not found - probably no new elements supplied.", not_found)
+        vertex_color = []
+        for v in self.graph.vs:
+            if 'D' in v['label']:
+                vertex_color.append("green")
+            elif 'R' in v['label']:
+                vertex_color.append("orange")
+            else:
+                vertex_color.append("pink")
+        layout = self.graph.layout_bipartite()
+        if graph_type == 'rows':
+            layout = self.graph.layout_bipartite()
+        elif graph_type == 'circle':
+            layout = self.graph.layout_circle()
+
         if self.graph:
-            # TODO add display of matching
             fig, ax = plt.subplots(figsize=(20, 10))
             ig.plot(
                 self.graph,
                 target=ax,
-                layout=self.graph.layout_bipartite(),
+                layout=layout,
                 vertex_size=0.4,
                 vertex_label=self.graph.vs["label"],
                 palette=ig.RainbowPalette(),
-                vertex_color=[v*80+50 for v in self.graph.vs["type"]],
-                edge_width=self.graph.es["label"],
-                edge_label=weight
+                vertex_color=vertex_color,
+                edge_width=edge_width,
+                edge_label=weight,
+                edge_color=edge_color,
+                edge_curved=0.15
             )
             plt.show()
 
@@ -207,9 +242,8 @@ class Matching():
             num_old = len(all_string_series.loc[all_string_series.Supply_id.str.contains('R')].Supply_id.unique())
             num_new = len(all_string_series.loc[all_string_series.Supply_id.str.contains('N')].Supply_id.unique())
             num_matched = len(self.pairs.dropna())
-            logging.info(f"""Matched {num_old} old and {num_new} new elements to {num_matched} demand elements ({100 * num_matched / len(self.pairs)}%) 
-            using {func.__name__}. Resulting in LCA (GWP) {round(self.result, 2)} kgCO2eq, in {round(end - start,3)} seconds.""")
-
+            logging.info("Matched %s old and %s new elements to %s demand elements (%s %%) using %s. Resulting in LCA (GWP) %s kgCO2eq, in %s seconds.", 
+                num_old, num_new, num_matched, round(100 * num_matched / len(self.pairs), 2), func.__name__, round(self.result, 2), round(end - start, 3))
             return [self.result, self.pairs]
         return wrapper
 
@@ -265,10 +299,14 @@ class Matching():
 
     @_matching_decorator
     def match_bipartite_graph(self):
-        """Match using Maximum Bipartite Graphs"""
+        """Match using Maximum Bipartite Graphs. A maximum matching is a set of edges such that each vertex is
+        incident on at most one matched edge and the weight of such edges in the set is as large as possible."""
         # TODO multiple assignment won't work OOTB.
         if not self.graph:
             self.add_graph()
+        if self.graph.is_connected():
+            # TODO separate disjoint graphs for efficiency
+            logging.info("graph contains unconnected subgraphs that could be separated")
         bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
         for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])  
@@ -571,12 +609,12 @@ class Matching():
 #         self.drop(axis = 1, index= 0, inplace=True)
 #         self.reset_index(drop = True, inplace = True)
 
-def calculate_lca(length, area, is_new=True, gwp=28.9):
+def calculate_lca(length, area, is_new=True, gwp=TIMBER_GWP):
     """ Calculate Life Cycle Assessment """
     # TODO add distance, processing and other impact categories than GWP
     if not is_new:
-        gwp = gwp * 0.0778
-    #gwp_array = np.where(is_new, gwp, gwp * 0.0778)
+        gwp = gwp * REUSE_GWP_RATIO
+    #gwp_array = np.where(is_new, gwp, gwp * REUSE_GWP_RATIO)
     lca = length * area * gwp
     return lca
 

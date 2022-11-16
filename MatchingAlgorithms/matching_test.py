@@ -1,4 +1,4 @@
-from matching import Matching
+from matching import Matching #, TIMBER_GWP, REUSE_GWP_RATIO
 import pandas as pd
 import random
 import time
@@ -6,7 +6,6 @@ import time
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")
 ### Test with just few elements
-
 
 demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
 supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
@@ -25,12 +24,11 @@ supply.loc['R4'] = {'Material': 1, 'Length': 5.10, 'Area': 0.041, 'Inertia_momen
 demand.loc['D4'] = {'Material': 1, 'Length': 8.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
 supply.loc['R5'] = {'Material': 1, 'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 # Add supply that can after cut fits perfectly
-#demand.loc['D5'] = {'Material': 1, 'Length': 3.50, 'Area': 0.19, 'Inertia_moment':0.0008, 'Height': 0.80}
-#demand.loc['D6'] = {'Material': 1, 'Length': 5.50, 'Area': 0.18, 'Inertia_moment':0.00076, 'Height': 0.75}
-#supply.loc['R6'] = {'Material': 1, 'Length': 9.00, 'Area': 0.20, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
+demand.loc['D5'] = {'Material': 1, 'Length': 3.50, 'Area': 0.19, 'Inertia_moment':0.0008, 'Height': 0.80}
+demand.loc['D6'] = {'Material': 1, 'Length': 5.50, 'Area': 0.18, 'Inertia_moment':0.00076, 'Height': 0.75}
+supply.loc['R6'] = {'Material': 1, 'Length': 9.00, 'Area': 0.20, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 # Add element that fits the cut from D4 when allowing multiple assignment
-demand.loc['D5'] = {'Length': 4.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
-
+demand.loc['D5'] = {'Material': 1, 'Length': 4.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
 
 # create constraint dictionary
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
@@ -44,6 +42,8 @@ matching.weight_incidence()
 matching.match_bipartite_graph()
 weight_bi = matching.weights.copy(deep = True).sum().sum()
 pairs_bi = matching.pairs.copy(deep = True)
+
+# matching.display_graph(show_weights=True, graph_type='rows')
 
 matching.match_greedy_algorithm(plural_assign=False)
 weight_g0 = matching.weights.copy(deep = True).sum().sum()
@@ -67,7 +67,7 @@ greedy1 = matching.pairs.copy(deep = True)
 test = pd.concat([pairs_bi, greedy0, greedy1, cp], axis = 1) # look at how all the assignments are working.
 test.columns = ["Bipartite", "Greedy_single", "Greedy_multiple", "MILP"]
 
-"""
+
 ### Test from JSON files with Slettelokka data 
 print_header("SLETTELØKKA MATCHING")
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
@@ -107,10 +107,13 @@ incidence_shapes = []
 matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
 matching.evaluate()
 matching.weight_incidence()
+
 matching.match_bipartite_graph()
 incidence_shapes.append(matching.incidence.shape)
 weight_bi = matching.weights.copy(deep = True).sum().sum()
 pairs_bi = matching.pairs.copy(deep = True)
+
+# matching.display_graph(graph_type='circle', show_weights=False, show_result=True)
 
 matching.match_greedy_algorithm(plural_assign=False)
 weight_g0 = matching.weights.copy(deep = True).sum().sum()
@@ -128,6 +131,7 @@ test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the a
 # matching.match_cp_solver()
 # ERROR matching.match_mixed_integer_programming()
 
+"""
 
 ### Test with random generated elements
 print_header("RANDOM ELEMENTS n_D = 100, n_S = 200")
@@ -164,7 +168,7 @@ matching.match_greedy_algorithm(plural_assign=True)
 matching.match_cp_solver()
 # ERROR matching.match_mixed_integer_programming()
 
-"""
+
 ### Test with random generated elements
 print_header("RANDOM ELEMENTS n_D = 200, n_S = 10000")
 random.seed(3)
@@ -198,6 +202,3 @@ matching.match_bipartite_graph()
 matching.match_greedy_algorithm(plural_assign=False)
 matching.match_greedy_algorithm(plural_assign=True)
 # ERROR matching.match_mixed_integer_programming()
-
-
-"""

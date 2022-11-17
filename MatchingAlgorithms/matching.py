@@ -473,6 +473,7 @@ using {func.__name__}. Resulting in LCA (GWP) {round(self.result, 2)} kgCO2eq, i
 
         # the CP Solver works only on integers. Consequently, all values are multiplied by 1000 before solving the
         m_fac = 10000
+        max_time = 100
         # --- Create the data needed for the solver ---        
         data = {} # initiate empty dictionary
         data ['lengths'] = (self.demand.Length * m_fac).astype(int)
@@ -538,7 +539,7 @@ using {func.__name__}. Resulting in LCA (GWP) {round(self.result, 2)} kgCO2eq, i
         
         # --- Solve ---
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = 100
+        solver.parameters.max_time_in_seconds = max_time
         status = solver.Solve(model)
         test = solver.ObjectiveValue()
         index_series = self.supply.index

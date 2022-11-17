@@ -50,6 +50,7 @@ class Matching():
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
         self.weights = None
         self.constraints = constraints
+        self.solution_time = None
 
                     
         # create incidence and weight for the method
@@ -222,6 +223,7 @@ class Matching():
             self.calculate_result()
             # After:
             end = time.time()
+            self.solution_time = end - start
             all_string_series = self.pairs.fillna('nan') # have all entries as string before search
             num_old = len(all_string_series.loc[all_string_series.Supply_id.str.contains('R')].Supply_id.unique())
             num_new = len(all_string_series.loc[all_string_series.Supply_id.str.contains('N')].Supply_id.unique())
@@ -586,6 +588,55 @@ class Matching():
         #TODO Try using scipy for computational speed
         pass
       
+      
+      
+def run_matching( demand, supply, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False):
+    """Run selected matching algorithms and returns results for comparison.
+    By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
+    #TODO Can **kwargs be used instead of all these arguments
+    # create matching object 
+    matching = Matching(demand=demand, supply= supply, constraints=constraints, add_new= add_new)
+
+    results = {'Assignment_df': [], 'Score': []} # results to return
+    headers = []
+    if bipartite:
+        matching.match_bipartite_graph()
+        results['Assignment_df'].append(matching.pairs.copy(deep=True))
+        results['Score'].append(matching.result)
+        headers.append('Bipartite')
+    
+    if greedy_single:
+        matching.match_greedy_algorithm(plural_assign=False)
+        results['Assignment_df'].append(matching.pairs.copy(deep=True))
+        results['Score'].append(matching.result)
+        headers.append('Greedy_single')
+
+    if greedy_plural:
+        matching.match_greedy_algorithm(plural_assign=True)
+        results['Assignment_df'].append(matching.pairs.copy(deep=True))
+        results['Score'].append(matching.result)
+        headers.append('Greedy_plural')
+    
+    if milp:
+        matching.match_mixed_integer_programming()
+        results['Assignment_df'].append(matching.pairs.copy(deep=True))
+        results['Score'].append(matching.result)
+        headers.append('MILP')
+
+    if genetic:
+        matching.match_genetic_algorithm()
+        results['Assignment_df'].append(matching.pairs.copy(deep=True))
+        results['Score'].append(matching.result)
+        headers.append('Genetic')
+    
+    #convert list of dfs to single df
+    results['Assignment_df'] = pd.concat(results['Assignment_df'], axis = 1)
+    results['Assignment_df'].columns = headers
+
+    results['Score'] = pd.Series(results['Score'], index = headers).round(2)
+
+    return results
+
 
 # class Elements(pd.DataFrame):
 #     def read_json(self):

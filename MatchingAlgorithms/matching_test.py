@@ -6,52 +6,6 @@ import time
 # ===== HELPER METHODS =====
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")
 
-def run_matching(demand, supply, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False):
-    """Run selected matching algorithms and returns results for comparison.
-    By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
-    #TODO Can **kwargs be used instead of all these arguments
-    # create matching object 
-    matching = Matching(demand=demand, supply= supply, constraints=constraints, add_new= add_new)
-
-    results = {'Assignment_df': [], 'Score': []} # results to return
-    headers = []
-    if bipartite:
-        matching.match_bipartite_graph()
-        results['Assignment_df'].append(matching.pairs.copy(deep=True))
-        results['Score'].append(matching.result)
-        headers.append('Bipartite')
-    
-    if greedy_single:
-        matching.match_greedy_algorithm(plural_assign=False)
-        results['Assignment_df'].append(matching.pairs.copy(deep=True))
-        results['Score'].append(matching.result)
-        headers.append('Greedy_single')
-
-    if greedy_plural:
-        matching.match_greedy_algorithm(plural_assign=True)
-        results['Assignment_df'].append(matching.pairs.copy(deep=True))
-        results['Score'].append(matching.result)
-        headers.append('Greedy_plural')
-    
-    if milp:
-        matching.match_mixed_integer_programming()
-        results['Assignment_df'].append(matching.pairs.copy(deep=True))
-        results['Score'].append(matching.result)
-        headers.append('MILP')
-
-    if genetic:
-        matching.match_genetic_algorithm()
-        results['Assignment_df'].append(matching.pairs.copy(deep=True))
-        results['Score'].append(matching.result)
-        headers.append('Genetic')
-    
-    #convert list of dfs to single df
-    results['Assignment_df'] = pd.concat(results['Assignment_df'], axis = 1)
-    results['Assignment_df'].columns = headers
-
-    results['Score'] = pd.Series(results['Score'], index = headers).round(2)
-
-    return results
     
     
 

@@ -1,4 +1,4 @@
-from matching import Matching #, TIMBER_GWP, REUSE_GWP_RATIO
+from matching import Matching, run_matching #, TIMBER_GWP, REUSE_GWP_RATIO
 import pandas as pd
 import random
 import time

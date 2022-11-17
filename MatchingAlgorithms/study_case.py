@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-MIN_LENGTH = 2.0 # m
+MIN_LENGTH = 1.0 # m
 MAX_LENGTH = 5.0 # m
 MIN_AREA = 0.05 # m^2
 MAX_AREA = 0.25 # m^2
@@ -55,6 +55,6 @@ for d, s in zip(d_counts, s_counts):
     #create data
     print(f'\n*** Running for {d} demand and {s} supply elements.***\n')
     demand, supply = create_random_data(demand_count=d, supply_count=s)
-    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, greedy_single = False))
+    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, milp=True))
     
 print(type(results))

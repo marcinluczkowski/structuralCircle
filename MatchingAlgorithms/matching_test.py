@@ -42,8 +42,7 @@ print_header("Simple Study Case")
 
 result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
             milp=True)
-pairs_simple = result_simple['Assignment_df']
-scores_simple = result_simple['Score']
+
 
 
 ### Test from JSON files with Slettelokka data 
@@ -83,8 +82,7 @@ supply.Height *=0.01
 #--- CREATE AND EVALUATE ---
 result_slette = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
             milp=True)
-pairs_slette = result_slette['Assignment_df']
-scores_slette = result_slette['Score']
+
 
 
 # ====  Test with randomly generated elements ====
@@ -115,8 +113,7 @@ supply.index = ['R' + str(num) for num in supply.index]
 
 result_rndm1 = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
             milp=True)
-pairs_rndm1 = result_rndm1['Assignment_df']
-scores_rndm1 = result_rndm1['Score']
+
 
 
 
@@ -149,6 +146,5 @@ supply.index = ['R' + str(num) for num in supply.index]
 
 result_rndm2 = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
             milp=True)
-pairs_rndm2 = result_rndm2['Assignment_df']
-scores_rndm2 = result_rndm2['Score']
+
 

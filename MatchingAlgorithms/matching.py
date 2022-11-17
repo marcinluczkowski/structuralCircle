@@ -5,7 +5,7 @@ import random
 import sys
 import time
 from itertools import compress, product
-
+from copy import copy, deepcopy
 import igraph as ig
 import matplotlib.pyplot as plt
 import numexpr as ne
@@ -59,20 +59,17 @@ class Matching():
 
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
 
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        return result    
+
     def evaluate(self):
         """Populates incidence matrix with true values where the element fit constraint criteria"""    
         # TODO optimize the evaluation.
-        # TODO add 'Distance'
-        # TODO add 'Price'
-        # TODO add 'Material'
-        # TODO add 'Density'
-        # TODO add 'Imperfections'
-        # TODO add 'Is_column'
-        # TODO add 'Utilisation'
-        # TODO add 'Group'
-        # TODO add 'Quality'
-        # TODO add 'Max_height' ?
-        #TODO Where to add weights to this incidence matrix
+        # TODO add 'Distance' 'Price' 'Material' 'Density' 'Imperfections' 'Is_column' 'Utilisation' 'Group' 'Quality' 'Max_height' ?
+        
         start = time.time()
         bool_array = np.full((self.demand.shape[0], self.supply.shape[0]), True) # initiate empty array
         for param, compare in self.constraints.items():
@@ -127,7 +124,7 @@ class Matching():
         
     def add_graph(self):
         """Add a graph notation based on incidence matrix"""
-        #FIXME The method assigns new elements to demand items although there should be available old elemements.  
+        
         vertices = [0]*len(self.demand.index) + [1]*len(self.supply.index)
         edges = []
         weights = []        
@@ -216,7 +213,7 @@ class Matching():
             self.calculate_result()
             # After:
             end = time.time()
-            self.solution_time = end - start
+            self.solution_time = round(end - start, 3)
             all_string_series = self.pairs.fillna('nan') # have all entries as string before search
             num_old = len(all_string_series.loc[all_string_series.Supply_id.str.contains('R')].Supply_id.unique())
             num_new = len(all_string_series.loc[all_string_series.Supply_id.str.contains('N')].Supply_id.unique())
@@ -265,12 +262,12 @@ class Matching():
                         new_ind = supply_sorted['Length'].searchsorted(new_length, side = 'left') #get index to insert new row into
                         part1 = supply_sorted[:new_ind].copy(deep=True)
                         part2 = supply_sorted[new_ind:].copy(deep=True)
-                        supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).T, part2])
+                        supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).T, part2]) # FIXME this gives "FUTURE Warning about Dtype... Fix"
                         
-                        # if the total length becomes zero, then we should remove it.
+                        
                         # sort the supply list
                         #supply_sorted = supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)  # TODO move this element instead of sorting whole list
-                        #self.result += calculate_lca(demand_row.Length, supply_row.Area, is_new=supply_row.Is_new)
+                        
                         logging.debug("---- %s is a match, that results in %s m cut.", supply_tuple.Index, supply_tuple.Length)
                     else:
                         #self.result += calculate_lca(supply_row.Length, supply_row.Area, is_new=supply_row.Is_new)
@@ -295,7 +292,7 @@ class Matching():
         bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
         for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])  
-        #self.result = sum(bipartite_matching.edges()["label"]) #TODO Remove this if new method works.
+        
 
 
     @_matching_decorator
@@ -596,45 +593,31 @@ def run_matching( demand, supply, constraints = None, add_new = True, bipartite 
     # create matching object 
     matching = Matching(demand=demand, supply= supply, constraints=constraints, add_new= add_new, multi = True)
 
-    results = {'Assignment_df': [], 'Score': []} # results to return
+    matches =[] # results to return
     headers = []
     if bipartite:
         matching.match_bipartite_graph()
-        results['Assignment_df'].append(matching.pairs.copy(deep=True))
-        results['Score'].append(matching.result)
-        headers.append('Bipartite')
+        matches.append({'Name': 'Bipartite', 'Match object': copy(matching)})
     
     if greedy_single:
         matching.match_greedy_algorithm(plural_assign=False)
-        results['Assignment_df'].append(matching.pairs.copy(deep=True))
-        results['Score'].append(matching.result)
-        headers.append('Greedy_single')
+        matches.append({'Name': 'Greedy_single','Match object': copy(matching)})
 
     if greedy_plural:
         matching.match_greedy_algorithm(plural_assign=True)
-        results['Assignment_df'].append(matching.pairs.copy(deep=True))
-        results['Score'].append(matching.result)
-        headers.append('Greedy_plural')
+        matches.append({'Name': 'Greedy_plural', 'Match object': copy(matching)})
     
     if milp:
         matching.match_mixed_integer_programming()
-        results['Assignment_df'].append(matching.pairs.copy(deep=True))
-        results['Score'].append(matching.result)
-        headers.append('MILP')
+        matches.append({'Name': 'MILP','Match object': copy(matching)})
 
     if genetic:
         matching.match_genetic_algorithm()
-        results['Assignment_df'].append(matching.pairs.copy(deep=True))
-        results['Score'].append(matching.result)
-        headers.append('Genetic')
+        matches.append({'Name': 'Genetic','Match object': copy(matching)})
     
     #convert list of dfs to single df
-    results['Assignment_df'] = pd.concat(results['Assignment_df'], axis = 1)
-    results['Assignment_df'].columns = headers
 
-    results['Score'] = pd.Series(results['Score'], index = headers).round(2)
-
-    return results
+    return matches
 
 
 # class Elements(pd.DataFrame):

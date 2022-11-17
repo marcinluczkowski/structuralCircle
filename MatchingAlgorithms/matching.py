@@ -124,14 +124,7 @@ class Matching():
         """Execute matrix matching"""
         # add to match_map:
         self.pairs.loc[demand_id, 'Supply_id'] = supply_id
-        # remove already used:
-        # TODO not change the initial incidence...
-        # try:
-        #     self.incidence.drop(demand_id, inplace=True)
-        #     self.incidence.drop(supply_id, axis=1, inplace=True)
-        # except KeyError:
-        #     pass
-
+        
     def add_graph(self):
         """Add a graph notation based on incidence matrix"""
         #FIXME The method assigns new elements to demand items although there should be available old elemements.  
@@ -253,34 +246,40 @@ class Matching():
         supply_sorted = self.supply.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)
 
         min_length = demand_sorted.iloc[-1].Length # the minimum lenght of a demand element
-        for demand_index, demand_row in demand_sorted.iterrows():
+        for demand_tuple in demand_sorted.itertuples():
             match=False
-            logging.debug("-- Attempt to find a match for %s", demand_index)                
-            for supply_index, supply_row in supply_sorted.iterrows():
-                # TODO replace constraints with evalute string
-                if demand_row.Length <= supply_row.Length and demand_row.Area <= supply_row.Area and demand_row.Inertia_moment <= supply_row.Inertia_moment and demand_row.Height <= supply_row.Height:
+            logging.debug("-- Attempt to find a match for %s", demand_tuple.Index)                
+            for supply_tuple in supply_sorted.itertuples():
+                # TODO replace constraints with evalute string                
+                if demand_tuple.Length <= supply_tuple.Length and demand_tuple.Area <= supply_tuple.Area and demand_tuple.Inertia_moment <= supply_tuple.Inertia_moment and demand_tuple.Height <= supply_tuple.Height:
                     match=True
-                    self.add_pair(demand_index, supply_index)
+                    self.add_pair(demand_tuple.Index, supply_tuple.Index)
                 if match:
-                    new_length = supply_row.Length - demand_row.Length
+                    new_length = supply_tuple.Length - demand_tuple.Length
                     if plural_assign and new_length >= min_length:
                         # shorten the supply element:
-                        #supply_row.Length = supply_row.Length - demand_row.Length # this does not do anything to the dataframe?
+                        supply_sorted.loc[supply_tuple.Index, "Length"] = new_length
+                        temp_row = supply_sorted.loc[supply_tuple.Index] #.copy(deep=True)
+                       
+                        supply_sorted.drop(supply_tuple.Index, axis = 0, inplace = True)
+                        new_ind = supply_sorted['Length'].searchsorted(new_length, side = 'left') #get index to insert new row into
+                        part1 = supply_sorted[:new_ind].copy(deep=True)
+                        part2 = supply_sorted[new_ind:].copy(deep=True)
+                        supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).T, part2])
                         
-                        supply_sorted.loc[supply_index, "Length"] = new_length
                         # if the total length becomes zero, then we should remove it.
                         # sort the supply list
-                        supply_sorted = supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)  # TODO move this element instead of sorting whole list
+                        #supply_sorted = supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)  # TODO move this element instead of sorting whole list
                         #self.result += calculate_lca(demand_row.Length, supply_row.Area, is_new=supply_row.Is_new)
-                        logging.debug("---- %s is a match, that results in %s m cut.", supply_index, supply_row.Length)
+                        logging.debug("---- %s is a match, that results in %s m cut.", supply_tuple.Index, supply_tuple.Length)
                     else:
                         #self.result += calculate_lca(supply_row.Length, supply_row.Area, is_new=supply_row.Is_new)
-                        logging.debug("---- %s is a match and will be utilized fully.", supply_index)
-                        supply_sorted.drop(supply_index, inplace = True)
+                        logging.debug("---- %s is a match and will be utilized fully.", supply_tuple.Index)
+                        supply_sorted.drop(supply_tuple.Index, inplace = True)
                     break
                         
             else:
-                logging.debug("---- %s is not matching.", supply_index)
+                logging.debug("---- %s is not matching.", supply_tuple.Index)
 
 
     @_matching_decorator
@@ -595,7 +594,7 @@ def run_matching( demand, supply, constraints = None, add_new = True, bipartite 
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
     # create matching object 
-    matching = Matching(demand=demand, supply= supply, constraints=constraints, add_new= add_new)
+    matching = Matching(demand=demand, supply= supply, constraints=constraints, add_new= add_new, multi = True)
 
     results = {'Assignment_df': [], 'Score': []} # results to return
     headers = []

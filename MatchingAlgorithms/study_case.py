@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 MIN_LENGTH = 1.0 # m
-MAX_LENGTH = 5.0 # m
+MAX_LENGTH = 20.0 # m
 MIN_AREA = 0.05 # m^2
 MAX_AREA = 0.25 # m^2
 
@@ -42,10 +42,10 @@ def create_random_data(demand_count, supply_count, seed = 2):
 
 
 # ========== SCENARIO 1 ============== 
-var1 = 10
+var1 = 0.5
 #d_counts = np.logspace(1, 3, num = 5).astype(int) Use this later when actually testing. Using the below for now to reduce time
-d_counts = np.linspace(10, 50, num = 3).astype(int)
-s_counts = d_counts * var1
+d_counts = np.linspace(10, 500, num = 10).astype(int)
+s_counts = (d_counts * var1).astype(int)
 
 results = [] #list of results for each iteration
 
@@ -55,6 +55,32 @@ for d, s in zip(d_counts, s_counts):
     #create data
     print(f'\n*** Running for {d} demand and {s} supply elements.***\n')
     demand, supply = create_random_data(demand_count=d, supply_count=s)
-    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, milp=True))
+    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, milp=False).copy())
     
-print(type(results))
+n_els = d_counts*s_counts # number of elements for each iteration
+
+time_dict = {res[list(res.keys())[0]] : [] for res in results[0]} # create a dictionary for the time spent running each method with different number of elements
+lca_dict = {res[list(res.keys())[0]] : [] for res in results[0]}
+
+for iteration in results:
+    for method in iteration: # iterate through all methods
+        lca_dict[method['Name']].append(method['Match object'].result) 
+        time_dict[method['Name']].append(method['Match object'].solution_time) 
+
+fig, ax = plt.subplots()
+for key, items in time_dict.items():
+    plt.plot(n_els, items, label = key)
+plt.legend()
+plt.xlabel('Number of elements')
+plt.ylabel('Solution time [s]')
+plt.plot()
+plt.show()
+
+fig, ax = plt.subplots()
+for key, items in lca_dict.items():
+    plt.plot(n_els, items, label = key)
+plt.legend()
+plt.xlabel('Number of elements')
+plt.ylabel('LCA_score')
+plt.plot()
+plt.show()

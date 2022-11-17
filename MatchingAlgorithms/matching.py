@@ -136,14 +136,13 @@ class Matching():
         #FIXME The method assigns new elements to demand items although there should be available old elemements.  
         vertices = [0]*len(self.demand.index) + [1]*len(self.supply.index)
         edges = []
-        weights = []
-        #is_na = self.incidence.isna() #TODO delete this line if the below line works
-        is_na = self.weights.isna()
+        weights = []        
+        is_n = ~self.weights.isna() # get and invert the booleans
         row_inds = np.arange(self.incidence.shape[0]).tolist()
         col_inds = np.arange(len(self.demand.index), len(self.demand.index)+ self.incidence.shape[1]).tolist()
         for i in row_inds:
             combs = list(product([i], col_inds) )
-            mask =  ~is_na.iloc[i] # invert the booleans
+            mask =  is_n.iloc[i] 
             edges.extend( (list(compress(combs, mask) ) ) )
             weights.extend(list(compress(self.weights.iloc[i], mask)))
         weights = max(weights) - np.array(weights)
@@ -223,14 +222,6 @@ class Matching():
             self.calculate_result()
             # After:
             end = time.time()
-            # logging.info("Matched: %s to %s (%s %%) of %s elements using %s, resulting in LCA (GWP): %s kgCO2eq, in: %s sec.",
-            #     len(self.pairs['Supply_id'].unique()),
-            #     self.pairs['Supply_id'].count(),
-            #     100*self.pairs['Supply_id'].count()/len(self.demand),
-            #     self.supply.shape[0],
-            #     func.__name__,
-            #     round(self.result, 2),
-            #     round(end - start,3)
             all_string_series = self.pairs.fillna('nan') # have all entries as string before search
             num_old = len(all_string_series.loc[all_string_series.Supply_id.str.contains('R')].Supply_id.unique())
             num_new = len(all_string_series.loc[all_string_series.Supply_id.str.contains('N')].Supply_id.unique())
@@ -375,7 +366,7 @@ class Matching():
         self.result += 1234 #calculate_lca(supply_row.Length, supply_row.Area, is_new=supply_row.Is_new)
 
     @_matching_decorator
-    def match_mixed_integer_programming(self):
+    def match_mixed_integer_programming_OLD(self):
         """Match using SCIP - Solving Constraint Integer Programs, branch-and-cut algorithm, type of mixed integer programming (MIP)"""
 
         def constraint_inds():
@@ -505,13 +496,13 @@ class Matching():
         return [self.result, self.pairs]
 
     @_matching_decorator
-    def match_cp_solver(self):
+    def match_mixed_integer_programming(self):
         """This method is the same as the previous one, but uses a CP model instead of a MIP model in order to stop at a given number of 
         feasible solutions. """
-
+        #TODO Evaluate if the cost function is the best we can have. 
         # the CP Solver works only on integers. Consequently, all values are multiplied by 1000 before solving the
         m_fac = 10000
-        max_time = 100
+        max_time = 1000
         # --- Create the data needed for the solver ---        
         data = {} # initiate empty dictionary
         data ['lengths'] = (self.demand.Length * m_fac).astype(int)

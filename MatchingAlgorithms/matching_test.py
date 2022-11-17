@@ -3,8 +3,58 @@ import pandas as pd
 import random
 import time
 
-
+# ===== HELPER METHODS =====
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")
+
+def run_matching(demand, supply, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False):
+    """Run selected matching algorithms and returns results for comparison.
+    By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
+    #TODO Can **kwargs be used instead of all these arguments
+    # create matching object 
+    matching = Matching(demand=demand, supply= supply, constraints=constraints, add_new= add_new)
+
+    results = {'Assignment_df': [], 'Score': []} # results to return
+    headers = []
+    if bipartite:
+        matching.match_bipartite_graph()
+        results['Assignment_df'].append(matching.pairs.copy(deep=True))
+        results['Score'].append(matching.result)
+        headers.append('Bipartite')
+    
+    if greedy_single:
+        matching.match_greedy_algorithm(plural_assign=False)
+        results['Assignment_df'].append(matching.pairs.copy(deep=True))
+        results['Score'].append(matching.result)
+        headers.append('Greedy_single')
+
+    if greedy_plural:
+        matching.match_greedy_algorithm(plural_assign=True)
+        results['Assignment_df'].append(matching.pairs.copy(deep=True))
+        results['Score'].append(matching.result)
+        headers.append('Greedy_plural')
+    
+    if milp:
+        matching.match_mixed_integer_programming()
+        results['Assignment_df'].append(matching.pairs.copy(deep=True))
+        results['Score'].append(matching.result)
+        headers.append('MILP')
+
+    if genetic:
+        matching.match_genetic_algorithm()
+        results['Assignment_df'].append(matching.pairs.copy(deep=True))
+        results['Score'].append(matching.result)
+        headers.append('Genetic')
+    
+    #convert list of dfs to single df
+    results['Assignment_df'] = pd.concat(results['Assignment_df'], axis = 1)
+    results['Assignment_df'].columns = headers
+
+    results['Score'] = pd.Series(results['Score'], index = headers).round(2)
+
+    return results
+    
+    
+
 ### Test with just few elements
 
 demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
@@ -36,39 +86,15 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
 print_header("Simple Study Case")
 
-matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
-matching.match_bipartite_graph()
-weight_bi = matching.weights.copy(deep = True).sum().sum()
-pairs_bi = matching.pairs.copy(deep = True)
-
-# matching.display_graph(show_weights=True, graph_type='rows')
-
-matching.match_greedy_algorithm(plural_assign=False)
-weight_g0 = matching.weights.copy(deep = True).sum().sum()
-greedy0 = matching.pairs.copy(deep = True)
-
-matching.match_greedy_algorithm(plural_assign=True)
-weight_g1 = matching.weights.copy(deep = True).sum().sum()
-greedy1 = matching.pairs.copy(deep = True)
-#matching.match_genetic_algorithm()
-#matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
-matching.match_cp_solver()
-weight_cp = matching.weights.copy(deep = True).sum().sum()
-cp = matching.pairs.copy(deep = True)
-#milp = matching.pairs.copy(deep=True)
-
-weight_g1 = matching.weights.copy(deep = True).sum().sum()
-greedy1 = matching.pairs.copy(deep = True)
-#matching.match_mixed_integer_programming() #TODO Make the "pairs" df similar to the other methods, Now it is integers
-#milp = matching.pairs.copy(deep=True)
-# matching.match_genetic_algorithm()
-test = pd.concat([pairs_bi, greedy0, greedy1, cp], axis = 1) # look at how all the assignments are working.
-test.columns = ["Bipartite", "Greedy_single", "Greedy_multiple", "MILP"]
+result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
+            milp=True)
+pairs_simple = result_simple['Assignment_df']
+scores_simple = result_simple['Score']
 
 
 ### Test from JSON files with Slettelokka data 
 print_header("SLETTELØKKA MATCHING")
-matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
+
 
 DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
 SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
@@ -101,34 +127,13 @@ supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
 
 #--- CREATE AND EVALUATE ---
-incidence_shapes = []
-matching = Matching(demand, supply, add_new=True, multi=False, constraints = constraint_dict)
-matching.match_bipartite_graph()
-incidence_shapes.append(matching.incidence.shape)
-weight_bi = matching.weights.copy(deep = True).sum().sum()
-pairs_bi = matching.pairs.copy(deep = True)
+result_slette = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
+            milp=True)
+pairs_slette = result_slette['Assignment_df']
+scores_slette = result_slette['Score']
 
-# matching.display_graph(graph_type='circle', show_weights=False, show_result=True)
 
-matching.match_greedy_algorithm(plural_assign=False)
-weight_g0 = matching.weights.copy(deep = True).sum().sum()
-greedy0 = matching.pairs.copy(deep = True)
-incidence_shapes.append(matching.incidence.shape)
-
-matching.match_greedy_algorithm(plural_assign=True)
-weight_g1 = matching.weights.copy(deep = True).sum().sum()
-greedy1 = matching.pairs.copy(deep = True)
-incidence_shapes.append(matching.incidence.shape)
-
-matching.match_cp_solver()
-"""
-test = pd.concat([pairs_bi, greedy0, greedy1], axis = 1) # look at how all the assignments are working.
-# matching.match_cp_solver()
-# ERROR matching.match_mixed_integer_programming()
-
-"""
-
-### Test with random generated elements
+# ====  Test with randomly generated elements ====
 print_header("RANDOM ELEMENTS n_D = 100, n_S = 200")
 random.seed(3)
 
@@ -154,20 +159,20 @@ supply['Height'] = supply.apply(lambda row: row['Area']**(0.5), axis=1)   # deri
 supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 supply.index = ['R' + str(num) for num in supply.index]
 
-matching = Matching(demand, supply, add_new=True, multi=False)
-matching.match_bipartite_graph()
-matching.match_greedy_algorithm(plural_assign=False)
-matching.match_greedy_algorithm(plural_assign=True)
-matching.match_cp_solver()
-# ERROR matching.match_mixed_integer_programming()
+result_rndm1 = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
+            milp=True)
+pairs_rndm1 = result_rndm1['Assignment_df']
+scores_rndm1 = result_rndm1['Score']
+
+
 
 
 ### Test with random generated elements
-print_header("RANDOM ELEMENTS n_D = 200, n_S = 10000")
+print_header("RANDOM ELEMENTS n_D = 100, n_S = 1000")
 random.seed(3)
 
 DEMAND_COUNT = 100
-SUPPLY_COUNT = 10000
+SUPPLY_COUNT = 1000
 MIN_LENGTH = 1.0
 MAX_LENGTH = 10.0
 MIN_AREA = 0.0025   # 5x5cm
@@ -188,8 +193,8 @@ supply['Height'] = supply.apply(lambda row: row['Area']**(0.5), axis=1)   # deri
 supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 supply.index = ['R' + str(num) for num in supply.index]
 
-matching = Matching(demand, supply, add_new=True, multi=False)
-matching.match_bipartite_graph()
-matching.match_greedy_algorithm(plural_assign=False)
-matching.match_greedy_algorithm(plural_assign=True)
-# ERROR matching.match_mixed_integer_programming()
+result_rndm2 = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
+            milp=True)
+pairs_rndm2 = result_rndm2['Assignment_df']
+scores_rndm2 = result_rndm2['Score']
+

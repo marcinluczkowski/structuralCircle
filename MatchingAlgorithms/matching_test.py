@@ -41,10 +41,10 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 print_header("Simple Study Case")
 
 result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True)
+            milp=True, sci_milp=True)
 
 
-
+"""
 ### Test from JSON files with Slettelokka data 
 print_header("SLETTELØKKA MATCHING")
 
@@ -148,3 +148,4 @@ result_rndm2 = run_matching(demand=demand, supply = supply, constraints=constrai
             milp=True)
 
 
+"""

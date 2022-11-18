@@ -15,6 +15,8 @@ import pygad
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
 
+from scipy.optimize import milp, LinearConstraint, NonlinearConstraint, Bounds
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(levelname)s_%(asctime)s_%(message)s',
@@ -581,12 +583,78 @@ class Matching():
             
     @_matching_decorator
     def match_scipy_milp(self):
-        #TODO Try using scipy for computational speed
+        
+        costs = np.nan_to_num(self.weights.to_numpy(), nan = 0.0).reshape(-1,) # set as 1d array like the variables below
+        # parameters x
+        x_mat = np.zeros(self.weights.shape, dtype= int) # need to flatten this to use scipy
+        x_arr = np.reshape(x_mat, (-1, ))
+        
+        # parameter bounds
+        bounds = Bounds(lb = np.full_like(x_arr, 0), ub = np.full_like(x_arr, 1)) # can modify these later to restrict solutions that we already know are infeasible.
+        lb = np.full_like(x_arr, 0)
+        ub = np.full_like(x_arr, 1)
+        # constraints
+
+        #Try creating a constraints list
+        rows, cols = x_mat.shape
+        A1 = np.zeros((rows, rows*cols))
+        # fill a with ones: 
+        for i in range(rows):
+            A1[i, i*cols : (i+1)*cols] = 1
+        cons = [] # Constraints dictionary
+        
+        max_constr = lambda vec: np.sum(vec)
+        constraints1 = LinearConstraint(A = A1 , lb = 0, ub = 1)
+
+        A2 = np.zeros((cols, rows * cols))
+        demand_lengths = self.demand.Length.to_numpy()
+        constraints2 = LinearConstraint(A = A2, lb = 0, ub = self.supply.Length)
+        for j in range(cols):
+            A2[j, j*rows : (j+1)*rows] = demand_lengths
+
+        constaints2 = LinearConstraint(A = A2, lb = 0, ub = self.supply.Length.to_numpy())
+        """
+        con1 = [{'type' : 'ineq', 'fun' : float(max_constr(x_arr[i : i + rows]) - 1) } for i in range(0, rows*cols - rows + 1, rows)]
+        
+        supply_lengths = self.supply.Length.to_numpy() # lenght of each element in supply_j
+        x_col_flat = np.reshape(x_mat, (-1, ), order = 'F') # flatten the variables column by column
+        demand_lengths = np.reshape(self.demand.Length.to_numpy(), (-1, )) # length of each demand elemen_i
+        cap_con = lambda vec, lengths: vec @ lengths #np.dot(vec, lenghts)
+        
+        con2 = [{'type' : 'ineq', 'fun' : cap_con(x_col_flat[j : j + cols], demand_lengths) - supply_lengths[int(j/cols)] } for j in range(0, rows*cols - cols + 1, cols)]
+
+        constraints = con1 + con2
+        
+        
+        con = lambda vec: np.sum(vec)
+
+        constraints = []
+        
+        for i in range(0, rows*cols - rows + 1, rows):
+            sub_vec = x_arr[i : i+rows]
+            constraints.append(NonlinearConstraint(con(sub_vec), 0, 1)) # the sum of each row cannot exceed one
+
+        # add capacity constraint for each bin
+        bin_lengths = self.supply.Length.to_numpy() # lenght of each element in supply_j
+        demand_lengths = np.reshape(self.demand.Length.to_numpy(), (-1, )) # length of each demand elemen_i
+        con_l = lambda vec, lengths: vec @ lengths #np.dot(vec, lenghts)
+        x_col_flat = np.reshape(x_mat, (-1, ), order = 'F') # flatten the variables column by column
+        
+        for j in range(0, rows*cols - cols +1 , cols):
+            sub_vec = x_col_flat[j : j+cols]
+            constraints.append(NonlinearConstraint(con_l(sub_vec, demand_lengths), 0, bin_lengths[int(i/cols)])) # the total lenght of demand elements cannot exceed the supply length
+        """
+        
+        integrality = np.full_like(x_arr, True)
+        constraints = [constraints1, constaints2]
+        # calculate the result
+        res = milp(c= costs.reshape(-1,) * -1, constraints = constraints, bounds = bounds, integrality = integrality)
+
         pass
       
       
       
-def run_matching( demand, supply, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False):
+def run_matching( demand, supply, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
@@ -611,6 +679,9 @@ def run_matching( demand, supply, constraints = None, add_new = True, bipartite 
         matching.match_mixed_integer_programming()
         matches.append({'Name': 'MILP','Match object': copy(matching)})
 
+    if sci_milp:
+        matching.match_scipy_milp()
+        matches.append({'Name': 'Scipy MILP','Match object': copy(matching)})
     if genetic:
         matching.match_genetic_algorithm()
         matches.append({'Name': 'Genetic','Match object': copy(matching)})

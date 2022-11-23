@@ -36,6 +36,8 @@ demand.loc['D5'] = {'Material': 1, 'Length': 4.00, 'Area': 0.1, 'Inertia_moment'
 
 # create constraint dictionary
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
+# TODO objective_function = "Area * Length * gwp_array"
+
 # TODO add 'Material': '=='
 
 print_header("Simple Study Case")

@@ -17,12 +17,17 @@ def create_random_data(demand_count, supply_count, seed = 2):
     supply = pd.DataFrame()
 
     # create element lenghts
-    demand['Length'] = ((MAX_LENGTH+1) - MIN_LENGTH) * np.random.random_sample(size = demand_count) + MIN_LENGTH
-    supply['Length'] = ((MAX_LENGTH+1) - MIN_LENGTH) * np.random.random_sample(size = supply_count) + MIN_LENGTH
+    demand['Length'] = ((MAX_LENGTH/2 + 1) - MIN_LENGTH) * np.random.random_sample(size = demand_count) + MIN_LENGTH
+    supply['Length'] = ((MAX_LENGTH + 1) - MIN_LENGTH) * np.random.random_sample(size = supply_count) + MIN_LENGTH
 
     # create element areas independent of the length. Can change this back to Artur's method later, but I want to see the effect of even more randomness. 
-    demand['Area'] = ((MAX_AREA+1) - MIN_AREA) * np.random.random_sample(size = demand_count) + MIN_AREA
-    supply['Area'] = ((MAX_AREA+1) - MIN_AREA) * np.random.random_sample(size = supply_count) + MIN_AREA
+    #demand['Area'] = ((MAX_AREA + .001) - MIN_AREA) * np.random.random_sample(size = demand_count) + MIN_AREA
+    #supply['Area'] = ((MAX_AREA + .001) - MIN_AREA) * np.random.random_sample(size = supply_count) + MIN_AREA
+
+    # constraints
+    demand['Area'] = np.full((demand_count,), MIN_AREA)
+    supply['Area'] = np.full((supply_count,), MIN_AREA)
+
 
     # intertia moment
     demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
@@ -55,7 +60,7 @@ for d, s in zip(d_counts, s_counts):
     #create data
     print(f'\n*** Running for {d} demand and {s} supply elements.***\n')
     demand, supply = create_random_data(demand_count=d, supply_count=s)
-    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, add_new = False, sci_milp=False))
+    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, add_new = False, sci_milp=True))
     
 n_els = d_counts*s_counts # number of elements for each iteration
 

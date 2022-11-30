@@ -98,6 +98,8 @@ result_slette = run_matching(demand=demand, supply = supply, constraints=constra
 
 slette_pairs = extract_pairs_df(result_slette)
 print(slette_pairs)
+#Add this comment to seee if it appears in Github desktop
+print("Test if this is registered")
 """
 
 # ====  Test with randomly generated elements ====

@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 MIN_LENGTH = 2 # m
-MAX_LENGTH = 5.0 # m
-MIN_AREA = 0.05 # m^2
+MAX_LENGTH = 15.0 # m
+MIN_AREA = 0.25 # m^2
 MAX_AREA = 0.25 # m^2
 
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
@@ -42,9 +42,9 @@ def create_random_data(demand_count, supply_count, seed = 2):
 
 
 # ========== SCENARIO 1 ============== 
-var1 = 0.5
+var1 = 1
 #d_counts = np.logspace(1, 3, num = 5).astype(int) Use this later when actually testing. Using the below for now to reduce time
-d_counts = np.linspace(10, 30, num = 4).astype(int)
+d_counts = np.linspace(10, 2000, num = 4).astype(int)
 s_counts = (d_counts * var1).astype(int)
 
 results = [] #list of results for each iteration
@@ -55,7 +55,7 @@ for d, s in zip(d_counts, s_counts):
     #create data
     print(f'\n*** Running for {d} demand and {s} supply elements.***\n')
     demand, supply = create_random_data(demand_count=d, supply_count=s)
-    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, add_new = True, milp=True))
+    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, add_new = False, sci_milp=False))
     
 n_els = d_counts*s_counts # number of elements for each iteration
 
@@ -76,6 +76,7 @@ for key, items in time_dict.items():
 plt.legend()
 plt.xlabel('Number of elements')
 plt.ylabel('Solution time [s]')
+plt.yscale('log')
 plt.plot()
 plt.show()
 
@@ -85,5 +86,6 @@ for key, items in lca_dict.items():
 plt.legend()
 plt.xlabel('Number of elements')
 plt.ylabel('LCA_score')
+#plt.yscale('log')
 plt.plot()
 plt.show()

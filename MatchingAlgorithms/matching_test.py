@@ -28,9 +28,9 @@ supply.loc['R4'] = {'Material': 1, 'Length': 5.10, 'Area': 0.041, 'Inertia_momen
 demand.loc['D4'] = {'Material': 1, 'Length': 8.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
 supply.loc['R5'] = {'Material': 1, 'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 # Add supply that can after cut fits perfectly
-demand.loc['D5'] = {'Material': 1, 'Length': 3.50, 'Area': 0.19, 'Inertia_moment':0.0008, 'Height': 0.80}
-demand.loc['D6'] = {'Material': 1, 'Length': 5.50, 'Area': 0.18, 'Inertia_moment':0.00076, 'Height': 0.75}
-supply.loc['R6'] = {'Material': 1, 'Length': 9.00, 'Area': 0.20, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
+#demand.loc['D5'] = {'Material': 1, 'Length': 3.50, 'Area': 0.19, 'Inertia_moment':0.0008, 'Height': 0.80}
+#demand.loc['D6'] = {'Material': 1, 'Length': 5.50, 'Area': 0.18, 'Inertia_moment':0.00076, 'Height': 0.75}
+#supply.loc['R6'] = {'Material': 1, 'Length': 9.00, 'Area': 0.20, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 # Add element that fits the cut from D4 when allowing multiple assignment
 demand.loc['D5'] = {'Material': 1, 'Length': 4.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
 
@@ -40,8 +40,20 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
 print_header("Simple Study Case")
 
-result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
+result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=False,
             milp=True, sci_milp=True)
+
+
+def extract_pairs_df(dict_list):
+    sub_df = []
+    cols = []
+    for run in dict_list:
+        sub_df.append(run['Match object'].pairs)
+        cols.append(run['Name'])
+    df = pd.concat(sub_df, axis = 1)
+    df.columns = cols
+    return df
+simple_pairs = extract_pairs_df(result_simple)
 
 
 """
@@ -81,7 +93,7 @@ supply.Height *=0.01
 
 #--- CREATE AND EVALUATE ---
 result_slette = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True)
+            milp=True, sci_milp = True)
 
 
 
@@ -112,8 +124,7 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 supply.index = ['R' + str(num) for num in supply.index]
 
 result_rndm1 = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True)
-
+            milp=True, sci_milp = True)
 
 
 
@@ -145,7 +156,7 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 supply.index = ['R' + str(num) for num in supply.index]
 
 result_rndm2 = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True)
+            milp=True, sci_milp = True)
 
 
 """

@@ -58,6 +58,9 @@ class Matching():
         self.evaluate()
         self.weight_incidence()
 
+        #calculate LCA of original elements
+        self.demand.eval(f"LCA = Length * Area * {TIMBER_GWP}", inplace = True) #TODO Discuss with Artur where and how to make this more general
+
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
 
     def __copy__(self):
@@ -252,6 +255,13 @@ class Matching():
         #row_inds = np.arange(0, local_pairs.shape[0], 1) # the row inds are the same here and in the weights
         self.result = (self.weights.to_numpy()[row_inds, col_inds]).sum()
 
+        # add the LCA of original elements that are not substituted
+        mask = self.pairs.Supply_id.isna().to_numpy()
+        original_LCA = self.demand.LCA[mask].sum()
+        self.result += original_LCA
+
+
+
     @_matching_decorator
     def match_greedy_algorithm(self, plural_assign=False):
         """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
@@ -259,13 +269,16 @@ class Matching():
         demand_sorted = self.demand.sort_values(by=['Length', 'Area'], axis=0, ascending=False)  #TODO Do a performance test to see which sorting performs the best.
         supply_sorted = self.supply.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)#TODO Switch back to True if not better. 
         incidence_copy = self.incidence.copy(deep = True) #TODO: Try using Numpy instead to see if it is faster.
-
+        #incidence__np = self.incidence.to_numpy(dtype=bool)
+        columns = self.supply.index.to_list()
+        rows = self.demand.index.to_list()
         min_length = demand_sorted.iloc[-1].Length # the minimum lenght of a demand element
-        for demand_tuple in demand_sorted.itertuples():
+        
+        for demand_tuple in demand_sorted.itertuples():            
             match=False
             logging.debug("-- Attempt to find a match for %s", demand_tuple.Index)                
-            for supply_tuple in supply_sorted.itertuples():
-                # TODO replace constraints with evalute string    
+            for supply_tuple in supply_sorted.itertuples():                 
+                #if incidence__np[rows.index(demand_tuple.Index), columns.index(supply_tuple.Index)]:
                 if incidence_copy.loc[demand_tuple.Index, supply_tuple.Index]:            
                     match=True
                     self.add_pair(demand_tuple.Index, supply_tuple.Index)
@@ -284,6 +297,7 @@ class Matching():
                         
                         #TODO Why is this so slow? 
                         new_incidence_col = self.evaluate_column(supply_tuple.Index, new_length, "Length", self.constraints["Length"], incidence_copy.loc[:, supply_tuple.Index])
+                        #incidence__np[:, columns.index(supply_tuple.Index)] = new_incidence_col
                         incidence_copy.loc[:, supply_tuple.Index] = new_incidence_col
                         
                         

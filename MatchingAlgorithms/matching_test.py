@@ -56,7 +56,7 @@ def extract_pairs_df(dict_list):
 simple_pairs = extract_pairs_df(result_simple)
 
 
-"""
+
 ### Test from JSON files with Slettelokka data 
 print_header("SLETTELØKKA MATCHING")
 
@@ -96,6 +96,9 @@ result_slette = run_matching(demand=demand, supply = supply, constraints=constra
             milp=True, sci_milp = True)
 
 
+slette_pairs = extract_pairs_df(result_slette)
+print(slette_pairs)
+"""
 
 # ====  Test with randomly generated elements ====
 print_header("RANDOM ELEMENTS n_D = 100, n_S = 200")

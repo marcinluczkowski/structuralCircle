@@ -1,4 +1,4 @@
-from symbol import term
+#from symbol import term
 from matching import Matching
 import pandas as pd
 import numpy as np

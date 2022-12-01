@@ -31,6 +31,7 @@ class Matching():
     """Class describing the matching problem, with its constituent parts."""
     def __init__(self, demand, supply, add_new=False, multi=False, constraints = {}):
         self.demand = demand.infer_objects()
+
         if add_new:
             # add perfectly matching new elements to supply
             demand_copy = demand.copy(deep = True)
@@ -52,7 +53,6 @@ class Matching():
         self.weights = None
         self.constraints = constraints
         self.solution_time = None
-
                     
         # create incidence and weight for the method
         self.evaluate()
@@ -111,6 +111,8 @@ class Matching():
         """Assign wegihts to elements in the incidence matrix. At the moment only LCA is taken into\
         account. This method should replace the last step in the original evaluate method."""
         start = time.time()
+        
+        # TODO implement constraints
         el_locs0 = np.where(self.incidence) # tuple of rows and columns as list
         el_locs = np.transpose(el_locs0) # array of row-column pairs where incidence matrix is true. 
         areas = self.supply.Area.iloc[el_locs[:, 1]].to_numpy(dtype=float).astype(float) # array of areas 
@@ -120,7 +122,10 @@ class Matching():
         gwp_array = np.where(el_new, gwp, gwp * REUSE_GWP_RATIO)
         #get_gwp = ne.evaluate("gwp if el_new else gwp*REUSE_GWP_RATIO")
         #gwp = [7.28 if tr else ]
-        lca_array = ne.evaluate("areas * lengths * gwp_array")
+
+        # TODO function as an input 
+        lca_array = ne.evaluate("areas * lenghts * gwp_array")
+
        
         
         lca_mat = np.empty(shape = (self.incidence.shape[0], self.incidence.shape[1]))

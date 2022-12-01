@@ -106,7 +106,7 @@ class Matching():
         """
         return bool_column
 
-
+    
     def weight_incidence(self):
         """Assign wegihts to elements in the incidence matrix. At the moment only LCA is taken into\
         account. This method should replace the last step in the original evaluate method."""

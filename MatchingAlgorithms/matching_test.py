@@ -38,13 +38,13 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
 hm.print_header('Simple Study Case')
 
-result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=False, bipartite=False,
-            milp=False, sci_milp=False)
+result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=True,
+            milp=True, sci_milp=True)
 
 
 
 simple_pairs = hm.extract_pairs_df(result_simple)
-
+print(simple_pairs)
 
 
 ### Test from JSON files with Slettelokka data 
@@ -88,8 +88,6 @@ result_slette = run_matching(demand=demand, supply = supply, constraints=constra
 
 slette_pairs = hm.extract_pairs_df(result_slette)
 print(slette_pairs)
-#Add this comment to seee if it appears in Github desktop
-print("Test if this is registered")
 """
 
 # ====  Test with randomly generated elements ====

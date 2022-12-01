@@ -60,7 +60,7 @@ class Matching():
 
         #calculate LCA of original elements
         self.demand.eval(f"LCA = Length * Area * {TIMBER_GWP}", inplace = True) #TODO Discuss with Artur where and how to make this more general
-
+        self.supply.eval(f"LCA = Length * Area * {TIMBER_GWP*REUSE_GWP_RATIO}", inplace = True)
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
 
     def __copy__(self):
@@ -141,17 +141,21 @@ class Matching():
         """Add a graph notation based on incidence matrix"""
         
         vertices = [0]*len(self.demand.index) + [1]*len(self.supply.index)
+        num_rows = len(self.demand.index)
         edges = []
-        weights = []        
-        is_n = ~self.weights.isna() # get and invert the booleans
+        weights = []    
+        #is_n = self.incidence    
+        #is_n = ~self.weights.isna() # get and invert the booleans
         row_inds = np.arange(self.incidence.shape[0]).tolist()
         col_inds = np.arange(len(self.demand.index), len(self.demand.index)+ self.incidence.shape[1]).tolist()
         for i in row_inds:
             combs = list(product([i], col_inds) )
-            mask =  is_n.iloc[i] 
+            mask =  self.incidence.iloc[i] 
             edges.extend( (list(compress(combs, mask) ) ) )
             weights.extend(list(compress(self.weights.iloc[i], mask)))
-        weights = max(weights) - np.array(weights)
+        
+        weights = np.array([self.demand.LCA[edge[0]] for edge in edges ]) - np.array(weights)
+        #weights = max(weights) - np.array(weights)
         graph = ig.Graph.Bipartite(vertices, edges)
         graph.es["label"] = weights
         graph.vs["label"] = list(self.demand.index)+list(self.supply.index) #vertice names
@@ -176,10 +180,11 @@ class Matching():
                 try:
                     target = self.graph.vs.find(label=pair['Supply_id'])
                     edge = self.graph.es.select(_between = ([source.index], [target.index]))
+                    edge_color[edge.indices[0]] = "red"
+                    edge_width[edge.indices[0]] = 2.5
                 except ValueError:
                     not_found+=1
-                edge_color[edge.indices[0]] = "red"
-                edge_width[edge.indices[0]] = 2.5
+                
             if not_found > 0:
                 logging.error("%s elements not found - probably no new elements supplied.", not_found)
         vertex_color = []
@@ -268,35 +273,37 @@ class Matching():
         supply_sorted.index = np.array(range(len(supply_sorted.index)))
 
         #sort the supply and demand
-        demand_sorted.sort_values(by=['Length', 'Area'], axis=0, ascending=False, inplace = True)
-        supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True, inplace = True)
-        incidence_np = self.incidence.values      
+        #demand_sorted.sort_values(by=['Length', 'Area'], axis=0, ascending=False, inplace = True)
+        demand_sorted.sort_values(by=['LCA'], axis=0, ascending=False, inplace = True)
+        #supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True, inplace = True)
+        supply_sorted.sort_values(by=['LCA'], axis=0, ascending=True, inplace = True)
+        incidence_np = self.incidence.copy(deep=True).values      
 
         columns = self.supply.index.to_list()
         rows = self.demand.index.to_list()
-        min_length = demand_sorted.iloc[-1].Length # the minimum lenght of a demand element
+        min_length = self.demand.Length.min() # the minimum lenght of a demand element
         
         for demand_tuple in demand_sorted.itertuples():            
             match=False
             logging.debug("-- Attempt to find a match for %s", demand_tuple.Index)                
             for supply_tuple in supply_sorted.itertuples():                 
-                if incidence_np[demand_tuple.Index,supply_tuple.Index]:
-                #if incidence_copy.values[demand_tuple.Index, supply_tuple.Index]:
-                #if incidence_copy.loc[demand_tuple.Index, supply_tuple.Index]:            
+                if incidence_np[demand_tuple.Index,supply_tuple.Index]:           
                     match=True
                     self.add_pair(rows[demand_tuple.Index], columns[supply_tuple.Index])
                 if match:
                     new_length = supply_tuple.Length - demand_tuple.Length
-                    if plural_assign and new_length >= min_length:
+                    if plural_assign and new_length >= min_length:                    
                         # shorten the supply element:
                         supply_sorted.loc[supply_tuple.Index, "Length"] = new_length
-                        temp_row = supply_sorted.loc[supply_tuple.Index] #.copy(deep=True)
-                       
+                        
+                        temp_row = supply_sorted.loc[supply_tuple.Index].copy(deep=True)
+                        temp_row['LCA'] = temp_row.Length * temp_row.Area * REUSE_GWP_RATIO * TIMBER_GWP
                         supply_sorted.drop(supply_tuple.Index, axis = 0, inplace = True)
-                        new_ind = supply_sorted['Length'].searchsorted(new_length, side = 'left') #get index to insert new row into #TODO Can this be sorted also by 'Area' and any other constraint?
+                        #new_ind = supply_sorted['Length'].searchsorted(new_length, side = 'left') #get index to insert new row into #TODO Can this be sorted also by 'Area' and any other constraint?
+                        new_ind = supply_sorted['LCA'].searchsorted(new_length, side = 'left') #get index to insert new row into #TODO Can this be sorted also by 'Area' and any other constraint?
                         part1 = supply_sorted[:new_ind].copy(deep=True)
                         part2 = supply_sorted[new_ind:].copy(deep=True)
-                        supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).transpose().infer_objects(), part2]) 
+                        supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).transpose().infer_objects(), part2]) #TODO Can we make it simpler
                         
                         new_incidence_col = self.evaluate_column(new_length, "Length", self.constraints['Length'], incidence_np[:, supply_tuple.Index])
                         #new_incidence_col = self.evaluate_column(supply_tuple.Index, new_length, "Length", self.constraints["Length"], incidence_np[:, supply_tuple.Index])
@@ -534,7 +541,7 @@ class Matching():
         #TODO Evaluate if the cost function is the best we can have. 
         # the CP Solver works only on integers. Consequently, all values are multiplied by 1000 before solving the
         m_fac = 10000
-        max_time = 1000
+        max_time = 40
         # --- Create the data needed for the solver ---        
         data = {} # initiate empty dictionary
         data ['lengths'] = (self.demand.Length * m_fac).astype(int)
@@ -552,7 +559,7 @@ class Matching():
 
         #get constraint ids
         #c_inds = constraint_inds()
-        c_inds = np.transpose(np.where(~self.incidence)) # get the position of the element which cannot be used
+        c_inds = np.transpose(np.where(~self.incidence)) # get the position of the substitutions that cannot be used
         
         # create model
         model = cp_model.CpModel()
@@ -583,21 +590,25 @@ class Matching():
             j = int(inds[1])
             model.Add(x[i,j] == 0)
             #model.AddHint(x[i,j], 0)    
-
+        
         # --- Objective ---
         # maximise total inverse of total gwp
         # coefficients
-        coeff_array = self.weights * m_fac
-        coeff_array = coeff_array.replace(np.nan, coeff_array.max().max() * 1000).to_numpy() # play with different values here. 
-        coeff_array = coeff_array.astype(int)
+        coeff_array = self.weights.values * m_fac
+        np.nan_to_num(coeff_array, False, nan = 0.0)
+        #coeff_array = coeff_array.replace(np.nan, coeff_array.max().max() * 1000).to_numpy() # play with different values here. 
+        #coeff_array = coeff_array.astype(int)
+        
         objective = []
         for i in data['all_items']:
             for j in data['all_bins']:
                 objective.append(
-                    cp_model.LinearExpr.Term(x[i,j], 1 / coeff_array[i,j]))
+                    #cp_model.LinearExpr.Term(x[i,j], coeff_array[i,j])
+                    cp_model.LinearExpr.Term(x[i,j], (self.demand.LCA[i]*m_fac - coeff_array[i,j]))
+                    )
                                 
+        #model.Maximize(cp_model.LinearExpr.Sum(objective))
         model.Maximize(cp_model.LinearExpr.Sum(objective))
-        
         # --- Solve ---
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = max_time
@@ -615,12 +626,16 @@ class Matching():
             
     @_matching_decorator
     def match_scipy_milp(self):
-        
+        max_time = 40
         #costs = np.nan_to_num(self.weights.to_numpy(), nan = 0.0).reshape(-1,)*100 # set as 1d array like the variables below
         #initial_gwp = pd.eval('self.demand.Length * self.demand.Area * TIMBER_GWP').sum()
-        costs = self.weights.to_numpy().reshape((-1,)).astype(float) 
-        costs = 1/ costs 
-        np.nan_to_num(costs, copy = False, nan = -110)
+        #costs = self.weights.to_numpy(dtype = float)
+        weights = np.nan_to_num(self.weights.to_numpy().astype(float), nan = 0) 
+        lca = self.demand.Length.to_numpy(dtype = float).reshape((-1,1)) 
+        costs = np.subtract(lca, weights).reshape((-1,))
+        
+        #costs = costs 
+        #np.nan_to_num(costs, copy = False, nan = -110)
         # What should be the costs of assigning an element?
         # parameters x
         x_mat = np.zeros(self.weights.shape, dtype= int) # need to flatten this to use scipy
@@ -658,7 +673,7 @@ class Matching():
         constraints = [constraints1, constraints2]       
        
         # Run optimisation:
-        time_limit = None
+        time_limit = max_time
         options = {'disp':False, 'time_limit': time_limit}
         
         res = milp(c= -costs, constraints = constraints, bounds = bounds, integrality = integrality, options = options)

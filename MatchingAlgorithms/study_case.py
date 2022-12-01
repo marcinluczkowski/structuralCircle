@@ -2,6 +2,7 @@ import matching
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import helper_methods as hm
 
 MIN_LENGTH = 2 # m
 MAX_LENGTH = 15.0 # m
@@ -49,6 +50,7 @@ def create_random_data(demand_count, supply_count, seed = 2):
 # ========== SCENARIO 1 ============== 
 var1 = 1
 #d_counts = np.logspace(1, 3, num = 5).astype(int) Use this later when actually testing. Using the below for now to reduce time
+d_counts = np.linspace(10, 1500, num = 4).astype(int)
 s_counts = (d_counts * var1).astype(int)
 
 results = [] #list of results for each iteration

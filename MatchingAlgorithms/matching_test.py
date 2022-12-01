@@ -44,7 +44,7 @@ result_simple = run_matching(demand=demand, supply = supply, constraints=constra
 
 
 simple_pairs = hm.extract_pairs_df(result_simple)
-
+print(simple_pairs)
 
 
 ### Test from JSON files with Slettelokka data 

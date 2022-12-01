@@ -540,8 +540,8 @@ class Matching():
         feasible solutions. """
         #TODO Evaluate if the cost function is the best we can have. 
         # the CP Solver works only on integers. Consequently, all values are multiplied by 1000 before solving the
-        m_fac = 1000
-        max_time = 100
+        m_fac = 10000
+        max_time = 40
         # --- Create the data needed for the solver ---        
         data = {} # initiate empty dictionary
         data ['lengths'] = (self.demand.Length * m_fac).astype(int)
@@ -626,12 +626,16 @@ class Matching():
             
     @_matching_decorator
     def match_scipy_milp(self):
-        
+        max_time = 40
         #costs = np.nan_to_num(self.weights.to_numpy(), nan = 0.0).reshape(-1,)*100 # set as 1d array like the variables below
         #initial_gwp = pd.eval('self.demand.Length * self.demand.Area * TIMBER_GWP').sum()
-        costs = self.weights.to_numpy().reshape((-1,)).astype(float) 
-        costs = 1/ costs 
-        np.nan_to_num(costs, copy = False, nan = -110)
+        #costs = self.weights.to_numpy(dtype = float)
+        weights = np.nan_to_num(self.weights.to_numpy().astype(float), nan = 0) 
+        lca = self.demand.Length.to_numpy(dtype = float).reshape((-1,1)) 
+        costs = np.subtract(lca, weights).reshape((-1,))
+        
+        #costs = costs 
+        #np.nan_to_num(costs, copy = False, nan = -110)
         # What should be the costs of assigning an element?
         # parameters x
         x_mat = np.zeros(self.weights.shape, dtype= int) # need to flatten this to use scipy
@@ -669,7 +673,7 @@ class Matching():
         constraints = [constraints1, constraints2]       
        
         # Run optimisation:
-        time_limit = None
+        time_limit = max_time
         options = {'disp':False, 'time_limit': time_limit}
         
         res = milp(c= -costs, constraints = constraints, bounds = bounds, integrality = integrality, options = options)

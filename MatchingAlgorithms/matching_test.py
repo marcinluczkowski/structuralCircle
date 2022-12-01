@@ -4,10 +4,7 @@ import random
 import time
 import helper_methods as hm
 
-# ===== HELPER METHODS =====
-print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")
-
-    
+ 
     
 
 ### Test with just few elements
@@ -37,11 +34,9 @@ demand.loc['D5'] = {'Material': 1, 'Length': 4.00, 'Area': 0.1, 'Inertia_moment'
 
 # create constraint dictionary
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
-# TODO objective_function = "Area * Length * gwp_array"
-
 # TODO add 'Material': '=='
 
-print_header("Simple Study Case")
+hm.extract_pairs_df("Simple Study Case")
 
 result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=True,
             milp=True, sci_milp=True)
@@ -53,7 +48,7 @@ simple_pairs = hm.extract_pairs_df(result_simple)
 
 
 ### Test from JSON files with Slettelokka data 
-print_header("SLETTELØKKA MATCHING")
+hm.print_header("SLETTELØKKA MATCHING")
 
 
 DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
@@ -91,14 +86,14 @@ result_slette = run_matching(demand=demand, supply = supply, constraints=constra
             milp=True, sci_milp = True)
 
 
-slette_pairs = extract_pairs_df(result_slette)
+slette_pairs = hm.extract_pairs_df(result_slette)
 print(slette_pairs)
 #Add this comment to seee if it appears in Github desktop
 print("Test if this is registered")
 """
 
 # ====  Test with randomly generated elements ====
-print_header("RANDOM ELEMENTS n_D = 100, n_S = 200")
+hm.print_header("RANDOM ELEMENTS n_D = 100, n_S = 200")
 random.seed(3)
 
 DEMAND_COUNT = 100
@@ -130,7 +125,7 @@ result_rndm1 = run_matching(demand=demand, supply = supply, constraints=constrai
 
 
 ### Test with random generated elements
-print_header("RANDOM ELEMENTS n_D = 100, n_S = 1000")
+hm.print_header("RANDOM ELEMENTS n_D = 100, n_S = 1000")
 random.seed(3)
 
 DEMAND_COUNT = 100

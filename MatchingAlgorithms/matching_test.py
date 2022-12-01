@@ -36,10 +36,10 @@ demand.loc['D5'] = {'Material': 1, 'Length': 4.00, 'Area': 0.1, 'Inertia_moment'
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 # TODO add 'Material': '=='
 
-hm.extract_pairs_df("Simple Study Case")
+hm.print_header('Simple Study Case')
 
-result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=True,
-            milp=True, sci_milp=True)
+result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=False, bipartite=False,
+            milp=False, sci_milp=False)
 
 
 

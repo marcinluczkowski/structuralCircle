@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import helper_methods as hm
 
-MIN_LENGTH = 2 # m
+MIN_LENGTH = 4 # m
 MAX_LENGTH = 15.0 # m
-MIN_AREA = 0.25 # m^2
+MIN_AREA = 0.15 # m^2
 MAX_AREA = 0.25 # m^2
 
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
@@ -22,12 +22,12 @@ def create_random_data(demand_count, supply_count, seed = 2):
     supply['Length'] = ((MAX_LENGTH + 1) - MIN_LENGTH) * np.random.random_sample(size = supply_count) + MIN_LENGTH
 
     # create element areas independent of the length. Can change this back to Artur's method later, but I want to see the effect of even more randomness. 
-    #demand['Area'] = ((MAX_AREA + .001) - MIN_AREA) * np.random.random_sample(size = demand_count) + MIN_AREA
-    #supply['Area'] = ((MAX_AREA + .001) - MIN_AREA) * np.random.random_sample(size = supply_count) + MIN_AREA
+    demand['Area'] = ((MAX_AREA + .001) - MIN_AREA) * np.random.random_sample(size = demand_count) + MIN_AREA
+    supply['Area'] = ((MAX_AREA + .001) - MIN_AREA) * np.random.random_sample(size = supply_count) + MIN_AREA
 
     # constraints
-    demand['Area'] = np.full((demand_count,), MIN_AREA)
-    supply['Area'] = np.full((supply_count,), MIN_AREA)
+    #demand['Area'] = np.full((demand_count,), MIN_AREA)
+    #supply['Area'] = np.full((supply_count,), MIN_AREA)
 
 
     # intertia moment
@@ -50,7 +50,7 @@ def create_random_data(demand_count, supply_count, seed = 2):
 # ========== SCENARIO 1 ============== 
 var1 = 1
 #d_counts = np.logspace(1, 3, num = 5).astype(int) Use this later when actually testing. Using the below for now to reduce time
-d_counts = np.linspace(10, 1500, num = 4).astype(int)
+d_counts = np.linspace(10, 2500, num = 8).astype(int)
 s_counts = (d_counts * var1).astype(int)
 
 results = [] #list of results for each iteration
@@ -61,7 +61,8 @@ for d, s in zip(d_counts, s_counts):
     #create data
     print(f'\n*** Running for {d} demand and {s} supply elements.***\n')
     demand, supply = create_random_data(demand_count=d, supply_count=s)
-    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, add_new = False, sci_milp=False))
+    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, add_new = False, sci_milp=False, greedy_single=True, bipartite=True))
+    
     
 n_els = d_counts*s_counts # number of elements for each iteration
 

@@ -90,21 +90,13 @@ class Matching():
         end = time.time()
         logging.info("Create incidence matrix from constraints: %s sec", round(end - start,3))
 
-    def evaluate_column(self, col_name, supply_val, parameter, compare, current_bool):
+    def evaluate_column(self, supply_val, parameter, compare, current_bool):
         """Evaluates a column in the incidence matrix according to the constraints
             Returns a np array that can substitute the input column."""
         demand_array = self.demand[parameter].to_numpy(dtype = float) # array of demand parameters to evaluate. 
         compare_array = ne.evaluate(f"{supply_val} {compare} demand_array")        
         return ne.evaluate("current_bool & compare_array")
-        """
-        bool_column = np.full((self.demand.shape[0],), True) # Initial true list
-        for key, val in self.constraints.items(): # iterate through the constraints dictionary
-            demand_array = self.demand[key].to_numpy(dtype = float)
-            supply_val = self.supply.loc[col_name,key]
-            compare_array = ne.evaluate(f"{supply_val} {val} demand_array")
-            bool_column = ne.evaluate("bool_column & compare_array")
-        """
-        return bool_column
+        
 
     
     def weight_incidence(self):
@@ -123,7 +115,7 @@ class Matching():
         #get_gwp = ne.evaluate("gwp if el_new else gwp*REUSE_GWP_RATIO")
         #gwp = [7.28 if tr else ]
         # TODO function as an input 
-        lca_array = ne.evaluate("areas * lenghts * gwp_array")
+        lca_array = ne.evaluate("areas * lengths * gwp_array")
        
         
         lca_mat = np.empty(shape = (self.incidence.shape[0], self.incidence.shape[1]))
@@ -269,10 +261,17 @@ class Matching():
     def match_greedy_algorithm(self, plural_assign=False):
         """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
         # TODO consider opposite sorting (as we did in Gh), small chance but better result my occur
-        demand_sorted = self.demand.sort_values(by=['Length', 'Area'], axis=0, ascending=False)  #TODO Do a performance test to see which sorting performs the best.
-        supply_sorted = self.supply.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)#TODO Switch back to True if not better. 
-        incidence_copy = self.incidence.copy(deep = True) #TODO: Try using Numpy instead to see if it is faster.
-        #incidence__np = self.incidence.to_numpy(dtype=bool)
+        demand_sorted = self.demand.copy(deep =True)
+        supply_sorted = self.supply.copy(deep =True)
+        #Change indices to integers for both demand and supply
+        demand_sorted.index = np.array(range(len(demand_sorted.index)))
+        supply_sorted.index = np.array(range(len(supply_sorted.index)))
+
+        #sort the supply and demand
+        demand_sorted.sort_values(by=['Length', 'Area'], axis=0, ascending=False, inplace = True)
+        supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True, inplace = True)
+        incidence_np = self.incidence.values      
+
         columns = self.supply.index.to_list()
         rows = self.demand.index.to_list()
         min_length = demand_sorted.iloc[-1].Length # the minimum lenght of a demand element
@@ -281,10 +280,11 @@ class Matching():
             match=False
             logging.debug("-- Attempt to find a match for %s", demand_tuple.Index)                
             for supply_tuple in supply_sorted.itertuples():                 
-                #if incidence__np[rows.index(demand_tuple.Index), columns.index(supply_tuple.Index)]:
-                if incidence_copy.loc[demand_tuple.Index, supply_tuple.Index]:            
+                if incidence_np[demand_tuple.Index,supply_tuple.Index]:
+                #if incidence_copy.values[demand_tuple.Index, supply_tuple.Index]:
+                #if incidence_copy.loc[demand_tuple.Index, supply_tuple.Index]:            
                     match=True
-                    self.add_pair(demand_tuple.Index, supply_tuple.Index)
+                    self.add_pair(rows[demand_tuple.Index], columns[supply_tuple.Index])
                 if match:
                     new_length = supply_tuple.Length - demand_tuple.Length
                     if plural_assign and new_length >= min_length:
@@ -298,11 +298,12 @@ class Matching():
                         part2 = supply_sorted[new_ind:].copy(deep=True)
                         supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).transpose().infer_objects(), part2]) 
                         
-                        #TODO Why is this so slow? 
-                        new_incidence_col = self.evaluate_column(supply_tuple.Index, new_length, "Length", self.constraints["Length"], incidence_copy.loc[:, supply_tuple.Index])
+                        new_incidence_col = self.evaluate_column(new_length, "Length", self.constraints['Length'], incidence_np[:, supply_tuple.Index])
+                        #new_incidence_col = self.evaluate_column(supply_tuple.Index, new_length, "Length", self.constraints["Length"], incidence_np[:, supply_tuple.Index])
                         #incidence__np[:, columns.index(supply_tuple.Index)] = new_incidence_col
-                        incidence_copy.loc[:, supply_tuple.Index] = new_incidence_col
-                        
+
+                        #incidence_copy.loc[:, columns[supply_tuple.Index]] = new_incidence_col #TODO If i get the indicies to work. Try using this as an np array instead of df.
+                        incidence_np[:,supply_tuple.Index] = new_incidence_col
                         
                         logging.debug("---- %s is a match, that results in %s m cut.", supply_tuple.Index, supply_tuple.Length)
                     else:

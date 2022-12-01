@@ -2,6 +2,7 @@ from matching import Matching, run_matching #, TIMBER_GWP, REUSE_GWP_RATIO
 import pandas as pd
 import random
 import time
+import helper_methods as hm
 
 # ===== HELPER METHODS =====
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")
@@ -28,9 +29,9 @@ supply.loc['R4'] = {'Material': 1, 'Length': 5.10, 'Area': 0.041, 'Inertia_momen
 demand.loc['D4'] = {'Material': 1, 'Length': 8.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
 supply.loc['R5'] = {'Material': 1, 'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 # Add supply that can after cut fits perfectly
-demand.loc['D5'] = {'Material': 1, 'Length': 3.50, 'Area': 0.19, 'Inertia_moment':0.0008, 'Height': 0.80}
-demand.loc['D6'] = {'Material': 1, 'Length': 5.50, 'Area': 0.18, 'Inertia_moment':0.00076, 'Height': 0.75}
-supply.loc['R6'] = {'Material': 1, 'Length': 9.00, 'Area': 0.20, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
+#demand.loc['D5'] = {'Material': 1, 'Length': 3.50, 'Area': 0.19, 'Inertia_moment':0.0008, 'Height': 0.80}
+#demand.loc['D6'] = {'Material': 1, 'Length': 5.50, 'Area': 0.18, 'Inertia_moment':0.00076, 'Height': 0.75}
+#supply.loc['R6'] = {'Material': 1, 'Length': 9.00, 'Area': 0.20, 'Inertia_moment':0.0008, 'Height': 0.8, 'Is_new':False}
 # Add element that fits the cut from D4 when allowing multiple assignment
 demand.loc['D5'] = {'Material': 1, 'Length': 4.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50}
 
@@ -42,8 +43,12 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
 print_header("Simple Study Case")
 
-result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True)
+result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=True,
+            milp=True, sci_milp=True)
+
+
+
+simple_pairs = hm.extract_pairs_df(result_simple)
 
 
 
@@ -83,9 +88,14 @@ supply.Height *=0.01
 
 #--- CREATE AND EVALUATE ---
 result_slette = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True)
+            milp=True, sci_milp = True)
 
 
+slette_pairs = extract_pairs_df(result_slette)
+print(slette_pairs)
+#Add this comment to seee if it appears in Github desktop
+print("Test if this is registered")
+"""
 
 # ====  Test with randomly generated elements ====
 print_header("RANDOM ELEMENTS n_D = 100, n_S = 200")
@@ -114,8 +124,7 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 supply.index = ['R' + str(num) for num in supply.index]
 
 result_rndm1 = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True)
-
+            milp=True, sci_milp = True)
 
 
 
@@ -147,6 +156,7 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 supply.index = ['R' + str(num) for num in supply.index]
 
 result_rndm2 = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True)
+            milp=True, sci_milp = True)
 
 
+"""

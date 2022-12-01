@@ -14,6 +14,7 @@ import pandas as pd
 import pygad
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
+from scipy.optimize import milp, LinearConstraint, NonlinearConstraint, Bounds
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,8 +30,8 @@ REUSE_GWP_RATIO = 0.1  # 0.0778
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
     def __init__(self, demand, supply, add_new=False, multi=False, constraints = {}):
-        self.demand = demand
-        # TODO calculate new elements first, and not add them to supply bank.
+        self.demand = demand.infer_objects()
+
         if add_new:
             # add perfectly matching new elements to supply
             demand_copy = demand.copy(deep = True)
@@ -40,10 +41,10 @@ class Matching():
                 demand_copy.rename(index=dict(zip(demand.index.values.tolist(), [sub.replace('D', 'N') for sub in demand.index.values.tolist()] )), inplace=True)
             except AttributeError:
                 pass
-            self.supply = pd.concat((supply, demand_copy), ignore_index=False)
+            self.supply = pd.concat((supply, demand_copy), ignore_index=False).infer_objects()
             
         else:
-            self.supply = supply
+            self.supply = supply.infer_objects()
         self.multi = multi
         self.graph = None
         self.result = None  #saves latest result of the matching
@@ -57,6 +58,9 @@ class Matching():
         self.evaluate()
         self.weight_incidence()
 
+        #calculate LCA of original elements
+        self.demand.eval(f"LCA = Length * Area * {TIMBER_GWP}", inplace = True) #TODO Discuss with Artur where and how to make this more general
+
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
 
     def __copy__(self):
@@ -69,7 +73,7 @@ class Matching():
         """Populates incidence matrix with true values where the element fit constraint criteria"""    
         # TODO optimize the evaluation.
         # TODO add 'Distance' 'Price' 'Material' 'Density' 'Imperfections' 'Is_column' 'Utilisation' 'Group' 'Quality' 'Max_height' ?
-        
+        #TODO Create standalone method for evaluating one column Rj of the incidence matrix. Need this for cutoffs in greedy algorithm as well. 
         start = time.time()
         bool_array = np.full((self.demand.shape[0], self.supply.shape[0]), True) # initiate empty array
         for param, compare in self.constraints.items():
@@ -81,10 +85,26 @@ class Matching():
             cond_array = np.column_stack(cond_list) #create new 2D-array of conditionals
             bool_array = ne.evaluate("cond_array & bool_array") # 
             #bool_array = np.logical_and(bool_array, cond_array)
+        
         self.incidence = pd.DataFrame(bool_array, columns= self.incidence.columns, index= self.incidence.index)
         end = time.time()
         logging.info("Create incidence matrix from constraints: %s sec", round(end - start,3))
 
+    def evaluate_column(self, col_name, supply_val, parameter, compare, current_bool):
+        """Evaluates a column in the incidence matrix according to the constraints
+            Returns a np array that can substitute the input column."""
+        demand_array = self.demand[parameter].to_numpy(dtype = float) # array of demand parameters to evaluate. 
+        compare_array = ne.evaluate(f"{supply_val} {compare} demand_array")        
+        return ne.evaluate("current_bool & compare_array")
+        """
+        bool_column = np.full((self.demand.shape[0],), True) # Initial true list
+        for key, val in self.constraints.items(): # iterate through the constraints dictionary
+            demand_array = self.demand[key].to_numpy(dtype = float)
+            supply_val = self.supply.loc[col_name,key]
+            compare_array = ne.evaluate(f"{supply_val} {val} demand_array")
+            bool_column = ne.evaluate("bool_column & compare_array")
+        """
+        return bool_column
 
 
     def weight_incidence(self):
@@ -95,15 +115,17 @@ class Matching():
         # TODO implement constraints
         el_locs0 = np.where(self.incidence) # tuple of rows and columns as list
         el_locs = np.transpose(el_locs0) # array of row-column pairs where incidence matrix is true. 
-        areas = self.supply.Area.iloc[el_locs[:, 1]].to_list() # array of areas 
-        lenghts = self.demand.Length.iloc[el_locs[:, 0]].to_list() # array of element lenghts
-        el_new = self.supply.Is_new.iloc[el_locs[:,1]].to_list() # array of booleans for element condition.  
+        areas = self.supply.Area.iloc[el_locs[:, 1]].to_numpy(dtype=float).astype(float) # array of areas 
+        lengths = self.demand.Length.iloc[el_locs[:, 0]].to_numpy(dtype=float).astype(float) # array of element lenghts
+        el_new = self.supply.Is_new.iloc[el_locs[:,1]].to_numpy(dtype=float).astype(bool) # array of booleans for element condition.  
         gwp = TIMBER_GWP
         gwp_array = np.where(el_new, gwp, gwp * REUSE_GWP_RATIO)
         #get_gwp = ne.evaluate("gwp if el_new else gwp*REUSE_GWP_RATIO")
         #gwp = [7.28 if tr else ]
+
         # TODO function as an input 
         lca_array = ne.evaluate("areas * lenghts * gwp_array")
+
        
         
         lca_mat = np.empty(shape = (self.incidence.shape[0], self.incidence.shape[1]))
@@ -238,20 +260,31 @@ class Matching():
         #row_inds = np.arange(0, local_pairs.shape[0], 1) # the row inds are the same here and in the weights
         self.result = (self.weights.to_numpy()[row_inds, col_inds]).sum()
 
+        # add the LCA of original elements that are not substituted
+        mask = self.pairs.Supply_id.isna().to_numpy()
+        original_LCA = self.demand.LCA[mask].sum()
+        self.result += original_LCA
+
+
+
     @_matching_decorator
     def match_greedy_algorithm(self, plural_assign=False):
         """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
         # TODO consider opposite sorting (as we did in Gh), small chance but better result my occur
-        demand_sorted = self.demand.sort_values(by=['Length', 'Area'], axis=0, ascending=False)
-        supply_sorted = self.supply.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)
-
+        demand_sorted = self.demand.sort_values(by=['Length', 'Area'], axis=0, ascending=False)  #TODO Do a performance test to see which sorting performs the best.
+        supply_sorted = self.supply.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)#TODO Switch back to True if not better. 
+        incidence_copy = self.incidence.copy(deep = True) #TODO: Try using Numpy instead to see if it is faster.
+        #incidence__np = self.incidence.to_numpy(dtype=bool)
+        columns = self.supply.index.to_list()
+        rows = self.demand.index.to_list()
         min_length = demand_sorted.iloc[-1].Length # the minimum lenght of a demand element
-        for demand_tuple in demand_sorted.itertuples():
+        
+        for demand_tuple in demand_sorted.itertuples():            
             match=False
             logging.debug("-- Attempt to find a match for %s", demand_tuple.Index)                
-            for supply_tuple in supply_sorted.itertuples():
-                # TODO replace constraints with evalute string                
-                if demand_tuple.Length <= supply_tuple.Length and demand_tuple.Area <= supply_tuple.Area and demand_tuple.Inertia_moment <= supply_tuple.Inertia_moment and demand_tuple.Height <= supply_tuple.Height:
+            for supply_tuple in supply_sorted.itertuples():                 
+                #if incidence__np[rows.index(demand_tuple.Index), columns.index(supply_tuple.Index)]:
+                if incidence_copy.loc[demand_tuple.Index, supply_tuple.Index]:            
                     match=True
                     self.add_pair(demand_tuple.Index, supply_tuple.Index)
                 if match:
@@ -262,14 +295,16 @@ class Matching():
                         temp_row = supply_sorted.loc[supply_tuple.Index] #.copy(deep=True)
                        
                         supply_sorted.drop(supply_tuple.Index, axis = 0, inplace = True)
-                        new_ind = supply_sorted['Length'].searchsorted(new_length, side = 'left') #get index to insert new row into
+                        new_ind = supply_sorted['Length'].searchsorted(new_length, side = 'left') #get index to insert new row into #TODO Can this be sorted also by 'Area' and any other constraint?
                         part1 = supply_sorted[:new_ind].copy(deep=True)
                         part2 = supply_sorted[new_ind:].copy(deep=True)
-                        supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).T, part2]) # FIXME this gives "FUTURE Warning about Dtype... Fix"
+                        supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).transpose().infer_objects(), part2]) 
                         
+                        #TODO Why is this so slow? 
+                        new_incidence_col = self.evaluate_column(supply_tuple.Index, new_length, "Length", self.constraints["Length"], incidence_copy.loc[:, supply_tuple.Index])
+                        #incidence__np[:, columns.index(supply_tuple.Index)] = new_incidence_col
+                        incidence_copy.loc[:, supply_tuple.Index] = new_incidence_col
                         
-                        # sort the supply list
-                        #supply_sorted = supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True)  # TODO move this element instead of sorting whole list
                         
                         logging.debug("---- %s is a match, that results in %s m cut.", supply_tuple.Index, supply_tuple.Length)
                     else:
@@ -280,7 +315,6 @@ class Matching():
                         
             else:
                 logging.debug("---- %s is not matching.", supply_tuple.Index)
-
 
     @_matching_decorator
     def match_bipartite_graph(self):
@@ -296,8 +330,6 @@ class Matching():
         for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])  
         
-
-
     @_matching_decorator
     def match_genetic_algorithm(self):
         """Match using Evolutionary/Genetic Algorithm"""
@@ -584,12 +616,72 @@ class Matching():
             
     @_matching_decorator
     def match_scipy_milp(self):
-        #TODO Try using scipy for computational speed
-        pass
+        
+        #costs = np.nan_to_num(self.weights.to_numpy(), nan = 0.0).reshape(-1,)*100 # set as 1d array like the variables below
+        #initial_gwp = pd.eval('self.demand.Length * self.demand.Area * TIMBER_GWP').sum()
+        costs = self.weights.to_numpy().reshape((-1,)).astype(float) 
+        costs = 1/ costs 
+        np.nan_to_num(costs, copy = False, nan = -110)
+        # What should be the costs of assigning an element?
+        # parameters x
+        x_mat = np.zeros(self.weights.shape, dtype= int) # need to flatten this to use scipy
+        x_arr = np.reshape(x_mat, (-1, ))
+        
+        # parameter bounds
+        lb = np.full_like(x_arr, 0)
+        ub = np.where(self.weights.isna().to_numpy().reshape((-1,)), 0 ,1)
+        bounds = Bounds(lb = lb, ub = ub)#, ub = np.full_like(x_arr, 1)) # can modify these later to restrict solutions that we already know are infeasible.
+        
+        
+        # constraints
+
+        #Try creating a constraints list
+        rows, cols = x_mat.shape
+        A1 = np.zeros((rows, rows*cols))
+        # fill a with ones: 
+        for i in range(rows):
+            A1[i, i*cols : (i+1)*cols] = 1
+        cons = [] # Constraints dictionary
+        
+        max_constr = lambda vec: np.sum(vec)
+        constraints1 = LinearConstraint(A = A1 , lb = 0, ub = 1)
+
+        A2 = np.zeros((cols, rows * cols))
+        demand_lengths = self.demand.Length.to_numpy()
+        #constraints2 = LinearConstraint(A = A2, lb = 0, ub = self.supply.Length)
+        for j in range(cols):
+            A2[j, j::cols] = demand_lengths
+            #A2[j, j*rows : (j+1)*rows] = demand_lengths
+
+        constraints2 = LinearConstraint(A = A2, lb = 0., ub = self.supply.Length.to_numpy())
+                       
+        integrality = np.full_like(x_arr, True)
+        constraints = [constraints1, constraints2]       
+       
+        # Run optimisation:
+        time_limit = None
+        options = {'disp':False, 'time_limit': time_limit}
+        
+        res = milp(c= -costs, constraints = constraints, bounds = bounds, integrality = integrality, options = options)
+        #res = milp(c= -np.ones_like(x_arr), constraints = constraints, bounds = bounds, integrality = integrality, options = options)
+        # ======= POST PROCESS ===========
+        assigment_array = res.x.reshape(rows, cols)
+        demand_ind, supply_ind = np.where(assigment_array == 1)
+
+        demand_id = self.demand.index[demand_ind]
+        supply_id = self.supply.index[supply_ind]
+
+        self.pairs.loc[demand_id] = supply_id.to_numpy().reshape((-1,1))
+
+        # Create dataframe to see if constraints are kept. 
+        #capacity_df = pd.concat([self.pairs, self.demand.Length], axis = 1).groupby('Supply_id').sum()
+        #compare_df = capacity_df.join(self.supply.Length, how = 'inner', lsuffix = ' Assigned', rsuffix = ' Capacity')
+        #compare_df['OK'] = np.where(compare_df['Length Assigned'] <= compare_df['Length Capacity'], True, False)
+        
       
       
       
-def run_matching( demand, supply, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False):
+def run_matching( demand, supply, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
@@ -614,6 +706,9 @@ def run_matching( demand, supply, constraints = None, add_new = True, bipartite 
         matching.match_mixed_integer_programming()
         matches.append({'Name': 'MILP','Match object': copy(matching)})
 
+    if sci_milp:
+        matching.match_scipy_milp()
+        matches.append({'Name': 'Scipy MILP','Match object': copy(matching)})
     if genetic:
         matching.match_genetic_algorithm()
         matches.append({'Name': 'Genetic','Match object': copy(matching)})

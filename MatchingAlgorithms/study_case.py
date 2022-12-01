@@ -64,7 +64,7 @@ for d, s in zip(d_counts, s_counts):
     results.append(matching.run_matching(demand, supply, constraints = constraint_dict, add_new = False, sci_milp=False, greedy_single=True, bipartite=True))
     
     
-n_els = d_counts*s_counts # number of elements for each iteration
+n_els = d_counts+s_counts # number of elements for each iteration
 
 time_dict = {res[list(res.keys())[0]] : [] for res in results[0]} # create a dictionary for the time spent running each method with different number of elements
 lca_dict = {res[list(res.keys())[0]] : [] for res in results[0]}

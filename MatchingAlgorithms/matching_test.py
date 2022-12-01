@@ -2,6 +2,7 @@ from matching import Matching, run_matching #, TIMBER_GWP, REUSE_GWP_RATIO
 import pandas as pd
 import random
 import time
+import helper_methods as hm
 
 # ===== HELPER METHODS =====
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")
@@ -44,16 +45,8 @@ result_simple = run_matching(demand=demand, supply = supply, constraints=constra
             milp=True, sci_milp=True)
 
 
-def extract_pairs_df(dict_list):
-    sub_df = []
-    cols = []
-    for run in dict_list:
-        sub_df.append(run['Match object'].pairs)
-        cols.append(run['Name'])
-    df = pd.concat(sub_df, axis = 1)
-    df.columns = cols
-    return df
-simple_pairs = extract_pairs_df(result_simple)
+
+simple_pairs = hm.extract_pairs_df(result_simple)
 
 
 

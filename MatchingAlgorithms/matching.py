@@ -29,7 +29,7 @@ REUSE_GWP_RATIO = 0.1  # 0.0778
 
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
-    def __init__(self, demand, supply, add_new=False, multi=False, constraints = {}):
+    def __init__(self, demand, supply, add_new=False, multi=False, constraints = {}, solution_limit = 60):
         self.demand = demand.infer_objects()
         # TODO calculate new elements first, and not add them to supply bank.
         if add_new:
@@ -53,7 +53,7 @@ class Matching():
         self.weights = None
         self.constraints = constraints
         self.solution_time = None
-                    
+        self.solution_limit = solution_limit           
         # create incidence and weight for the method
         self.evaluate()
         self.weight_incidence()
@@ -541,7 +541,7 @@ class Matching():
         #TODO Evaluate if the cost function is the best we can have. 
         # the CP Solver works only on integers. Consequently, all values are multiplied by 1000 before solving the
         m_fac = 10000
-        max_time = 40
+        max_time = self.solution_limit
         # --- Create the data needed for the solver ---        
         data = {} # initiate empty dictionary
         data ['lengths'] = (self.demand.Length * m_fac).astype(int)
@@ -626,7 +626,7 @@ class Matching():
             
     @_matching_decorator
     def match_scipy_milp(self):
-        max_time = 40
+        max_time = self.solution_limit
         #costs = np.nan_to_num(self.weights.to_numpy(), nan = 0.0).reshape(-1,)*100 # set as 1d array like the variables below
         #initial_gwp = pd.eval('self.demand.Length * self.demand.Area * TIMBER_GWP').sum()
         #costs = self.weights.to_numpy(dtype = float)

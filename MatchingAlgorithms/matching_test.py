@@ -46,7 +46,7 @@ result_simple = run_matching(demand=demand, supply = supply, constraints=constra
 simple_pairs = hm.extract_pairs_df(result_simple)
 print(simple_pairs)
 
-
+"""
 ### Test from JSON files with Slettelokka data 
 hm.print_header("SLETTELØKKA MATCHING")
 
@@ -88,6 +88,7 @@ result_slette = run_matching(demand=demand, supply = supply, constraints=constra
 
 slette_pairs = hm.extract_pairs_df(result_slette)
 print(slette_pairs)
+
 """
 
 # ====  Test with randomly generated elements ====
@@ -117,17 +118,17 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 supply.index = ['R' + str(num) for num in supply.index]
 
 result_rndm1 = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True, sci_milp = True)
+            milp=True, sci_milp = False)
 
 
 
 
 ### Test with random generated elements
-hm.print_header("RANDOM ELEMENTS n_D = 100, n_S = 1000")
+hm.print_header("RANDOM ELEMENTS n_D = 200, n_S = 200")
 random.seed(3)
 
-DEMAND_COUNT = 100
-SUPPLY_COUNT = 1000
+DEMAND_COUNT = 200
+SUPPLY_COUNT = 200
 MIN_LENGTH = 1.0
 MAX_LENGTH = 10.0
 MIN_AREA = 0.0025   # 5x5cm
@@ -149,7 +150,6 @@ supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 supply.index = ['R' + str(num) for num in supply.index]
 
 result_rndm2 = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True, sci_milp = True)
+            milp=True, sci_milp = False)
 
 
-"""

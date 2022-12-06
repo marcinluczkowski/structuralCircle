@@ -631,8 +631,7 @@ class Matching():
         #initial_gwp = pd.eval('self.demand.Length * self.demand.Area * TIMBER_GWP').sum()
         #costs = self.weights.to_numpy(dtype = float)
         weights = np.nan_to_num(self.weights.to_numpy().astype(float), nan = 0) 
-        lca = self.demand.Length.to_numpy(dtype = float).reshape((-1,1)) 
-        costs = np.subtract(lca, weights).reshape((-1,))
+        costs = np.subtract(self.demand.Length.to_numpy(dtype = float).reshape((-1,1)) , weights).reshape((-1,))
         
         #costs = costs 
         #np.nan_to_num(costs, copy = False, nan = -110)

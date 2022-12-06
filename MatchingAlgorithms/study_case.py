@@ -48,9 +48,9 @@ def create_random_data(demand_count, supply_count, seed = 2):
 
 
 # ========== SCENARIO 1 ============== 
-var1 = 0.5
+var1 = 1
 #d_counts = np.logspace(1, 3, num = 5).astype(int) Use this later when actually testing. Using the below for now to reduce time
-d_counts = np.linspace(10, 2000, num = 4).astype(int)
+d_counts = np.linspace(10, 250, num = 8).astype(int)
 s_counts = (d_counts * var1).astype(int)
 
 results = [] #list of results for each iteration
@@ -61,7 +61,7 @@ for d, s in zip(d_counts, s_counts):
     #create data
     print(f'\n*** Running for {d} demand and {s} supply elements.***\n')
     demand, supply = create_random_data(demand_count=d, supply_count=s)
-    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, add_new = False, milp=True, sci_milp=False, greedy_single=True, bipartite=True))
+    results.append(matching.run_matching(demand, supply, constraints = constraint_dict, add_new = False, sci_milp=True, milp=False, greedy_single=False, bipartite=False))
     
     
 n_els = d_counts+s_counts # number of elements for each iteration

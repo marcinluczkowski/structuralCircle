@@ -41,10 +41,25 @@ hm.print_header('Simple Study Case')
 result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=True,
             milp=True, sci_milp=True)
 
+# result_simple[0]['Match object'].display_graph()
 
+### Add scatter plot:
 
-simple_pairs = hm.extract_pairs_df(result_simple)
-print(simple_pairs)
+# import matplotlib.pyplot as plt
+# plt.scatter(demand.Length, demand.Area, s=50, c='b', marker="X", label='Demand')
+# plt.scatter(supply.Length, supply.Area, s=50, c='r', marker="X", label='Supply') 
+# plt.legend()
+# plt.xlabel("Length")
+# plt.ylabel("Area")
+# for i, row in demand.iterrows():
+#     plt.annotate(i, (row['Length']-0.6, row['Area']-0.004))
+# for i, row in supply.iterrows():
+#     if i != "R4":
+#         plt.annotate(i, (row['Length']+0.2, row['Area']-0.003))
+# plt.show()
+
+# simple_pairs = hm.extract_pairs_df(result_simple)
+# print(simple_pairs)
 
 """
 ### Test from JSON files with Slettelokka data 

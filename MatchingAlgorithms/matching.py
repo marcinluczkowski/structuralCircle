@@ -167,7 +167,8 @@ class Matching():
             self.add_graph()
         weight = None
         if show_weights:
-            weight = list(np.absolute(np.array(self.graph.es["label"]) - 8).round(decimals=2)) 
+            # weight = list(np.absolute(np.array(self.graph.es["label"]) - 8).round(decimals=2)) 
+            weight = list(np.array(self.graph.es["label"]).round(decimals=2)) 
         edge_color = None
         edge_width = self.graph.es["label"]
         if show_result and not self.pairs.empty:
@@ -180,7 +181,7 @@ class Matching():
                 try:
                     target = self.graph.vs.find(label=pair['Supply_id'])
                     edge = self.graph.es.select(_between = ([source.index], [target.index]))
-                    edge_color[edge.indices[0]] = "red"
+                    edge_color[edge.indices[0]] = "black" #"red"
                     edge_width[edge.indices[0]] = 2.5
                 except ValueError:
                     not_found+=1
@@ -190,9 +191,9 @@ class Matching():
         vertex_color = []
         for v in self.graph.vs:
             if 'D' in v['label']:
-                vertex_color.append("green")
+                vertex_color.append("lightgray")
             elif 'R' in v['label']:
-                vertex_color.append("orange")
+                vertex_color.append("slategray")
             else:
                 vertex_color.append("pink")
         layout = self.graph.layout_bipartite()
@@ -202,7 +203,7 @@ class Matching():
             layout = self.graph.layout_circle()
 
         if self.graph:
-            fig, ax = plt.subplots(figsize=(20, 10))
+            fig, ax = plt.subplots(figsize=(15, 10))
             ig.plot(
                 self.graph,
                 target=ax,

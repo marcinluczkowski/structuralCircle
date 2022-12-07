@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Tomczak"
+  given-names: "Artur"
+  orcid: "https://orcid.org/my-orcid?orcid=0000-0002-6944-2216"
+- family-names: "Haakonsen"
+  given-names: "Sverre Magnus"
+  orcid: "https://orcid.org/my-orcid?orcid=0000-0002-2105-0985"
+title: "structuralCircle"
+version: "Alpha"
+doi: 10.5281/zenodo.7396796
+date-released: 2022-12-05
+url: "https://doi.org/10.5281/zenodo.7396796"

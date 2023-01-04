@@ -24,8 +24,8 @@ logging.basicConfig(
     # filemode='w'
     )
 
-TIMBER_GWP = 10     # 28.9
-REUSE_GWP_RATIO = 0.1  # 0.0778
+TIMBER_GWP = 28.9           # based on NEPD-3442-2053-EN, previously: 10.0
+REUSE_GWP_RATIO = 2.25      # 0.0778*28.9 = 2.25 based on Eberhardt, previously: 0.1
 
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
@@ -100,7 +100,7 @@ class Matching():
 
     
     def weight_incidence(self):
-        """Assign wegihts to elements in the incidence matrix. At the moment only LCA is taken into\
+        """Assign weights to elements in the incidence matrix. At the moment only LCA is taken into\
         account. This method should replace the last step in the original evaluate method."""
         start = time.time()
         
@@ -153,7 +153,7 @@ class Matching():
             mask =  self.incidence.iloc[i] 
             edges.extend( (list(compress(combs, mask) ) ) )
             weights.extend(list(compress(self.weights.iloc[i], mask)))
-        
+        # initial LCA minus the replacement LCA:
         weights = np.array([self.demand.LCA[edge[0]] for edge in edges ]) - np.array(weights)
         #weights = max(weights) - np.array(weights)
         graph = ig.Graph.Bipartite(vertices, edges)

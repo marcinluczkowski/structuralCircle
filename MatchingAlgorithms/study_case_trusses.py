@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     # From that set, distinguish N_D demand and N_S supply elements, based on the desired number and ratios:
     # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
-    N_D, N_S = 100, 50
+    N_D, N_S = 10, 20
     
     np.random.seed(2022)
     while demand.shape[0] < N_D:
@@ -77,12 +77,10 @@ if __name__ == "__main__":
                 print(l)
                 b = e[1][0]
                 h = e[1][1]
-                new_elem = pd.DataFrame({'Length': l, 'Area': b*h, 'Inertia_moment': b*(h**3)/12, 'Height': h}, index=[0])
+                new_elem = pd.DataFrame({'Length': l, 'Area': b*h, 'Inertia_moment': b*(h**3)/12, 'Height': h, 'Is_new':False}, index=[0])
                 supply = pd.concat([supply, new_elem]) #, ignore_index=True)
                 i += 1   
 
     # Run the matching
     result = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=True,
             milp=True, sci_milp=True)
-
-    pass

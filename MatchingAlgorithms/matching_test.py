@@ -38,13 +38,18 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
 hm.print_header('Simple Study Case')
 
-result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=True,
-            milp=True, sci_milp=True)
+result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=True, greedy_single=True, bipartite=True,
+            milp=False, sci_milp=True)
 
-
+#FIXME When testing with new elements. Why are the scores (LCA) identical even though we have different matching DataFrames. 
 
 simple_pairs = hm.extract_pairs_df(result_simple)
+simple_results = hm.extract_results_df(result_simple)
+
 print(simple_pairs)
+print(simple_results)
+
+
 
 """
 ### Test from JSON files with Slettelokka data 
@@ -87,9 +92,12 @@ result_slette = run_matching(demand=demand, supply = supply, constraints=constra
 
 
 slette_pairs = hm.extract_pairs_df(result_slette)
+slette_results = hm.extract_results_df(result_slette)
 print(slette_pairs)
+print(slette_results)
 
-"""
+
+
 
 # ====  Test with randomly generated elements ====
 hm.print_header("RANDOM ELEMENTS n_D = 100, n_S = 200")
@@ -153,3 +161,4 @@ result_rndm2 = run_matching(demand=demand, supply = supply, constraints=constrai
             milp=True, sci_milp = False)
 
 
+"""

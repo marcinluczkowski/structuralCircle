@@ -1,5 +1,5 @@
 # import matplotlib.pyplot as plt
-# import helper_methods as hm
+import helper_methods as hm
 import numpy as np
 import csv
 import json
@@ -49,38 +49,50 @@ if __name__ == "__main__":
 
     # From that set, distinguish N_D demand and N_S supply elements, based on the desired number and ratios:
     # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
-    N_D, N_S = 10, 20
+    N_D, N_S = 5, 10
     
     np.random.seed(2022)
     while demand.shape[0] < N_D:
         truss = np.random.choice(trusses)
-        print(truss.__dict__)
+        # print(truss.__dict__)
         for e in truss.elements:
             i = 0
             while demand.shape[0] < N_D and i < len(truss.elements):
+                i += 1
                 l = e[0]
-                print(l)
+                # print(l)
                 b = e[1][0]
                 h = e[1][1]
                 new_elem = pd.DataFrame({'Length': l, 'Area': b*h, 'Inertia_moment': b*(h**3)/12, 'Height': h}, index=[0])
-                demand = pd.concat([demand, new_elem]) #, ignore_index=True)
-                i += 1   
+                demand = pd.concat([demand, new_elem], ignore_index=True)
+    demand.index = ['D' + str(num) for num in demand.index]
 
     np.random.seed(2023)
     while supply.shape[0] < N_S:
         truss = np.random.choice(trusses)
-        print(truss.__dict__)
+        # print(truss.__dict__)
         for e in truss.elements:
             i = 0
             while supply.shape[0] < N_S and i < len(truss.elements):
+                i += 1   
                 l = e[0]
-                print(l)
+                # print(l)
                 b = e[1][0]
                 h = e[1][1]
                 new_elem = pd.DataFrame({'Length': l, 'Area': b*h, 'Inertia_moment': b*(h**3)/12, 'Height': h, 'Is_new':False}, index=[0])
-                supply = pd.concat([supply, new_elem]) #, ignore_index=True)
-                i += 1   
+                supply = pd.concat([supply, new_elem], ignore_index=True)
+
+    supply.reset_index(drop = True, inplace = True)
+    supply.index = ['S' + str(num) for num in supply.index]
 
     # Run the matching
-    result = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=True,
+    result = run_matching(demand=demand, supply=supply, constraints=constraint_dict, add_new=True, greedy_single=True, bipartite=True,
             milp=True, sci_milp=True)
+
+    pairs = hm.extract_pairs_df(result)
+    print(pairs)
+    print(f"result: {result[0]['Match object'].result} kg, time: {result[0]['Match object'].solution_time} s")
+    print(f"result: {result[1]['Match object'].result} kg, time: {result[1]['Match object'].solution_time} s")
+    print(f"result: {result[2]['Match object'].result} kg, time: {result[2]['Match object'].solution_time} s")
+    print(f"result: {result[3]['Match object'].result} kg, time: {result[3]['Match object'].solution_time} s")
+    print(f"result: {result[4]['Match object'].result} kg, time: {result[4]['Match object'].solution_time} s")

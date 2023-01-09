@@ -279,7 +279,7 @@ class Matching():
         #demand_sorted.sort_values(by=['Length', 'Area'], axis=0, ascending=False, inplace = True)
         demand_sorted.sort_values(by=['LCA'], axis=0, ascending=False, inplace = True)
         #supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True, inplace = True)
-        supply_sorted.sort_values(by=['LCA'], axis=0, ascending=True, inplace = True)
+        supply_sorted.sort_values(by=['Is_new', 'LCA'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
         incidence_np = self.incidence.copy(deep=True).values      
 
         columns = self.supply.index.to_list()
@@ -302,8 +302,9 @@ class Matching():
                         temp_row = supply_sorted.loc[supply_tuple.Index].copy(deep=True)
                         temp_row['LCA'] = temp_row.Length * temp_row.Area * REUSE_GWP_RATIO * TIMBER_GWP
                         supply_sorted.drop(supply_tuple.Index, axis = 0, inplace = True)
-                        #new_ind = supply_sorted['Length'].searchsorted(new_length, side = 'left') #get index to insert new row into #TODO Can this be sorted also by 'Area' and any other constraint?
-                        new_ind = supply_sorted['LCA'].searchsorted(new_length, side = 'left') #get index to insert new row into #TODO Can this be sorted also by 'Area' and any other constraint?
+                        
+                        #new_ind = supply_sorted['LCA'].searchsorted([False ,temp_row['LCA']], side = 'left') #get index to insert new row into #TODO Can this be sorted also by 'Area' and any other constraint?
+                        new_ind = supply_sorted[supply_sorted['Is_new'] == False]['LCA'].searchsorted(temp_row['LCA'], side = 'left')
                         part1 = supply_sorted[:new_ind].copy(deep=True)
                         part2 = supply_sorted[new_ind:].copy(deep=True)
                         supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).transpose().infer_objects(), part2]) #TODO Can we make it simpler
@@ -672,17 +673,20 @@ class Matching():
 
         constraints2 = LinearConstraint(A = A2, lb = 0., ub = self.supply.Length.to_numpy())
                        
-        integrality = np.full_like(x_arr, True)
+        integrality = np.full_like(x_arr, True) # force decision variables to be 0 or 1
         constraints = [constraints1, constraints2]       
        
         # Run optimisation:
         time_limit = max_time
-        options = {'disp':False, 'time_limit': time_limit}
+        options = {'disp':False, 'time_limit': time_limit, 'presolve' : True}
         
-        res = milp(c= -costs, constraints = constraints, bounds = bounds, integrality = integrality, options = options)
+        res = milp(c=  costs* (-1), constraints = constraints, bounds = bounds, integrality = integrality, options = options)
         #res = milp(c= -np.ones_like(x_arr), constraints = constraints, bounds = bounds, integrality = integrality, options = options)
         # ======= POST PROCESS ===========
-        assigment_array = res.x.reshape(rows, cols)
+        try:
+            assigment_array = res.x.reshape(rows, cols) 
+        except AttributeError:# If no solution res.x is None. No substitutions exists. 
+            assigment_array = np.zeros_like(x_mat)
         demand_ind, supply_ind = np.where(assigment_array == 1)
 
         demand_id = self.demand.index[demand_ind]

@@ -15,6 +15,7 @@ import pygad
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
 from scipy.optimize import milp, LinearConstraint, NonlinearConstraint, Bounds
+import helper_methods as hm
 
 logging.basicConfig(
     level=logging.INFO,
@@ -192,7 +193,7 @@ class Matching():
         for v in self.graph.vs:
             if 'D' in v['label']:
                 vertex_color.append("lightgray")
-            elif 'R' in v['label']:
+            elif 'S' in v['label']:
                 vertex_color.append("slategray")
             else:
                 vertex_color.append("pink")
@@ -236,11 +237,12 @@ class Matching():
             end = time.time()
             self.solution_time = round(end - start, 3)
             all_string_series = self.pairs.fillna('nan') # have all entries as string before search
-            num_old = len(all_string_series.loc[all_string_series.Supply_id.str.contains('R')].Supply_id.unique())
-            num_new = len(all_string_series.loc[all_string_series.Supply_id.str.contains('N')].Supply_id.unique())
-            num_matched = len(self.pairs.dropna())
-            logging.info("Matched %s old and %s new elements to %s demand elements (%s %%) using %s. Resulting in LCA (GWP) %s kgCO2eq, in %s seconds.", 
-                num_old, num_new, num_matched, round(100 * num_matched / len(self.pairs), 2), func.__name__, round(self.result, 2), round(end - start, 3))
+            # TEMP
+            # num_old = len(all_string_series.loc[all_string_series.Supply_id.str.contains('S')].Supply_id.unique())
+            # num_new = len(all_string_series.loc[all_string_series.Supply_id.str.contains('N')].Supply_id.unique())
+            # num_matched = len(self.pairs.dropna())
+            # logging.info("Matched %s old and %s new elements to %s demand elements (%s %%) using %s. Resulting in LCA (GWP) %s kgCO2eq, in %s seconds.", 
+            #     num_old, num_new, num_matched, round(100 * num_matched / len(self.pairs), 2), func.__name__, round(self.result, 2), round(end - start, 3))
             return [self.result, self.pairs]
         return wrapper
 

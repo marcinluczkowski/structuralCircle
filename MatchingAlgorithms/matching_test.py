@@ -3,8 +3,6 @@ import pandas as pd
 import random
 import time
 import helper_methods as hm
-
- 
     
 
 ### Test with just few elements
@@ -54,6 +52,7 @@ print(simple_pairs)
 print(simple_results)
 
 
+pass
 # result_simple[0]['Match object'].display_graph()
 
 ### Add scatter plot:

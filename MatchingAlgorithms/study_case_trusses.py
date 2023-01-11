@@ -40,8 +40,8 @@ def create_trusses_from_JSON(csv_path):
 if __name__ == "__main__":
     
     # Generate a set of unique trusses from CSV file:
-    PATH = "MatchingAlgorithms/study_case_data.csv"
-    PATH = "C:\\Users\\sverremh\OneDrive - NTNU\\2022 Oslo reuse project, mapping algorithm\\Paper development\\GH-scripts\\truss_data_beta.csv"
+    #PATH = "MatchingAlgorithms/study_case_data.csv"
+    PATH = "truss_data_beta.csv"
     trusses = create_trusses_from_JSON(PATH)
 
     # Initiate the demand and supply sets

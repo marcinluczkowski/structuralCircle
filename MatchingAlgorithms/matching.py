@@ -61,7 +61,7 @@ class Matching():
 
         #calculate LCA of original elements
         self.demand.eval(f"LCA = Length * Area * {TIMBER_GWP}", inplace = True) #TODO Discuss with Artur where and how to make this more general
-        self.supply.eval(f"LCA = Length * Area * {TIMBER_GWP*REUSE_GWP_RATIO}", inplace = True)
+        self.supply.eval(f"LCA = Length * Area * {REUSE_GWP_RATIO}", inplace = True)
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
 
     def __copy__(self):
@@ -112,7 +112,7 @@ class Matching():
         lengths = self.demand.Length.iloc[el_locs[:, 0]].to_numpy(dtype=float).astype(float) # array of element lenghts
         el_new = self.supply.Is_new.iloc[el_locs[:,1]].to_numpy(dtype=float).astype(bool) # array of booleans for element condition.  
         gwp = TIMBER_GWP
-        gwp_array = np.where(el_new, gwp, gwp * REUSE_GWP_RATIO)
+        gwp_array = np.where(el_new, gwp, REUSE_GWP_RATIO)
         #get_gwp = ne.evaluate("gwp if el_new else gwp*REUSE_GWP_RATIO")
         #gwp = [7.28 if tr else ]
         # TODO function as an input 

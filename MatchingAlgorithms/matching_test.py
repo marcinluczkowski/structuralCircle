@@ -40,7 +40,7 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 hm.print_header('Simple Study Case')
 
 
-result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=True, greedy_single=True, bipartite=True,
+result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=False,
             milp=False, sci_milp=True)
 
 #FIXME When testing with new elements. Why are the scores (LCA) identical even though we have different matching DataFrames. 

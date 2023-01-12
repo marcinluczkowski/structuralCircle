@@ -23,7 +23,10 @@ def create_trusses_from_JSON(csv_path):
     with open(csv_path, newline='\n') as csvfile:
         reader = csv.reader(csvfile, delimiter=';')
         for row in reader:
-            parts = row[0].split('_')
+            if row[0] == 'Name':
+                continue
+            #TODO FIX THIS
+            parts = row[0].split('_')            
             new_truss = truss()
             new_truss.type = parts[0]
             new_truss.length = parts[1]
@@ -41,7 +44,7 @@ if __name__ == "__main__":
     
     # Generate a set of unique trusses from CSV file:
     #PATH = "MatchingAlgorithms/study_case_data.csv"
-    PATH = "truss_data_beta.csv"
+    PATH = "Data\\CSV files trusses\\truss_all_types_beta.csv"
     trusses = create_trusses_from_JSON(PATH)
 
     # Initiate the demand and supply sets
@@ -52,7 +55,7 @@ if __name__ == "__main__":
     
     # From that set, distinguish N_D demand and N_S supply elements, based on the desired number and ratios:
     # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
-    N_D, N_S = 1, 2 #TODO I'm now assuming that this is the number of trusses, and not elements that we "reclaim". Let's discuss when time :) 
+    N_D, N_S = 8, 300 #TODO I'm now assuming that this is the number of trusses, and not elements that we "reclaim". Let's discuss when time :) 
     
     # create demand elements
     np.random.seed(2022)
@@ -124,7 +127,7 @@ if __name__ == "__main__":
 
     # Run the matching
     result = run_matching(demand=demand, supply=supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=True,
-            milp=True, sci_milp=True)
+            milp=False, sci_milp=True)
 
     pairs = hm.extract_pairs_df(result)
 

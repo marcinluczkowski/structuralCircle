@@ -1,7 +1,6 @@
 
 _Artur_sandbox/
-GrasshopperScripts/backup/
-MatchingAlgorithms/backup/
-MatchingAlgorithms/__pycache__/
+*/backup/
+*/__pycache__/
 
 *.pyc

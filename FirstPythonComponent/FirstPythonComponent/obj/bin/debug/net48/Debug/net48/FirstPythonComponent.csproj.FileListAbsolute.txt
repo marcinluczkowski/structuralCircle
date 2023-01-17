@@ -1,4 +1,0 @@
-C:\Users\sverremh\source\repos\FirstPythonComponent\FirstPythonComponent\obj\bin\debug\net48\Debug\net48\FirstPythonComponent.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\sverremh\source\repos\FirstPythonComponent\FirstPythonComponent\obj\bin\debug\net48\Debug\net48\FirstPythonComponent.AssemblyInfoInputs.cache
-C:\Users\sverremh\source\repos\FirstPythonComponent\FirstPythonComponent\obj\bin\debug\net48\Debug\net48\FirstPythonComponent.AssemblyInfo.cs
-C:\Users\sverremh\source\repos\FirstPythonComponent\FirstPythonComponent\obj\bin\debug\net48\Debug\net48\FirstPythonComponent.csproj.CoreCompileInputs.cache

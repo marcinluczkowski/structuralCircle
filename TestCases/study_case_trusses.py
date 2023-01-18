@@ -1,6 +1,6 @@
 import sys
-sys.path.append('../Matching')
-from matching import Matching, run_matching #, TIMBER_GWP, REUSE_GWP_RATIO
+sys.path.append('./Matching')
+from matching import Matching, run_matching   #, TIMBER_GWP, REUSE_GWP_RATIO
 import helper_methods as hm
 import numpy as np
 import csv

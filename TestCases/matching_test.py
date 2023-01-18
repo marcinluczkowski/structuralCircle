@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../Matching')
+sys.path.append('./Matching')
 from matching import Matching, run_matching #, TIMBER_GWP, REUSE_GWP_RATIO
 import pandas as pd
 import random

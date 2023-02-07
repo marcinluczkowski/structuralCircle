@@ -1,11 +1,11 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
 import sys
 sys.path.append('./Matching')
 import helper_methods as hm
 from matching import run_matching # Matching
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 ### Test from JSON files with Slettelokka data 

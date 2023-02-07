@@ -1,10 +1,11 @@
 import sys
 sys.path.append('./Matching')
 import matching
+import helper_methods as hm
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import helper_methods as hm
 
 MIN_LENGTH = 4 # m
 MAX_LENGTH = 15.0 # m

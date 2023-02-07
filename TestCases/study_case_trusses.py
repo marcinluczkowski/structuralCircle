@@ -10,6 +10,7 @@ import numexpr as ne
 import pandas as pd
 import random
 
+
 class truss():
     def __init__(self) -> None:
         self.type = None
@@ -41,94 +42,77 @@ def create_trusses_from_JSON(csv_path):
     return trusses
 
 
+def elements_from_trusses(trusses):
+    es = []
+    ts = []
+    for truss in trusses:
+        t = []
+        for elem in truss.elements:
+            e = {
+                "Length": elem[0]*0.001,
+                "Width": elem[1][0]*0.001,
+                "Height": elem[1][1]*0.001,
+                "Inertia_moment": elem[1][0]*0.001 * elem[1][1]*0.001**3 / 12,
+                "Area": elem[1][0]*0.001 * elem[1][1]*0.001
+            }
+            t.append(e)
+            es.append(e)
+        ts.append(t)
+    return ts
+
+
+def pick_random(n_a, n_b, elements, whole_trusses=True):
+    random.seed(4)
+
+    if not whole_trusses:
+        elements = [item for sublist in elements for item in sublist]
+
+    if n_a + n_b > len(elements):
+        raise Exception("You can't pick more elements than are available in the set!")
+
+    selected = random.sample(elements, n_a + n_b)
+    
+    set_a = selected[0:n_a]
+    set_b = selected[n_a:len(selected)]
+
+    if whole_trusses:
+        # flatten the list of elements
+        flat_set_a = [item for sublist in set_a for item in sublist]
+        flat_set_b = [item for sublist in set_b for item in sublist]
+    else:
+        flat_set_a = set_a[:]
+        flat_set_b = set_b[:]
+    return flat_set_a, flat_set_b
+
+
 if __name__ == "__main__":
     
     # Generate a set of unique trusses from CSV file:
-    #PATH = "MatchingAlgorithms/study_case_data.csv"
-    PATH = "Data\\CSV files trusses\\truss_all_types_beta.csv"
+    PATH = "Data\\CSV files trusses\\truss_all_types_beta_4.csv"
     trusses = create_trusses_from_JSON(PATH)
+    truss_elements = elements_from_trusses(trusses)
+    all_elements = [item for sublist in truss_elements for item in sublist]
+    all_elem_df = pd.DataFrame(all_elements)
 
-    # Initiate the demand and supply sets
-    demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
-    supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
+    # demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
+    # supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
-    
     
     # From that set, distinguish N_D demand and N_S supply elements, based on the desired number and ratios:
     # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
-    N_D, N_S = 8, 300 #TODO I'm now assuming that this is the number of trusses, and not elements that we "reclaim". Let's discuss when time :) 
+    N_D, N_S = 50, 50
     
-    # create demand elements
-    np.random.seed(2022)
-    count = 0
-    while count < N_D:
-        truss = np.random.choice(trusses) # take a random truss for list of available trusses
-        lengths = np.array([el[0] for el in truss.elements], dtype=float) # get all element lengths and store them in numpy array        
-        widths = np.array([el[1][0] for el in truss.elements], dtype=float) # get all element widths and store them in numpy array
-        widths = ne.evaluate('widths*0.001')
-        heights = np.array([el[1][1] for el in truss.elements], dtype=float) # get all element heights and store them in numpy array
-        heights = ne.evaluate('heights * 0.001')
-        moments_inertia = ne.evaluate('(widths * heights**3) / 12')
-        areas = ne.evaluate('widths*heights')
-        sub_df = pd.DataFrame({'Length' : lengths, 'Area' : areas, 'Inertia_moment' : moments_inertia, 'Height' : heights, 'Width' : widths})
-        demand = pd.concat([demand, sub_df], ignore_index=True)
-        count += 1
+    set_a, set_b = pick_random(N_D, N_S, truss_elements, whole_trusses=False)
     
-        
-    # create supply elements
-    count = 0
-    np.random.seed(2023)
-    while count <N_S:
-        truss = np.random.choice(trusses) # take a random truss for list of available trusses
-        lengths = np.array([el[0] for el in truss.elements], dtype=float) # get all element lengths and store them in numpy array        
-        widths = np.array([el[1][0] for el in truss.elements], dtype=float) # get all element widths and store them in numpy array
-        widths = ne.evaluate('widths*0.001')
-        heights = np.array([el[1][1] for el in truss.elements], dtype=float) # get all element heights and store them in numpy array
-        heights = ne.evaluate('heights * 0.001')
-        moments_inertia = ne.evaluate('(widths * heights**3) / 12')
-        areas = ne.evaluate('widths*heights')
-
-        sub_df = pd.DataFrame({'Length' : lengths, 'Area' : areas, 'Inertia_moment' : moments_inertia, 'Height' : heights, 'Width' : widths})
-        supply = pd.concat([supply, sub_df], ignore_index=True)
-        count += 1
-    supply['Is_new'] = False
-    
-    # while demand.shape[0] < N_D:
-    #     truss = np.random.choice(trusses)
-    #     # print(truss.__dict__)
-    #     for e in truss.elements:
-    #         i = 0
-    #         while demand.shape[0] < N_D and i < len(truss.elements):
-    #             i += 1
-    #             l = e[0]
-    #             # print(l)
-    #             b = e[1][0]
-    #             h = e[1][1]
-    #             new_elem = pd.DataFrame({'Length': l, 'Area': b*h, 'Inertia_moment': b*(h**3)/12, 'Height': h}, index=[0])
-    #             demand = pd.concat([demand, new_elem], ignore_index=True)
+    demand = pd.DataFrame(set_a)
     demand.index = ['D' + str(num) for num in demand.index]
-
-    # np.random.seed(2023)
-    # while supply.shape[0] < N_S:
-    #     truss = np.random.choice(trusses)
-    #     # print(truss.__dict__)
-    #     for e in truss.elements:
-    #         i = 0
-    #         while supply.shape[0] < N_S and i < len(truss.elements):
-    #             i += 1   
-    #             l = e[0]
-    #             # print(l)
-    #             b = e[1][0]
-    #             h = e[1][1]
-    #             new_elem = pd.DataFrame({'Length': l, 'Area': b*h, 'Inertia_moment': b*(h**3)/12, 'Height': h, 'Is_new':False}, index=[0])
-    #             supply = pd.concat([supply, new_elem], ignore_index=True)
-
-    supply.reset_index(drop = True, inplace = True)
+    supply = pd.DataFrame(set_b)
     supply.index = ['S' + str(num) for num in supply.index]
+    supply.insert(5, "Is_new", False)
 
     # Run the matching
     result = run_matching(demand=demand, supply=supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=True,
-            milp=False, sci_milp=True)
+            milp=False, sci_milp=False)
 
     pairs = hm.extract_pairs_df(result)
 
@@ -136,3 +120,77 @@ if __name__ == "__main__":
     print(pairs)
     for res in result:
         print(f"Name: {res['Name']}\t\t*Result: {res['Match object'].result} kg, time: {res['Match object'].solution_time} s")
+
+
+    ### ADD PLOTS
+    
+    import matplotlib.pyplot as plt
+
+    ### Plot the histogram of truss elements:
+    all_elem_df.hist(column=['Length', 'Area'], bins=20)
+    plt.show()
+
+    ### Scatter plot of all elements width/height:
+    all_elem_df.plot.scatter(x='Width', y='Height')
+    plt.show()
+
+    # if close to one another, don't add but increase size:
+    demand_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
+    tolerance_length = 2.5
+    tolerance_area = 0.002
+    dot_size = 70
+    for index, row in demand.iterrows():
+        if demand_chart.empty:
+            # add first bubble
+            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        # check if similiar bubble already present:
+        elif demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].empty:
+            # not, so add new bubble
+            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        else:
+            # already present, so increase the bubble size:
+            ind = demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
+            demand_chart.at[ind,'dot_size'] = demand_chart.at[ind,'dot_size'] +1
+
+    demand_chart['dot_size_scaled'] = dot_size * (demand_chart['dot_size']**0.5)
+
+    supply_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
+    for index, row in supply.iterrows():
+        if supply_chart.empty:
+            # add first bubble
+            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        # check if similiar bubble already present:
+        elif supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].empty:
+            # not, so add new bubble
+            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        else:
+            # already present, so increase the bubble size:
+            ind = supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
+            supply_chart.at[ind,'dot_size'] = supply_chart.at[ind,'dot_size'] +1
+
+    supply_chart['dot_size_scaled'] = dot_size * (supply_chart['dot_size']**0.5)
+
+    plt.scatter(demand_chart.Length, demand_chart.Area, s=list(demand_chart.dot_size_scaled), c='b', alpha=0.5, label='Demand')
+    plt.scatter(supply_chart.Length, supply_chart.Area, s=list(supply_chart.dot_size_scaled), c='g', alpha=0.5, label='Supply')
+
+    lgnd = plt.legend(loc="lower right")
+    lgnd.legendHandles[0]._sizes = [50]
+    lgnd.legendHandles[1]._sizes = [50]
+
+    plt.xlabel("Length", size=16)
+    plt.ylabel("Area", size=16)
+
+    for i, row in demand_chart.iterrows():
+        if row['dot_size'] < 10:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
+        else:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
+    for i, row in supply_chart.iterrows():
+        if row['dot_size'] < 10:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
+        else:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
+
+    plt.show()
+
+    pass

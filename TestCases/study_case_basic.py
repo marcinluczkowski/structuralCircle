@@ -56,6 +56,7 @@ result_simple = run_matching(demand=demand, supply = supply, constraints=constra
 simple_pairs = hm.extract_pairs_df(result_simple)
 simple_results = hm.extract_results_df(result_simple)
 
+print(f'Type of simple_pairs: {type(simple_pairs)}')
 print(simple_pairs)
 print(simple_results)
 

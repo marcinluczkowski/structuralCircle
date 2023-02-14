@@ -16,6 +16,7 @@ from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
 from scipy.optimize import milp, LinearConstraint, NonlinearConstraint, Bounds
 import helper_methods as hm
+import requests
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,7 +31,7 @@ REUSE_GWP_RATIO = 2.25      # 0.0778*28.9 = 2.25 based on Eberhardt, previously:
 
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
-    def __init__(self, demand, supply, add_new=False, multi=False, constraints = {}, solution_limit = 60):
+    def __init__(self, demand, supply, include_transportation, add_new=False, multi=False, constraints = {}, solution_limit = 60):
         self.demand = demand.infer_objects()
         # TODO calculate new elements first, and not add them to supply bank.
         if add_new:
@@ -46,6 +47,7 @@ class Matching():
             
         else:
             self.supply = supply.infer_objects()
+        self.include_transportation = include_transportation
         self.multi = multi
         self.graph = None
         self.result = None  #saves latest result of the matching
@@ -262,8 +264,61 @@ class Matching():
         mask = self.pairs.Supply_id.isna().to_numpy()
         original_LCA = self.demand.LCA[mask].sum()
         self.result += original_LCA
+        #TODO: add LCA from transportation of the used timber
+        if self.include_transportation: #Include GWP from transportation of used elements
+            demand_indices = local_pairs.index.values.tolist()
+            demand_copy = self.demand.loc[demand_indices]
+            demand_copy = demand_copy[["Latitude", "Longitude"]]
+
+            supply_copy = self.supply.loc[local_pairs["Supply_id"].tolist()]
+            supply_copy.rename(columns = {"Latitude": "s_latitude", "Longitude": "s_longitude"}, inplace = True)
+
+            supply_copy["d_latitude"] = demand_copy["Latitude"].tolist()
+            supply_copy["d_longitude"] = demand_copy["Longitude"].tolist()
+            
+            supply_copy["distance"] = supply_copy.apply(lambda x: self.calculate_driving_distance(x.d_latitude, x.d_longitude, x.s_latitude, x.s_longitude), axis = 1) #Dataframe with calculated distances
+            supply_copy["volume"] = supply_copy["Area"] * supply_copy["Length"]
+
+            supply_copy["transportation_LCA"] = supply_copy.apply(lambda x: self.calculate_transportation_LCA(x.volume, 400, x.distance, factor = 96), axis = 1)
+
+            """TODO: NOT DONE ADDING THE RESULT
+            - Compare reuse + transporation against only new elements
+            """
+            sum_transportation_LCA = supply_copy["transportation_LCA"].sum()
+            print(f"Transportation LCA:", sum_transportation_LCA)
+            self.result += sum_transportation_LCA
+
+        
+
+    def calculate_driving_distance(self, demand_lat, demand_lon, supply_lat, supply_lon):
+        """Calculates the driving distance between two coordinates and returns the result in meters
+        - Coordinates as a String
+
+        """
+        try:
+            url = f"http://router.project-osrm.org/route/v1/car/{demand_lon},{demand_lat};{supply_lon},{supply_lat}?overview=false"
+            req = requests.get(url)
+            driving_distance_meter = req.json()["routes"][0]["distance"]
+            distance = driving_distance_meter / 1000 #driving distance in km
+        except:
+            logging.error("Was not able to get the driving distance from OSRM-API")
+            distance = 0
+        return  distance
+
+    def calculate_transportation_LCA(self, volume, density, distance, factor = 96.0):
+        """Calculates the CO2 equivalents of driving one element a specific distance
+        - volume in float
+        - density in float
+        - distance in float
+        - factor in float
+        
+        """
+        density = density / 1000 #convert kg/m^3 to tonne/m^3
+        factor = factor / 1000 #convert gram to kg
+        return volume * density * distance * factor #C02 equivalents in kg
 
 
+        #CALCULATE GWP FROM TRANSPORTATION
 
     @_matching_decorator
     def match_greedy_algorithm(self, plural_assign=False):
@@ -702,12 +757,12 @@ class Matching():
       
       
       
-def run_matching( demand, supply, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False):
+def run_matching( demand, supply, include_transportation = False, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
     # create matching object 
-    matching = Matching(demand=demand, supply= supply, constraints=constraints, add_new= add_new, multi = True)
+    matching = Matching(demand=demand, supply= supply, include_transportation = include_transportation, constraints=constraints, add_new= add_new, multi = True)
 
     matches =[] # results to return
     headers = []
@@ -754,10 +809,6 @@ def calculate_lca(length, area, is_new=True, gwp=TIMBER_GWP):
     #gwp_array = np.where(is_new, gwp, gwp * REUSE_GWP_RATIO)
     lca = length * area * gwp
     return lca
-
-
-    
-
 
 if __name__ == "__main__":
     PATH = sys.argv[0]

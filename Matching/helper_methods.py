@@ -25,7 +25,12 @@ def extract_results_df(dict_list):
         cols.append(run['Name'])
     
     df = pd.DataFrame(sub_df, index= cols)    
+    df=df.rename(columns={0:"LCA"})
     return df.round(3)
 
+def extract_LCA_new(dict_list):
+    matchobj=dict_list[0]["Match object"]
+    sum=matchobj.demand["LCA"].sum()
+    return sum
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

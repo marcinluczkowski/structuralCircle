@@ -281,9 +281,6 @@ class Matching():
 
             supply_copy["transportation_LCA"] = supply_copy.apply(lambda x: self.calculate_transportation_LCA(x.volume, 400, x.distance, factor = 96), axis = 1)
 
-            """TODO: NOT DONE ADDING THE RESULT
-            - Compare reuse + transporation against only new elements
-            """
             sum_transportation_LCA = supply_copy["transportation_LCA"].sum()
             print(f"Transportation LCA:", sum_transportation_LCA)
             self.result += sum_transportation_LCA
@@ -293,7 +290,6 @@ class Matching():
     def calculate_driving_distance(self, demand_lat, demand_lon, supply_lat, supply_lon):
         """Calculates the driving distance between two coordinates and returns the result in meters
         - Coordinates as a String
-
         """
         try:
             url = f"http://router.project-osrm.org/route/v1/car/{demand_lon},{demand_lat};{supply_lon},{supply_lat}?overview=false"
@@ -316,7 +312,6 @@ class Matching():
         density = density / 1000 #convert kg/m^3 to tonne/m^3
         factor = factor / 1000 #convert gram to kg
         return volume * density * distance * factor #C02 equivalents in kg
-
 
         #CALCULATE GWP FROM TRANSPORTATION
 
@@ -819,4 +814,3 @@ if __name__ == "__main__":
     DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
     SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
-

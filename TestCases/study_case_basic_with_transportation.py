@@ -46,7 +46,7 @@ demand.loc['D5'] = {'Material': 1, 'Length': 4.00, 'Area': 0.1, 'Inertia_moment'
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 # TODO add 'Material': '=='
 
-hm.print_header('Simple Study Case')
+hm.print_header('Study Case with transportation')
 
 
 result_simple = run_matching(demand=demand, supply = supply, include_transportation = True, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=False,
@@ -56,10 +56,15 @@ result_simple = run_matching(demand=demand, supply = supply, include_transportat
 
 simple_pairs = hm.extract_pairs_df(result_simple)
 simple_results = hm.extract_results_df(result_simple)
+new_materials_results=hm.extract_LCA_new(result_simple)
 
+print()
 print(simple_pairs)
+print()
+print("LCA with re-use of materials and transport for each algorithm:")
 print(simple_results)
-
+print()
+print("LCA using only new materials and no transport: ",new_materials_results)
 
 # result_simple[0]['Match object'].display_graph()
 

@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     # Run the matching
     result = run_matching(demand=demand, supply=supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=True,
-            milp=False, sci_milp=False)
+            milp=False, sci_milp=True)
 
     pairs = hm.extract_pairs_df(result)
 

@@ -49,7 +49,8 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
 hm.print_header('Simple Study Case')
 
-result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=False, bipartite=False,
+
+result_simple = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=True,
             milp=False, sci_milp=True)
 
 #FIXME When testing with new elements. Why are the scores (LCA) identical even though we have different matching DataFrames. 
@@ -68,6 +69,7 @@ print(simple_results)
 dem = result_simple[0]['Match object'].demand
 sup = result_simple[0]['Match object'].supply
 
+
 indices = list(dem.index)
 simple_el_ids = simple_pairs.mask(simple_pairs.isna(), indices, axis = 0) # replace NaN values with the intital index.
 areas = simple_el_ids.applymap(lambda el : dem.Area[el] if 'D' in el else sup.Area[el]) # Find the correct areas for each matching.
@@ -76,6 +78,7 @@ total_volumes = volumes.sum() # Sum each column to get total volumes.
 initial_volume = sum(dem.Area*dem.Length)
 
 ratios = (total_volumes - initial_volume) / initial_volume
+
 
 print(ratios)
 # result_simple[0]['Match object'].display_graph()

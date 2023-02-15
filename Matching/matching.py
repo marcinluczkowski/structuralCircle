@@ -222,6 +222,7 @@ class Matching():
             )
             plt.show()
 
+
     def _matching_decorator(func):
         """Set of repetitive tasks for all matching methods"""
         def wrapper(self, *args, **kwargs):
@@ -233,8 +234,10 @@ class Matching():
 
             # The actual method:
             func(self, *args, **kwargs)
+            
             #Calculate the result of the matching
             self.calculate_result()
+
             # After:
             end = time.time()
             self.solution_time = round(end - start, 3)
@@ -247,6 +250,7 @@ class Matching():
                 num_old, num_new, num_matched, round(100 * num_matched / len(self.pairs), 2), func.__name__, round(self.result, 2), round(end - start, 3))
             return [self.result, self.pairs]
         return wrapper
+    
 
     def calculate_result(self):
         """Evaluates the result based on the final matching of elements"""
@@ -394,69 +398,70 @@ class Matching():
     def match_genetic_algorithm(self):
         """Match using Evolutionary/Genetic Algorithm"""
 
-        # supply capacity - length:
-        capacity = self.supply['Length'].to_numpy()
-        lengths = self.demand['Length'].to_numpy()
+        # TODO implement the method
+        pass
 
-        # demand_mapping (column - demand):
-        initial_population = np.zeros((len(self.supply), len(self.demand)))
-        # for each column add one random 0/1.
-        for col in range(len(self.demand)):
-            row = random.randint(0, len(self.supply)-1)
-            initial_population[row, col] = random.randint(0, 1)
+        # # supply capacity - length:
+        # capacity = self.supply['Length'].to_numpy()
+        # lengths = self.demand['Length'].to_numpy()
 
-        def fitness_func(solution, solution_idx):
-            # output = np.sum(solution*function_inputs) #LCA!
-            total_length = np.sum(solution*lengths)
-            if np.sum(total_length > capacity) != len(capacity):
-                output = 10e4  # penalty
-            elif np.argwhere(np.sum(solution, axis=0) > 1):
-                output = 10e4  # penalty
-            else:
-                # LCA:
-                output = np.sum(solution*self.demand['Length'])
-            fitness = 1.0 / output
-            return fitness
+        # # demand_mapping (column - demand):
+        # initial_population = np.zeros((len(self.supply), len(self.demand)))
+        # # for each column add one random 0/1.
+        # for col in range(len(self.demand)):
+        #     row = random.randint(0, len(self.supply)-1)
+        #     initial_population[row, col] = random.randint(0, 1)
+
+        # def fitness_func(solution, solution_idx):
+        #     # output = np.sum(solution*function_inputs) #LCA!
+        #     total_length = np.sum(solution*lengths)
+        #     if np.sum(total_length > capacity) != len(capacity):
+        #         output = 10e4  # penalty
+        #     elif np.argwhere(np.sum(solution, axis=0) > 1):
+        #         output = 10e4  # penalty
+        #     else:
+        #         # LCA:
+        #         output = np.sum(solution*self.demand['Length'])
+        #     fitness = 1.0 / output
+        #     return fitness
         
-        ga_instance = pygad.GA(
-            num_generations=20,
-            num_parents_mating=2,
-            fitness_func=fitness_func,
-            sol_per_pop=10,
-            num_genes=initial_population.size, #len(initial_population),
-            # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
-            # (also possible with: gene_space=[0, 1])
-            init_range_low=0,
-            random_mutation_min_val=0,
-            init_range_high=2,   # upper bound exclusive, so only 0 and 1
-            random_mutation_max_val=2,   # upper bound exclusive, so only 0 and 1
-            mutation_by_replacement=True,
-            gene_type=int,
+        # ga_instance = pygad.GA(
+        #     num_generations=20,
+        #     num_parents_mating=2,
+        #     fitness_func=fitness_func,
+        #     sol_per_pop=10,
+        #     num_genes=initial_population.size, #len(initial_population),
+        #     # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
+        #     # (also possible with: gene_space=[0, 1])
+        #     init_range_low=0,
+        #     random_mutation_min_val=0,
+        #     init_range_high=2,   # upper bound exclusive, so only 0 and 1
+        #     random_mutation_max_val=2,   # upper bound exclusive, so only 0 and 1
+        #     mutation_by_replacement=True,
+        #     gene_type=int,
 
-            parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            keep_parents=1,
-            crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+        #     parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+        #     keep_parents=1,
+        #     crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
 
-            mutation_type="random",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            mutation_num_genes=1,
-            # mutation_percent_genes=10,
+        #     mutation_type="random",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+        #     mutation_num_genes=1,
+        #     # mutation_percent_genes=10,
 
-            initial_population=initial_population
-            )
+        #     initial_population=initial_population
+        #     )
         
-        ga_instance.run()
+        # ga_instance.run()
 
-        logging.debug(ga_instance.initial_population)
-        logging.debug(ga_instance.population)
+        # logging.debug(ga_instance.initial_population)
+        # logging.debug(ga_instance.population)
 
-        solution, solution_fitness, solution_idx = ga_instance.best_solution() 
-        logging.debug("Parameters of the best solution: %s", solution)
-        logging.debug("Fitness value of the best solution = %s", solution_fitness)
+        # solution, solution_fitness, solution_idx = ga_instance.best_solution() 
+        # logging.debug("Parameters of the best solution: %s", solution)
+        # logging.debug("Fitness value of the best solution = %s", solution_fitness)
 
-        # prediction = np.sum(np.array(function_inputs)*solution)
-        # logging.debug("Predicted output based on the best solution: %s", prediction)
 
-        self.result += 1234 #calculate_lca(supply_row.Length, supply_row.Area, is_new=supply_row.Is_new)
+        # self.result += 1234 #calculate_lca(supply_row.Length, supply_row.Area, is_new=supply_row.Is_new)
 
     @_matching_decorator
     def match_mixed_integer_programming_OLD(self):

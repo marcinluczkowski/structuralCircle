@@ -15,6 +15,7 @@ supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', '
 # Add a perfect matching pair
 demand.loc['D1'] = {'Material': 1, 'Length': 7.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20}
 supply.loc['S1'] = {'Material': 1, 'Length': 7.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Is_new':False}
+supply.loc['S1'] = {'Material': 1, 'Length': 7.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Is_new':False}
 
 # Add non-matchable demand
 # demand.loc['D2'] = {'Material': 1, 'Length': 13.00, 'Area': 0.001, 'Inertia_moment':0.00001, 'Height': 0.05}
@@ -56,7 +57,11 @@ result_simple = run_matching(demand=demand, supply = supply, constraints=constra
 simple_pairs = hm.extract_pairs_df(result_simple)
 simple_results = hm.extract_results_df(result_simple)
 
+print("Simple pairs:")
 print(simple_pairs)
+
+print()
+print("Simple results")
 print(simple_results)
 
 # Calculate volumes

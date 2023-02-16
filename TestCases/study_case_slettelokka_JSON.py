@@ -2,6 +2,7 @@ import sys
 sys.path.append('./Matching')
 import helper_methods as hm
 from matching import run_matching # Matching
+import LCA as lca
 
 import pandas as pd
 import numpy as np
@@ -27,20 +28,24 @@ demand.Length *=0.01
 demand.Area *=0.0001
 demand.Inertia_moment *=0.00000001
 demand.Height *=0.01
+demand.Gwp_factor = lca.TIMBER_GWP
+
 #read and clean supply df
 supply = pd.read_json(SUPPLY_JSON)
 supply_header = supply.iloc[0]
 supply.columns = supply_header
 supply.drop(axis = 1, index= 0, inplace=True)
-supply['Is_new'] = False
 supply.reset_index(drop = True, inplace = True)
 supply.index = ['R' + str(num) for num in supply.index]
+supply.Gwp_factor = lca.TIMBER_REUSE_GWP
 
 # scale input from mm to m
 supply.Length *=0.01
 supply.Area *=0.0001
 supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
+
+constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
 #--- CREATE AND EVALUATE ---
 result_slette = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 

@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     # Run the matching
     result = run_matching(demand=demand, supply=supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=True,
-            milp=False, sci_milp=True)
+            milp=False, sci_milp=False)
 
     pairs = hm.extract_pairs_df(result)
 
@@ -126,12 +126,30 @@ if __name__ == "__main__":
     
     import matplotlib.pyplot as plt
 
+    # X-tick labels taken from Artur-table, can find from df later by introducing information to DataFrame
+    new_ticks = ['36x36', '36x48', '36x148', '36x198', 
+                '48x148', '48x198', '61x198', '73x198', '73x223']
+
+    #fig, axs = plt.subplots(1,2, sharex=False, sharey=False)
+    
     ### Plot the histogram of truss elements:
-    all_elem_df.hist(column=['Length', 'Area'], bins=20)
-    plt.show()
+    all_elem_df.hist(column=['Length', 'Area'], bins=20)#, ax = axs[0])
+    #plt.show()
+
 
     ### Scatter plot of all elements width/height:
-    all_elem_df.plot.scatter(x='Width', y='Height')
+    #ticks = axs[1].get_xticks()
+    #axs[0].set_xticks(ticks)
+    #plt.sca(axs[1])
+    #plt.xticks(xticks = ticks, xticklabels = new_ticks)
+    fig, ax = plt.subplots(1,1)
+    all_elem_df.plot.scatter(x='Width', y='Height', ax = ax)
+
+    # set x_ticks
+    new_tick_pos = sorted(list(set(all_elem_df.Area)))
+    #ax.set_xticks(new_tick_pos)
+    ax.set_xticklabels(new_ticks, rotation = 45)
+    #ax.xticks = new_ticks
     plt.show()
 
     # if close to one another, don't add but increase size:

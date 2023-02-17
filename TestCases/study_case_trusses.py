@@ -155,7 +155,6 @@ def plot_histograms(df):
     sns.despine(fig = fig)
     sns.histplot(x = 'Area', palette='light:m_r', edgecolor = '0.3', linewidth = .5, ax=ax, data = all_elem_df)
     ax.set_title('Cross-section Histogram')
-    ax.xaxis.set_major_formatter(matplotlib.ticker.)
     
 
     plt.show()

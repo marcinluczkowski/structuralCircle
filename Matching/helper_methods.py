@@ -67,7 +67,7 @@ def create_random_data(demand_count, supply_count, demand_gwp=lca.TIMBER_GWP, su
     supply['Gwp_factor'] = supply_gwp
     # Change index names
     demand.index = map(lambda text: 'D' + str(text), demand.index)
-    supply.index = map(lambda text: 'R' + str(text), supply.index)
+    supply.index = map(lambda text: 'S' + str(text), supply.index)
     return demand.round(2), supply.round(2)
 
 

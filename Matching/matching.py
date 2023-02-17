@@ -200,9 +200,9 @@ class Matching():
 
         score = self.supply.Score.copy()
 
-        for row in sorted_weights.iterrows():
-            row_id = row[0]
-            vals = np.array(row[1:])[0]
+        for i in range(sorted_weights.shape[0]):
+            row_id = sorted_weights.iloc[[i]].index[0]
+            vals = np.array(sorted_weights.iloc[[i]])[0]
             if np.any(vals):    # checks if not empty row (no matches)
                 lowest = np.nanmin(vals)
                 col_id = sorted_weights.columns[np.where(vals == lowest)][0]
@@ -215,7 +215,6 @@ class Matching():
                 else:
                     # empty the column that was used
                     sorted_weights[col_id] = np.nan
-        pass
 
     @_matching_decorator
     def match_greedy_DEPRECIATED(self, plural_assign=False):
@@ -624,17 +623,17 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
 
 
 if __name__ == "__main__":
-    #DEMAND_JSON = sys.argv[1]
-    #SUPPLY_JSON = sys.argv[2]
-    #RESULT_FILE = sys.argv[3]
-    DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
-    SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
-    RESULT_FILE = r"MatchingAlgorithms\result.csv"
+    DEMAND_JSON = sys.argv[1]
+    SUPPLY_JSON = sys.argv[2]
+    RESULT_FILE = sys.argv[3]
+    # DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
+    # SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
+    # RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
     demand, supply = hm.create_random_data(demand_count=4, supply_count=5)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
-    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=False, bipartite=True)
+    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True)
     simple_pairs = hm.extract_pairs_df(result)
     simple_results = hm.extract_results_df(result)
     print("Simple pairs:")
@@ -642,4 +641,3 @@ if __name__ == "__main__":
     print()
     print("Simple results")
     print(simple_results)
-    pass

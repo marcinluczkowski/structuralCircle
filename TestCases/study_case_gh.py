@@ -41,6 +41,10 @@ supply.Gwp_factor = lca.TIMBER_REUSE_GWP
 
 # create matching object
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>=', 'Height': '>='} # make this as dynamic dictionary based on input string.
+score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
+
+# TODO add run method
+# result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=False, greedy_single=True, bipartite=True)
 
 matching = Matching( demand, supply, add_new=False, constraints = constraint_dict)
 matching.evaluate()

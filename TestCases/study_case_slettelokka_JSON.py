@@ -48,8 +48,8 @@ supply.Height *=0.01
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
 #--- CREATE AND EVALUATE ---
-result_slette = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True, sci_milp = True)
+score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
+result_slette = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=False, greedy_single=True, bipartite=True)
 
 
 slette_pairs = hm.extract_pairs_df(result_slette)

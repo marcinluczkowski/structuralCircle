@@ -198,7 +198,8 @@ if __name__ == "__main__":
     # demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
     # supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
-    
+    score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
+
     # From that set, distinguish N_D demand and N_S supply elements, based on the desired number and ratios:
     # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
     N_D, N_S = 167, 833
@@ -212,9 +213,8 @@ if __name__ == "__main__":
     supply.insert(5, "Is_new", False)
 
     # Run the matching
-    result = run_matching(demand=demand, supply=supply, constraints=constraint_dict, add_new=True, greedy_single=True, bipartite=True,
-            milp=False, sci_milp=False)
-
+    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, milp=False, sci_milp=False, greedy_single=True, bipartite=True)
+    
     pairs = hm.extract_pairs_df(result)
 
     # Print results

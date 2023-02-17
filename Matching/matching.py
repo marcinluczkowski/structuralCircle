@@ -121,7 +121,7 @@ class Matching():
         # create a new dataframe with values from supply, except for the Length, which is from demand set (cut supply)
         eval_df = self.supply.iloc[el_locs0[1]].reset_index(drop=True)
         eval_df['Length'] = self.demand.iloc[el_locs0[0]]['Length'].reset_index(drop=True)
-        eval_score = eval_df.eval(score_function_string)
+        eval_score = eval_df.eval(self.score_function_string)
         weights[el_locs0[0], el_locs0[1]] = eval_score.to_numpy()     
         end = time.time()  
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))

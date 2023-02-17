@@ -213,14 +213,14 @@ if __name__ == "__main__":
     supply.insert(5, "Is_new", False)
 
     # Run the matching
-    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, milp=False, sci_milp=False, greedy_single=True, bipartite=True)
+    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, milp=False, sci_milp=True, greedy_single=True, bipartite=True)
     
     pairs = hm.extract_pairs_df(result)
 
     # Print results
-    print(pairs)
+    # print(pairs)
     for res in result:
-        print(f"Name: {res['Name']}\t\t*Result: {res['Match object'].result} kg, time: {res['Time']}s, PercentNew: {res['PercentNew']}")
+        print(f"Name: {res['Name']}\t\t*Result: {res['Match object'].result} kg, time: {res['Time']}s, PercentNew: res['PercentNew']")
 
 
     # plot_histograms(all_elem_df)

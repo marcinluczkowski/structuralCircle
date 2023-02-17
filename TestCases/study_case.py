@@ -2,52 +2,14 @@ import sys
 sys.path.append('./Matching')
 import matching
 import helper_methods as hm
+import LCA as lca
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-MIN_LENGTH = 4 # m
-MAX_LENGTH = 15.0 # m
-MIN_AREA = 0.15 # m^2
-MAX_AREA = 0.25 # m^2
 
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-
-def create_random_data(demand_count, supply_count, seed = 2):
-    """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
-    np.random.RandomState(seed) #TODO not sure if this is the right way to do it. Read documentation
-    demand = pd.DataFrame()
-    supply = pd.DataFrame()
-
-    # create element lenghts
-    demand['Length'] = ((MAX_LENGTH/2 + 1) - MIN_LENGTH) * np.random.random_sample(size = demand_count) + MIN_LENGTH
-    supply['Length'] = ((MAX_LENGTH + 1) - MIN_LENGTH) * np.random.random_sample(size = supply_count) + MIN_LENGTH
-
-    # create element areas independent of the length. Can change this back to Artur's method later, but I want to see the effect of even more randomness. 
-    demand['Area'] = ((MAX_AREA + .001) - MIN_AREA) * np.random.random_sample(size = demand_count) + MIN_AREA
-    supply['Area'] = ((MAX_AREA + .001) - MIN_AREA) * np.random.random_sample(size = supply_count) + MIN_AREA
-
-    # constraints
-    #demand['Area'] = np.full((demand_count,), MIN_AREA)
-    #supply['Area'] = np.full((supply_count,), MIN_AREA)
-
-
-    # intertia moment
-    demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
-    supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
-
-    # height - assuming square cross sections
-    demand['Height'] = np.power(demand['Area'], 0.5)
-    supply['Height'] = np.power(supply['Area'], 0.5)
-
-    supply['Is_new'] = False
-    
-    # Change index names
-    demand.index = map(lambda text: 'D' + str(text), demand.index)
-    supply.index = map(lambda text: 'R' + str(text), supply.index)
-    
-    return demand.round(2), supply.round(2)
 
 
 # ========== SCENARIO 1 ============== 
@@ -63,7 +25,7 @@ hm.print_header("Starting Run")
 for d, s in zip(d_counts, s_counts):
     #create data
     print(f'\n*** Running for {d} demand and {s} supply elements.***\n')
-    demand, supply = create_random_data(demand_count=d, supply_count=s)
+    demand, supply = hm.create_random_data(demand_count=d, supply_count=s)
     results.append(matching.run_matching(demand, supply, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=False, bipartite=True))
     
     

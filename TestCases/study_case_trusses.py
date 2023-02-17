@@ -9,7 +9,8 @@ import ast
 import numexpr as ne
 import pandas as pd
 import random
-
+import matplotlib.pyplot as plt
+import LCA as lca
 
 class truss():
     def __init__(self) -> None:
@@ -53,7 +54,8 @@ def elements_from_trusses(trusses):
                 "Width": elem[1][0]*0.001,
                 "Height": elem[1][1]*0.001,
                 "Inertia_moment": elem[1][0]*0.001 * elem[1][1]*0.001**3 / 12,
-                "Area": elem[1][0]*0.001 * elem[1][1]*0.001
+                "Area": elem[1][0]*0.001 * elem[1][1]*0.001,
+                "Gwp_factor": lca.TIMBER_REUSE_GWP
             }
             t.append(e)
             es.append(e)
@@ -62,7 +64,8 @@ def elements_from_trusses(trusses):
 
 
 def pick_random(n_a, n_b, elements, whole_trusses=True):
-    random.seed(4)
+    
+    random.seed(2023)  # Preserve the same seed to replicate the results
 
     if not whole_trusses:
         elements = [item for sublist in elements for item in sublist]
@@ -85,7 +88,9 @@ def pick_random(n_a, n_b, elements, whole_trusses=True):
     return flat_set_a, flat_set_b
 
 
-if __name__ == "__main__":
+### ADD PLOTS
+
+def plot_histograms(df):
     
     # Generate a set of unique trusses from CSV file:
     PATH = "Data\\CSV files trusses\\truss_all_types_beta_4.csv"
@@ -123,6 +128,14 @@ if __name__ == "__main__":
 
 
     ### ADD PLOTS
+    # csfont = {'fontname':'Times New Roman'}
+    # plt.rcParams.update({'font.size': 22}) # must set in top
+    plt.rcParams['font.size'] = 12
+    plt.rcParams["font.family"] = "Times New Roman"
+
+    ### List unique values of width/height:
+    # TODO redo the histogram so that names are displayed, not area.
+    df['Cross-sections'] = df['Width'].astype(str) + "x" + df['Height'].astype(str)
     
     import matplotlib.pyplot as plt
     import seaborn as sns
@@ -146,7 +159,15 @@ if __name__ == "__main__":
     
 
     plt.show()
-    """
+    #fig, axs = plt.subplots(1,2, sharex=False, sharey=False)
+    
+    ### Plot the histogram of truss elements:
+    df.hist(column=['Length', 'Area'], bins=20)
+ 
+    # plt.Axes.set_axisbelow(b=True)
+    plt.title('Area')
+    plt.show()
+
     #fig, axs = plt.subplots(1,2, sharex=False, sharey=False)
     
     ### Plot the histogram of truss elements:
@@ -154,7 +175,21 @@ if __name__ == "__main__":
     #plt.show()
 
 
+
+def plot_scatter(df):
     ### Scatter plot of all elements width/height:
+    df.plot.scatter(x='Width', y='Height')
+    plt.xlabel('Width')
+    plt.ylabel('Height')
+    plt.show()
+
+
+def plot_hexbin(demand, supply):
+    # TODO try https://seaborn.pydata.org/examples/hexbin_marginals.html
+    pass
+
+
+def plot_bubble(demand, supply):
     #ticks = axs[1].get_xticks()
     #axs[0].set_xticks(ticks)
     #plt.sca(axs[1])
@@ -174,6 +209,7 @@ if __name__ == "__main__":
     tolerance_length = 2.5
     tolerance_area = 0.002
     dot_size = 70
+
     for index, row in demand.iterrows():
         if demand_chart.empty:
             # add first bubble
@@ -227,5 +263,48 @@ if __name__ == "__main__":
            plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
 
     plt.show()
-    """
+
+
+if __name__ == "__main__":
+    
+    # Generate a set of unique trusses from CSV file:
+    PATH = "Data\\CSV files trusses\\truss_all_types_beta_4.csv"
+    trusses = create_trusses_from_JSON(PATH)
+    truss_elements = elements_from_trusses(trusses)
+    all_elements = [item for sublist in truss_elements for item in sublist]
+    all_elem_df = pd.DataFrame(all_elements)
+
+    # demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
+    # supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
+    constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
+    
+    # From that set, distinguish N_D demand and N_S supply elements, based on the desired number and ratios:
+    # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
+    N_D, N_S = 167, 833
+    
+    set_a, set_b = pick_random(N_D, N_S, truss_elements, whole_trusses=False)
+    
+    demand = pd.DataFrame(set_a)
+    demand.index = ['D' + str(num) for num in demand.index]
+    supply = pd.DataFrame(set_b)
+    supply.index = ['S' + str(num) for num in supply.index]
+    supply.insert(5, "Is_new", False)
+
+    # Run the matching
+    result = run_matching(demand=demand, supply=supply, constraints=constraint_dict, add_new=True, greedy_single=True, bipartite=True,
+            milp=False, sci_milp=False)
+
+    pairs = hm.extract_pairs_df(result)
+
+    # Print results
+    print(pairs)
+    for res in result:
+        print(f"Name: {res['Name']}\t\t*Result: {res['Match object'].result} kg, time: {res['Time']}s, PercentNew: {res['PercentNew']}")
+
+
+    # plot_histograms(all_elem_df)
+    # plot_scatter(all_elem_df)
+    # plot_bubble(demand, supply)
+    # plot_hexbin(demand, supply)
+
     pass

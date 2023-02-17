@@ -29,7 +29,24 @@ logging.basicConfig(
 
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
-    def __init__(self, demand, supply, score_function, add_new=False, multi=False, constraints={}, solution_limit=60):
+    def __init__(self, demand, supply, score_function_string, add_new=False, multi=False, constraints={}, solution_limit=60):
+        """_summary_
+
+        :param demand: _description_
+        :type demand: _type_
+        :param supply: _description_
+        :type supply: _type_
+        :param score_function_string: _description_
+        :type score_function_string: _type_
+        :param add_new: _description_, defaults to False
+        :type add_new: bool, optional
+        :param multi: _description_, defaults to False
+        :type multi: bool, optional
+        :param constraints: _description_, defaults to {}
+        :type constraints: dict, optional
+        :param solution_limit: _description_, defaults to 60
+        :type solution_limit: int, optional
+        """
         self.demand = demand.infer_objects()
         if add_new: # just copy designed to supply set, so that they act as new products
             demand_copy = self.demand.copy(deep = True)
@@ -46,18 +63,18 @@ class Matching():
         self.result = None  #saves latest result of the matching
         self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id']) #saves latest array of pairs
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
-        self.weights = None
+        # self.weights = None
         self.constraints = constraints
-        self.score_function = score_function
+        self.score_function_string = score_function_string
         self.solution_time = None
         self.solution_limit = solution_limit           
        
-        self.demand['Score'] = self.demand.eval(score_function)
-        self.supply['Score'] = self.supply.eval(score_function)
+        self.demand['Score'] = self.demand.eval(score_function_string)
+        self.supply['Score'] = self.supply.eval(score_function_string)
 
         # create incidence and weight for the method
         self.incidence = self.evaluate_incidence()
-        self.weight = self.evaluate_weights()
+        self.weights = self.evaluate_weights()
 
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
 
@@ -98,13 +115,21 @@ class Matching():
     def evaluate_weights(self):
         """Return matrix of weights for elements in the incidence matrix. The lower the weight the better."""
         start = time.time()
-        weights = self.incidence.copy()
-        # TODO Artur: It should calc score based on new cut length, and then filter map using:
-        weights[self.incidence]
+        weights = np.full(self.incidence.shape, np.nan)
+
+        el_locs0 = np.where(self.incidence) # tuple of rows and columns positions, as a list
+        el_locs = np.transpose(el_locs0) # array of row-column pairs where incidence matrix is true. 
+        # demand_inds = [pair[0] for pair in el_locs]
+        # supply_inds = [pair[1] for pair in el_locs]
+        eval_df = self.supply.iloc[el_locs0[1]].reset_index(drop=True)
+        eval_df['Length'] = self.demand.iloc[el_locs0[0]]['Length'].reset_index(drop=True)
+        eval_score = eval_df.eval(score_function_string)
+
+        weights[el_locs0[0], el_locs0[1]] = eval_score.to_numpy()     
 
         end = time.time()  
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
-        return pd.DataFrame(score_mat, index = self.incidence.index, columns = self.incidence.columns)
+        return pd.DataFrame(weights, index = self.incidence.index, columns = self.incidence.columns)
 
     def add_pair(self, demand_id, supply_id):
         """Execute matrix matching"""
@@ -127,7 +152,7 @@ class Matching():
             edges.extend( (list(compress(combs, mask) ) ) )
             weights.extend(list(compress(self.weights.iloc[i], mask)))
         # initial score minus the replacement score:
-        weights = np.array([self.demand.score[edge[0]] for edge in edges ]) - np.array(weights)
+        weights = np.array([self.demand.Score[edge[0]] for edge in edges ]) - np.array(weights)
         #weights = max(weights) - np.array(weights)
         graph = ig.Graph.Bipartite(vertices, edges)
         graph.es["label"] = weights
@@ -170,7 +195,7 @@ class Matching():
         self.result = (self.weights.to_numpy()[row_inds, col_inds]).sum()
         # add the score of original elements that are not substituted
         mask = self.pairs.Supply_id.isna().to_numpy()
-        original_score = self.demand.score[mask].sum()
+        original_score = self.demand.Score[mask].sum()
         self.result += original_score
 
     ### MATCHING ALGORITHMS
@@ -186,9 +211,9 @@ class Matching():
         supply_sorted.index = np.array(range(len(supply_sorted.index)))
         #sort the supply and demand
         #demand_sorted.sort_values(by=['Length', 'Area'], axis=0, ascending=False, inplace = True)
-        demand_sorted.sort_values(by=['score'], axis=0, ascending=False, inplace = True)
+        demand_sorted.sort_values(by=['Score'], axis=0, ascending=False, inplace = True)
         #supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True, inplace = True)
-        supply_sorted.sort_values(by=['Is_new', 'score'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
+        supply_sorted.sort_values(by=['Is_new', 'Score'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
         incidence_np = self.incidence.copy(deep=True).values      
         columns = self.supply.index.to_list()
         rows = self.demand.index.to_list()
@@ -207,10 +232,10 @@ class Matching():
                         supply_sorted.loc[supply_tuple.Index, "Length"] = new_length
                         temp_row = supply_sorted.loc[supply_tuple.Index].copy(deep=True)
                         # TODO LCA outside
-                        temp_row['score'] = temp_row.Length * temp_row.Area * 2.2 * 28  #* REUSE_GWP_RATIO * TIMBER_GWP
+                        temp_row['Score'] = temp_row.Length * temp_row.Area * 2.2 * 28  #* REUSE_GWP_RATIO * TIMBER_GWP
                         supply_sorted.drop(supply_tuple.Index, axis = 0, inplace = True)
-                        #new_ind = supply_sorted['score'].searchsorted([False ,temp_row['score']], side = 'left') #get index to insert new row into #TODO Can this be sorted also by 'Area' and any other constraint?
-                        new_ind = supply_sorted[supply_sorted['Is_new'] == False]['score'].searchsorted(temp_row['score'], side = 'left')
+                        #new_ind = supply_sorted['Score'].searchsorted([False ,temp_row['Score']], side = 'left') #get index to insert new row into #TODO Can this be sorted also by 'Area' and any other constraint?
+                        new_ind = supply_sorted[supply_sorted['Is_new'] == False]['Score'].searchsorted(temp_row['Score'], side = 'left')
                         part1 = supply_sorted[:new_ind].copy(deep=True)
                         part2 = supply_sorted[new_ind:].copy(deep=True)
                         supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).transpose().infer_objects(), part2]) #TODO Can we make it simpler
@@ -465,7 +490,7 @@ class Matching():
             for j in data['all_bins']:
                 objective.append(
                     #cp_model.LinearExpr.Term(x[i,j], coeff_array[i,j])
-                    cp_model.LinearExpr.Term(x[i,j], (self.demand.score[i]*m_fac - coeff_array[i,j]))
+                    cp_model.LinearExpr.Term(x[i,j], (self.demand.Score[i]*m_fac - coeff_array[i,j]))
                     )          
         #model.Maximize(cp_model.LinearExpr.Sum(objective))
         model.Maximize(cp_model.LinearExpr.Sum(objective))
@@ -491,7 +516,7 @@ class Matching():
         #initial_score = pd.eval('self.demand.Length * self.demand.Area * TIMBER_factor').sum()
         #costs = self.weights.to_numpy(dtype = float)
         weights = np.nan_to_num(self.weights.to_numpy().astype(float), nan = 0) 
-        score = self.demand.score.to_numpy(dtype = float).reshape((-1,1)) 
+        score = self.demand.Score.to_numpy(dtype = float).reshape((-1,1)) 
         costs = np.subtract(score, weights).reshape((-1,))
         #costs = costs 
         #np.nan_to_num(costs, copy = False, nan = -110)
@@ -543,12 +568,12 @@ class Matching():
         #compare_df['OK'] = np.where(compare_df['Length Assigned'] <= compare_df['Length Capacity'], True, False)
         
       
-def run_matching(demand, supply, score_function, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False):
+def run_matching(demand, supply, score_function_string, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
     # create matching object 
-    matching = Matching(demand=demand, supply=supply, score_function=score_function, constraints=constraints, add_new=add_new, multi = True)
+    matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string, constraints=constraints, add_new=add_new, multi = True)
     matches =[] # results to return
     headers = []
     if bipartite:
@@ -582,8 +607,8 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=5, supply_count=5)
-    score_function = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
-    run_matching(demand, supply, score_function=score_function, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=False, bipartite=True)
+    demand, supply = hm.create_random_data(demand_count=3, supply_count=4)
+    score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
+    run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=False, bipartite=True)
 
     pass

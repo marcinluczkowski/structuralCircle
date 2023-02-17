@@ -190,6 +190,12 @@ class Matching():
     ### MATCHING ALGORITHMS
 
     @_matching_decorator
+    def match_brute(self, plural_assign=False):
+        """..."""
+        # TODO implement it
+        pass
+
+    @_matching_decorator
     def match_greedy(self, plural_assign=False):
         """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
 
@@ -600,21 +606,21 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
     matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string, constraints=constraints, add_new=add_new, multi = True)
     matches =[] # results to return
     headers = []
-    if bipartite:
-        matching.match_bipartite_graph()
-        matches.append({'Name': 'Bipartite', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if greedy_single:
         matching.match_greedy(plural_assign=False)
         matches.append({'Name': 'Greedy_single','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if greedy_plural:
         matching.match_greedy(plural_assign=True)
         matches.append({'Name': 'Greedy_plural', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+    if bipartite:
+        matching.match_bipartite_graph()
+        matches.append({'Name': 'Bipartite', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if milp:
         matching.match_mixed_integer_programming()
         matches.append({'Name': 'MILP','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if sci_milp:
         matching.match_scipy_milp()
-        matches.append({'Name': 'Scipy MILP','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'Scipy_MILP','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if genetic:
         matching.match_genetic_algorithm()
         matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})

@@ -33,6 +33,11 @@ def extract_results_df(dict_list):
     df=df.rename(columns={0:"LCA"})
     return df.round(3)
 
+def remove_alternatives(x, y):
+    if x > y:
+        return np.nan
+    else:
+        return x
 
 # def extract_LCA_new(dict_list):
 #     matchobj=dict_list[0]["Match object"]

@@ -116,17 +116,13 @@ class Matching():
         """Return matrix of weights for elements in the incidence matrix. The lower the weight the better."""
         start = time.time()
         weights = np.full(self.incidence.shape, np.nan)
-
         el_locs0 = np.where(self.incidence) # tuple of rows and columns positions, as a list
         el_locs = np.transpose(el_locs0) # array of row-column pairs where incidence matrix is true. 
-        # demand_inds = [pair[0] for pair in el_locs]
-        # supply_inds = [pair[1] for pair in el_locs]
+        # create a new dataframe with values from supply, except for the Length, which is from demand set (cut supply)
         eval_df = self.supply.iloc[el_locs0[1]].reset_index(drop=True)
         eval_df['Length'] = self.demand.iloc[el_locs0[0]]['Length'].reset_index(drop=True)
         eval_score = eval_df.eval(score_function_string)
-
         weights[el_locs0[0], el_locs0[1]] = eval_score.to_numpy()     
-
         end = time.time()  
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
         return pd.DataFrame(weights, index = self.incidence.index, columns = self.incidence.columns)
@@ -140,22 +136,15 @@ class Matching():
         """Add a graph notation based on incidence matrix"""
         vertices = [0]*len(self.demand.index) + [1]*len(self.supply.index)
         num_rows = len(self.demand.index)
-        edges = []
-        weights = []    
-        #is_n = self.incidence    
-        #is_n = ~self.weights.isna() # get and invert the booleans
-        row_inds = np.arange(self.incidence.shape[0]).tolist()
-        col_inds = np.arange(len(self.demand.index), len(self.demand.index)+ self.incidence.shape[1]).tolist()
-        for i in row_inds:
-            combs = list(product([i], col_inds) )
-            mask =  self.incidence.iloc[i] 
-            edges.extend( (list(compress(combs, mask) ) ) )
-            weights.extend(list(compress(self.weights.iloc[i], mask)))
-        # initial score minus the replacement score:
-        weights = np.array([self.demand.Score[edge[0]] for edge in edges ]) - np.array(weights)
-        #weights = max(weights) - np.array(weights)
+        edges = np.transpose(np.where(self.incidence))
+        edges = [[edge[0], edge[1]+num_rows] for edge in edges]
+        edge_weights = self.weights.to_numpy().reshape(-1,)
+        edge_weights = edge_weights[~np.isnan(edge_weights)]
+        # We need to reverse the weights, so that the higher the better. Because of this edge weights are initial score minus the replacement score:
+        edge_weights = np.array([self.demand.Score[edge[0]] for edge in edges ]) - edge_weights 
+        # assemble graph
         graph = ig.Graph.Bipartite(vertices, edges)
-        graph.es["label"] = weights
+        graph.es["label"] = edge_weights
         graph.vs["label"] = list(self.demand.index)+list(self.supply.index) #vertice names
         self.graph = graph
 
@@ -203,55 +192,30 @@ class Matching():
     @_matching_decorator
     def match_greedy(self, plural_assign=False):
         """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
-        # TODO consider opposite sorting (as we did in Gh), small chance but better result my occur
-        demand_sorted = self.demand.copy(deep =True)
-        supply_sorted = self.supply.copy(deep =True)
-        #Change indices to integers for both demand and supply
-        demand_sorted.index = np.array(range(len(demand_sorted.index)))
-        supply_sorted.index = np.array(range(len(supply_sorted.index)))
-        #sort the supply and demand
-        #demand_sorted.sort_values(by=['Length', 'Area'], axis=0, ascending=False, inplace = True)
-        demand_sorted.sort_values(by=['Score'], axis=0, ascending=False, inplace = True)
-        #supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True, inplace = True)
-        supply_sorted.sort_values(by=['Is_new', 'Score'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
-        incidence_np = self.incidence.copy(deep=True).values      
-        columns = self.supply.index.to_list()
-        rows = self.demand.index.to_list()
-        min_length = self.demand.Length.min() # the minimum lenght of a demand element
-        for demand_tuple in demand_sorted.itertuples():            
-            match=False
-            logging.debug("-- Attempt to find a match for %s", demand_tuple.Index)                
-            for supply_tuple in supply_sorted.itertuples():                 
-                if incidence_np[demand_tuple.Index,supply_tuple.Index]:           
-                    match=True
-                    self.add_pair(rows[demand_tuple.Index], columns[supply_tuple.Index])
-                if match:
-                    new_length = supply_tuple.Length - demand_tuple.Length
-                    if plural_assign and new_length >= min_length:                    
-                        # shorten the supply element:
-                        supply_sorted.loc[supply_tuple.Index, "Length"] = new_length
-                        temp_row = supply_sorted.loc[supply_tuple.Index].copy(deep=True)
-                        # TODO LCA outside
-                        temp_row['Score'] = temp_row.Length * temp_row.Area * 2.2 * 28  #* REUSE_GWP_RATIO * TIMBER_GWP
-                        supply_sorted.drop(supply_tuple.Index, axis = 0, inplace = True)
-                        #new_ind = supply_sorted['Score'].searchsorted([False ,temp_row['Score']], side = 'left') #get index to insert new row into #TODO Can this be sorted also by 'Area' and any other constraint?
-                        new_ind = supply_sorted[supply_sorted['Is_new'] == False]['Score'].searchsorted(temp_row['Score'], side = 'left')
-                        part1 = supply_sorted[:new_ind].copy(deep=True)
-                        part2 = supply_sorted[new_ind:].copy(deep=True)
-                        supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).transpose().infer_objects(), part2]) #TODO Can we make it simpler
-                        new_incidence_col = self.evaluate_column(new_length, "Length", self.constraints['Length'], incidence_np[:, supply_tuple.Index])
-                        #new_incidence_col = self.evaluate_column(supply_tuple.Index, new_length, "Length", self.constraints["Length"], incidence_np[:, supply_tuple.Index])
-                        #incidence__np[:, columns.index(supply_tuple.Index)] = new_incidence_col
-                        #incidence_copy.loc[:, columns[supply_tuple.Index]] = new_incidence_col #TODO If i get the indicies to work. Try using this as an np array instead of df.
-                        incidence_np[:,supply_tuple.Index] = new_incidence_col
-                        logging.debug("---- %s is a match, that results in %s m cut.", supply_tuple.Index, supply_tuple.Length)
-                    else:
-                        #self.result += calculate_score(supply_row.Length, supply_row.Area, is_new=supply_row.Is_new)
-                        logging.debug("---- %s is a match and will be utilized fully.", supply_tuple.Index)
-                        supply_sorted.drop(supply_tuple.Index, inplace = True)
-                    break
-            else:
-                logging.debug("---- %s is not matching.", supply_tuple.Index)
+
+        sorted_weights = self.weights.join(self.demand.Score)
+        sorted_weights = sorted_weights.sort_values(by='Score', axis=0, ascending=False)
+        sorted_weights = sorted_weights.drop(columns=['Score'])
+        # sorted_weights.fillna(np.inf, inplace=True)  
+
+        score = self.supply.Score.copy()
+
+        for row in sorted_weights.iterrows():
+            row_id = row[0]
+            vals = np.array(row[1:])[0]
+            if np.any(vals):    # checks if not empty row (no matches)
+                lowest = np.nanmin(vals)
+                col_id = sorted_weights.columns[np.where(vals == lowest)][0]
+                self.add_pair(row_id, col_id)
+                if plural_assign:
+                    # check if this column makes sense if remaining rows (score < initial_score-score_used), remove if not
+                    # sorted_weights[col_id] = sorted_weights[col_id].apply(hm.remove_alternatives, args=(self.supply.loc[col_id].Score))
+                    score.loc[col_id] = score.loc[col_id] - lowest
+                    sorted_weights[col_id] = sorted_weights[col_id].apply((lambda x: hm.remove_alternatives(x, score.loc[col_id])))
+                else:
+                    # empty the column that was used
+                    sorted_weights[col_id] = np.nan
+        pass
 
     @_matching_decorator
     def match_greedy_DEPRECIATED(self, plural_assign=False):
@@ -628,7 +592,7 @@ class Matching():
         #compare_df = capacity_df.join(self.supply.Length, how = 'inner', lsuffix = ' Assigned', rsuffix = ' Capacity')
         #compare_df['OK'] = np.where(compare_df['Length Assigned'] <= compare_df['Length Capacity'], True, False)
         
-      
+  
 def run_matching(demand, supply, score_function_string, constraints = None, add_new = True, bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
@@ -668,8 +632,14 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=3, supply_count=4)
+    demand, supply = hm.create_random_data(demand_count=4, supply_count=5)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
-    run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=False, bipartite=True)
-
+    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=False, bipartite=True)
+    simple_pairs = hm.extract_pairs_df(result)
+    simple_results = hm.extract_results_df(result)
+    print("Simple pairs:")
+    print(simple_pairs)
+    print()
+    print("Simple results")
+    print(simple_results)
     pass

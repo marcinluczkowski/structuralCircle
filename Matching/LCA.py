@@ -1,10 +1,10 @@
 import logging
 import requests
 
-TIMBER_GWP = 28.9       # based on NEPD-3442-2053-EN
-TIMBER_REUSE_GWP = 2.25        # 0.0778*28.9 = 2.25 based on Eberhardt
-TRANSPORT_GWP = 96.0    # TODO kg/m3/t based on ????
-TIMBER_DENSITY = 491.0  # kg, based on NEPD-3442-2053-EN
+TIMBER_GWP = 28.9           # based on NEPD-3442-2053-EN
+TIMBER_REUSE_GWP = 2.25     # 0.0778*28.9 = 2.25 based on Eberhardt
+TRANSPORT_GWP = 96.0        # TODO kg/m3/t based on ????
+TIMBER_DENSITY = 491.0      # kg, based on NEPD-3442-2053-EN
 
 def calculate_lca(length, area, gwp_factor=TIMBER_GWP, location=[0.0,0.0,0.0,0.0], density=TIMBER_DENSITY, include_transportation=False):
     """ Calculate Life Cycle Assessment """

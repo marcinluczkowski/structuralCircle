@@ -200,28 +200,48 @@ if __name__ == "__main__":
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
 
+    result_table = []
+
     # From that set, distinguish N_D demand and N_S supply elements, based on the desired number and ratios:
     # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
-    N_D, N_S = 167, 833
     
-    set_a, set_b = pick_random(N_D, N_S, truss_elements, whole_trusses=False)
+    amounts = [
+        [980,20],
+        [909,91],
+        [833,167],
+        [667,333],
+        [500,500],
+        [333,667],
+        [167,833],
+        [91,909],
+        [20,980]
+        ]    
     
-    demand = pd.DataFrame(set_a)
-    demand.index = ['D' + str(num) for num in demand.index]
-    supply = pd.DataFrame(set_b)
-    supply.index = ['S' + str(num) for num in supply.index]
-    supply.insert(5, "Is_new", False)
+    for x in amounts:
+        N_D, N_S = x
+        set_a, set_b = pick_random(N_D, N_S, truss_elements, whole_trusses=False)
+        demand = pd.DataFrame(set_a)
+        demand.index = ['D' + str(num) for num in demand.index]
+        supply = pd.DataFrame(set_b)
+        supply.index = ['S' + str(num) for num in supply.index]
+        # Run the matching
+        result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, milp=False, sci_milp=True, greedy_single=True, bipartite=True) 
+        pairs = hm.extract_pairs_df(result)
+        # Print results
+        # print(pairs)
+        for res in result:
+            result_table.append([
+            res['Name'],
+            0.0, #res['PercentNew']
+            round(res['Match object'].result, 2),
+            round(res['Time'], 2)
+            ])
+        
+        print(f"{N_D}x{N_S}")
 
-    # Run the matching
-    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, milp=False, sci_milp=True, greedy_single=True, bipartite=True)
-    
-    pairs = hm.extract_pairs_df(result)
+    result_df = pd.DataFrame(result_table)
 
-    # Print results
-    # print(pairs)
-    for res in result:
-        print(f"Name: {res['Name']}\t\t*Result: {res['Match object'].result} kg, time: {res['Time']}s, PercentNew: res['PercentNew']")
-
+    print(result_df.transpose())
 
     # plot_histograms(all_elem_df)
     # plot_scatter(all_elem_df)

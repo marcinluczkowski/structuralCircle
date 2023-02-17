@@ -4,6 +4,7 @@ from matching import Matching
 import pandas as pd
 import numpy as np
 import sys
+import LCA as lca
 
 # read input argument from console
 method_name = sys.argv[1]
@@ -23,17 +24,18 @@ demand.Length *=0.01
 demand.Area *=0.0001
 demand.Inertia_moment *=0.00000001
 demand.Height *=0.01
+demand.Gwp_factor = lca.TIMBER_GWP
 #read and clean supply df
 supply = pd.read_json(supply_path)
 supply_header = supply.iloc[0]
 supply.columns = supply_header
 supply.drop(axis = 1, index= 0, inplace=True)
-supply['Is_new'] = False
 supply.reset_index(drop = True, inplace = True)
 supply.Length *=0.01
 supply.Area *=0.0001
 supply.Inertia_moment *=0.00000001
 supply.Height *=0.01
+supply.Gwp_factor = lca.TIMBER_REUSE_GWP
 
 # constraints: these are added 
 

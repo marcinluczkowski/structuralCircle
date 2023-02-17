@@ -125,15 +125,32 @@ if __name__ == "__main__":
     ### ADD PLOTS
     
     import matplotlib.pyplot as plt
-
+    import seaborn as sns
     # X-tick labels taken from Artur-table, can find from df later by introducing information to DataFrame
     new_ticks = ['36x36', '36x48', '36x148', '36x198', 
                 '48x148', '48x198', '61x198', '73x198', '73x223']
 
+
+    
+    ### Test JointPlot from Seaborn
+    sns.set_theme(style = 'ticks')
+    jg = sns.jointplot(x='Length', y='Area', data = all_elem_df, kind = 'hex', color = "#4CB391")
+    
+    # Histogram
+    sns.set_theme(style='ticks')
+    fig, ax = plt.subplots(figsize = (15, 8))
+    sns.despine(fig = fig)
+    sns.histplot(x = 'Area', palette='light:m_r', edgecolor = '0.3', linewidth = .5, ax=ax, data = all_elem_df)
+    ax.set_title('Cross-section Histogram')
+    ax.xaxis.set_major_formatter(matplotlib.ticker.)
+    
+
+    plt.show()
+    """
     #fig, axs = plt.subplots(1,2, sharex=False, sharey=False)
     
     ### Plot the histogram of truss elements:
-    all_elem_df.hist(column=['Length', 'Area'], bins=20)#, ax = axs[0])
+    #all_elem_df.hist(column=['Length', 'Area'], bins=20)#, ax = axs[0])
     #plt.show()
 
 
@@ -142,15 +159,15 @@ if __name__ == "__main__":
     #axs[0].set_xticks(ticks)
     #plt.sca(axs[1])
     #plt.xticks(xticks = ticks, xticklabels = new_ticks)
-    fig, ax = plt.subplots(1,1)
-    all_elem_df.plot.scatter(x='Width', y='Height', ax = ax)
+    # fig, ax = plt.subplots(1,1)
+    # all_elem_df.plot.scatter(x='Width', y='Height', ax = ax)
 
-    # set x_ticks
-    new_tick_pos = sorted(list(set(all_elem_df.Area)))
-    #ax.set_xticks(new_tick_pos)
-    ax.set_xticklabels(new_ticks, rotation = 45)
-    #ax.xticks = new_ticks
-    plt.show()
+    # # set x_ticks
+    # new_tick_pos = sorted(list(set(all_elem_df.Area)))
+    # #ax.set_xticks(new_tick_pos)
+    # ax.set_xticklabels(new_ticks, rotation = 45)
+    # #ax.xticks = new_ticks
+    # plt.show()
 
     # if close to one another, don't add but increase size:
     demand_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
@@ -210,5 +227,5 @@ if __name__ == "__main__":
            plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
 
     plt.show()
-
+    """
     pass

@@ -55,7 +55,6 @@ def elements_from_trusses(trusses):
                 "Height": elem[1][1]*0.001,
                 "Inertia_moment": elem[1][0]*0.001 * elem[1][1]*0.001**3 / 12,
                 "Area": elem[1][0]*0.001 * elem[1][1]*0.001,
-                "Gwp_factor": lca.TIMBER_REUSE_GWP
             }
             t.append(e)
             es.append(e)
@@ -192,11 +191,10 @@ if __name__ == "__main__":
     PATH = "Data\\CSV files trusses\\truss_all_types_beta_4.csv"
     trusses = create_trusses_from_JSON(PATH)
     truss_elements = elements_from_trusses(trusses)
+
     all_elements = [item for sublist in truss_elements for item in sublist]
     all_elem_df = pd.DataFrame(all_elements)
 
-    # demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
-    # supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
 
@@ -222,10 +220,14 @@ if __name__ == "__main__":
         set_a, set_b = pick_random(N_D, N_S, truss_elements, whole_trusses=False)
         demand = pd.DataFrame(set_a)
         demand.index = ['D' + str(num) for num in demand.index]
+        demand['Gwp_factor'] = lca.TIMBER_GWP
+
         supply = pd.DataFrame(set_b)
         supply.index = ['S' + str(num) for num in supply.index]
+        supply['Gwp_factor'] = lca.TIMBER_REUSE_GWP
+
         # Run the matching
-        result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, milp=False, sci_milp=True, greedy_single=True, bipartite=True) 
+        result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, milp=True, sci_milp=True, greedy_single=True, bipartite=True) 
         pairs = hm.extract_pairs_df(result)
         # Print results
         # print(pairs)

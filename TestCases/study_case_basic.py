@@ -10,8 +10,8 @@ import LCA as lca
 
 ### Test with just few elements
 
-demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
-supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
+demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Gwp_factor'])
+supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Gwp_factor'])
 
 # Add a perfect matching pair
 demand.loc['D1'] = {'Material': 1, 'Length': 7.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Gwp_factor':lca.TIMBER_GWP}

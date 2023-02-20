@@ -100,7 +100,13 @@ class Matching():
             cond_array = np.column_stack(cond_list) #create new 2D-array of conditionals
             bool_array = ne.evaluate("cond_array & bool_array") # 
             #bool_array = np.logical_and(bool_array, cond_array)
-        
+        # for simplicity I restrict the incidence of new elements to only be True for the "new" equivalent
+        inds = self.supply.index[self.supply.index.map(lambda s: 'N' in s)] # Get the indices for new elements
+        if len(inds) > 0:
+            diag_mat = np.full((len(inds), len(inds)), False)
+            np.fill_diagonal(diag_mat, True) # create a diagonal with True on diag, False else. 
+            bool_array = np.hstack((bool_array[:, :-len(inds)], diag_mat))
+
         end = time.time()
         logging.info("Create incidence matrix from constraints: %s sec", round(end - start,3))
         return pd.DataFrame(bool_array, columns= self.incidence.columns, index= self.incidence.index)
@@ -235,9 +241,9 @@ class Matching():
 
         #sort the supply and demand
         #demand_sorted.sort_values(by=['Length', 'Area'], axis=0, ascending=False, inplace = True)
-        demand_sorted.sort_values(by=['LCA'], axis=0, ascending=False, inplace = True)
+        demand_sorted.sort_values(by=['Score'], axis=0, ascending=False, inplace = True)
         #supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True, inplace = True)
-        supply_sorted.sort_values(by=['Is_new', 'LCA'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
+        supply_sorted.sort_values(by=['Is_new', 'Score'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
         incidence_np = self.incidence.copy(deep=True).values      
 
         columns = self.supply.index.to_list()

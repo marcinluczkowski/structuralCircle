@@ -90,7 +90,7 @@ def display_graph(matching, graph_type='rows', show_weights=True, show_result=Tr
             source = matching.graph.vs.find(label=index) 
             try:
                 target = matching.graph.vs.find(label=pair['Supply_id'])
-                edge = smatchingelf.graph.es.select(_between = ([source.index], [target.index]))
+                edge = matching.graph.es.select(_between = ([source.index], [target.index]))
                 edge_color[edge.indices[0]] = "black" #"red"
                 edge_width[edge.indices[0]] = 2.5
             except ValueError:

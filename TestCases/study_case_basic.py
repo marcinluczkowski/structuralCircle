@@ -54,8 +54,8 @@ result = run_matching(demand, supply, score_function_string=score_function_strin
 
 #FIXME When testing with new elements. Why are the scores (LCA) identical even though we have different matching DataFrames. 
 
-simple_pairs = hm.extract_pairs_df(result_simple)
-simple_results = hm.extract_results_df(result_simple)
+simple_pairs = hm.extract_pairs_df(result)
+simple_results = hm.extract_results_df(result)
 
 print("Simple pairs:")
 print(simple_pairs)
@@ -65,8 +65,8 @@ print("Simple results")
 print(simple_results)
 
 # Calculate volumes
-dem = result_simple[0]['Match object'].demand
-sup = result_simple[0]['Match object'].supply
+dem = result[0]['Match object'].demand
+sup = result[0]['Match object'].supply
 
 
 indices = list(dem.index)

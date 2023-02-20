@@ -95,6 +95,7 @@ def plot_savings(result_df):
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
     plot.set(xlabel='Test case', ylabel='% of score saved')
+    plt.xticks(rotation=20)
     plt.show()
 
 def plot_time(result_df):
@@ -102,6 +103,7 @@ def plot_time(result_df):
     sns.set_theme(style="whitegrid")
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
     plot.set(yscale="log", xlabel='Test case', ylabel='Time [s]')
+    plt.xticks(rotation=20)
     plt.show()
 
 def plot_bubble(demand, supply):

@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import igraph as ig
 import logging
 import LCA as lca
+import seaborn as sns
+
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 
@@ -43,6 +45,127 @@ def remove_alternatives(x, y):
 #     matchobj=dict_list[0]["Match object"]
 #     sum=matchobj.demand["LCA"].sum()
 #     return sum
+
+
+### ADD PLOTS
+
+def plot_histograms(df):
+    
+    # csfont = {'fontname':'Times New Roman'}
+    # plt.rcParams.update({'font.size': 22}) # must set in top
+    plt.rcParams['font.size'] = 12
+    plt.rcParams["font.family"] = "Times New Roman"
+
+    ### List unique values of width/height:
+    # TODO redo the histogram so that names are displayed, not area.
+    df['Cross-sections'] = df['Width'].astype(str) + "x" + df['Height'].astype(str)
+    
+    ### Plot the histogram of truss elements:
+    df.hist(column=['Length', 'Area'], bins=20)
+ 
+    # plt.Axes.set_axisbelow(b=True)
+    plt.title('Area')
+    plt.show()
+
+
+def plot_scatter(df):
+    ### Scatter plot of all elements width/height:
+    df.plot.scatter(x='Width', y='Height')
+    plt.xlabel('Width')
+    plt.ylabel('Height')
+    plt.show()
+
+
+
+def plot_hexbin(df):
+    # Based on https://seaborn.pydata.org/examples/hexbin_marginals.html
+    plt.figure()
+    sns.set(font="Verdana")
+    sns.set_theme(style="ticks")
+    # TODO Sverre, try with section names: sns.jointplot(x=df['Length'], y=df['Section'], kind="hex", color="#4CB391")
+    sns.jointplot(x=df['Length'], y=df['Area'], kind="hex", color="#4CB391")
+    # sns.jointplot(x=supply['Length'], y=supply['Area'], kind="hex", color="#eb4034")
+    plt.show()
+
+
+
+def plot_savings(result_df):
+    plt.figure()
+    sns.set_theme(style="whitegrid")
+    # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
+    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
+    plot.set(xlabel='Test case', ylabel='% of score saved')
+    plt.show()
+
+def plot_time(result_df):
+    plt.figure()
+    sns.set_theme(style="whitegrid")
+    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
+    plot.set(yscale="log", xlabel='Test case', ylabel='Time [s]')
+    plt.show()
+
+def plot_bubble(demand, supply):
+
+    # if close to one another, don't add but increase size:
+    demand_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
+    tolerance_length = 2.5
+    tolerance_area = 0.002
+    dot_size = 70
+
+    for index, row in demand.iterrows():
+        if demand_chart.empty:
+            # add first bubble
+            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        # check if similiar bubble already present:
+        elif demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].empty:
+            # not, so add new bubble
+            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        else:
+            # already present, so increase the bubble size:
+            ind = demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
+            demand_chart.at[ind,'dot_size'] = demand_chart.at[ind,'dot_size'] +1
+
+    demand_chart['dot_size_scaled'] = dot_size * (demand_chart['dot_size']**0.5)
+
+    supply_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
+    for index, row in supply.iterrows():
+        if supply_chart.empty:
+            # add first bubble
+            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        # check if similiar bubble already present:
+        elif supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].empty:
+            # not, so add new bubble
+            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        else:
+            # already present, so increase the bubble size:
+            ind = supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
+            supply_chart.at[ind,'dot_size'] = supply_chart.at[ind,'dot_size'] +1
+
+    supply_chart['dot_size_scaled'] = dot_size * (supply_chart['dot_size']**0.5)
+
+    plt.scatter(demand_chart.Length, demand_chart.Area, s=list(demand_chart.dot_size_scaled), c='b', alpha=0.5, label='Demand')
+    plt.scatter(supply_chart.Length, supply_chart.Area, s=list(supply_chart.dot_size_scaled), c='g', alpha=0.5, label='Supply')
+
+    lgnd = plt.legend(loc="lower right")
+    lgnd.legendHandles[0]._sizes = [50]
+    lgnd.legendHandles[1]._sizes = [50]
+
+    plt.xlabel("Length", size=16)
+    plt.ylabel("Area", size=16)
+
+    for i, row in demand_chart.iterrows():
+        if row['dot_size'] < 10:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
+        else:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
+    for i, row in supply_chart.iterrows():
+        if row['dot_size'] < 10:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
+        else:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
+
+    plt.show()
+
 
 
 def create_random_data(demand_count, supply_count, demand_gwp=lca.TIMBER_GWP, supply_gwp=lca.TIMBER_REUSE_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
@@ -90,7 +213,7 @@ def display_graph(matching, graph_type='rows', show_weights=True, show_result=Tr
             source = matching.graph.vs.find(label=index) 
             try:
                 target = matching.graph.vs.find(label=pair['Supply_id'])
-                edge = smatchingelf.graph.es.select(_between = ([source.index], [target.index]))
+                edge = matching.graph.es.select(_between = ([source.index], [target.index]))
                 edge_color[edge.indices[0]] = "black" #"red"
                 edge_width[edge.indices[0]] = 2.5
             except ValueError:

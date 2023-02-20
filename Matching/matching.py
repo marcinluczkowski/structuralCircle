@@ -141,7 +141,7 @@ class Matching():
         edge_weights = self.weights.to_numpy().reshape(-1,)
         edge_weights = edge_weights[~np.isnan(edge_weights)]
         # We need to reverse the weights, so that the higher the better. Because of this edge weights are initial score minus the replacement score:
-        edge_weights = np.array([self.demand.Score[edge[0]] for edge in edges ]) - edge_weights 
+        edge_weights = (np.array([self.demand.Score[edge[0]] for edge in edges ])+0.0000001) - edge_weights 
         # assemble graph
         graph = ig.Graph.Bipartite(vertices, edges)
         graph.es["label"] = edge_weights
@@ -202,14 +202,15 @@ class Matching():
         sorted_weights = self.weights.join(self.demand.Score)
         sorted_weights = sorted_weights.sort_values(by='Score', axis=0, ascending=False)
         sorted_weights = sorted_weights.drop(columns=['Score'])
-        # sorted_weights.fillna(np.inf, inplace=True)  
+        #sorted_weights.replace(np.nan, np.inf, inplace=True)  
 
         score = self.supply.Score.copy()
 
         for i in range(sorted_weights.shape[0]):
             row_id = sorted_weights.iloc[[i]].index[0]
             vals = np.array(sorted_weights.iloc[[i]])[0]
-            if np.any(vals):    # checks if not empty row (no matches)
+#            if np.any(vals):    # checks if not empty row (no matches)
+            if sum(~np.isnan(vals)) > 0: # check if there it at least one element not np.nan
                 lowest = np.nanmin(vals)
                 col_id = sorted_weights.columns[np.where(vals == lowest)][0]
                 self.add_pair(row_id, col_id)
@@ -542,14 +543,11 @@ class Matching():
     @_matching_decorator
     def match_scipy_milp(self):
         max_time = self.solution_limit
-        #costs = np.nan_to_num(self.weights.to_numpy(), nan = 0.0).reshape(-1,)*100 # set as 1d array like the variables below
-        #initial_score = pd.eval('self.demand.Length * self.demand.Area * TIMBER_factor').sum()
-        #costs = self.weights.to_numpy(dtype = float)
+
         weights = np.nan_to_num(self.weights.to_numpy().astype(float), nan = 0) 
         score = self.demand.Score.to_numpy(dtype = float).reshape((-1,1)) 
         costs = np.subtract(score, weights).reshape((-1,))
-        #costs = costs 
-        #np.nan_to_num(costs, copy = False, nan = -110)
+        
         # What should be the costs of assigning an element?
         # parameters x
         x_mat = np.zeros(self.weights.shape, dtype= int) # need to flatten this to use scipy
@@ -581,7 +579,7 @@ class Matching():
         time_limit = max_time
         options = {'disp':False, 'time_limit': time_limit, 'presolve' : True}
         #TODO Make sure once more that the costs here are the same as what we describe in the text.
-        res = milp(c=  costs* (-1), constraints = constraints, bounds = bounds, integrality = integrality, options = options)
+        res = milp(c=  (costs+0.0000001)* (-1), constraints = constraints, bounds = bounds, integrality = integrality, options = options)
         #res = milp(c= -np.ones_like(x_arr), constraints = constraints, bounds = bounds, integrality = integrality, options = options)
         # ======= POST PROCESS ===========
         try:

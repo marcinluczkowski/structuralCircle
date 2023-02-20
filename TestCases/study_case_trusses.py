@@ -55,7 +55,7 @@ def elements_from_trusses(trusses):
                 "Height": elem[1][1]*0.001,
                 "Inertia_moment": elem[1][0]*0.001 * elem[1][1]*0.001**3 / 12,
                 "Area": elem[1][0]*0.001 * elem[1][1]*0.001,
-                "Gwp_factor": lca.TIMBER_REUSE_GWP
+                #"Gwp_factor": lca.TIMBER_REUSE_GWP
             }
             t.append(e)
             es.append(e)
@@ -206,15 +206,16 @@ if __name__ == "__main__":
     # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
     
     amounts = [
-        [980,20],
-        [909,91],
-        [833,167],
-        [667,333],
-        [500,500],
-        [333,667],
-        [167,833],
-        [91,909],
-        [20,980]
+        [15,10]
+        # [980,20],
+        # [909,91],
+        # [833,167],
+        # [667,333],
+        # [500,500],
+        # [333,667],
+        # [167,833],
+        # [91,909],
+        # [20,980]
         ]    
     
     for x in amounts:
@@ -222,10 +223,14 @@ if __name__ == "__main__":
         set_a, set_b = pick_random(N_D, N_S, truss_elements, whole_trusses=False)
         demand = pd.DataFrame(set_a)
         demand.index = ['D' + str(num) for num in demand.index]
+        demand["Gwp_factor"] = lca.TIMBER_GWP
+
         supply = pd.DataFrame(set_b)
         supply.index = ['S' + str(num) for num in supply.index]
+        supply["Gwp_factor"] = lca.TIMBER_REUSE_GWP
         # Run the matching
-        result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, milp=False, sci_milp=True, greedy_single=True, bipartite=True) 
+        result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True,
+        milp=False, sci_milp=True, greedy_single=True, bipartite=True) 
         pairs = hm.extract_pairs_df(result)
         # Print results
         # print(pairs)

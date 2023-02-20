@@ -45,7 +45,7 @@ def remove_alternatives(x, y):
 #     return sum
 
 
-def create_random_data(demand_count, supply_count, demand_gwp=lca.TIMBER_GWP, supply_gwp=lca.TIMBER_REUSE_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
+def create_random_data(demand_count, supply_count, demand_lat, demand_lon, supply_coords, demand_gwp=lca.TIMBER_GWP, supply_gwp=lca.TIMBER_REUSE_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()

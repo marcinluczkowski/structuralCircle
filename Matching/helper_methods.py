@@ -33,6 +33,11 @@ def extract_results_df(dict_list):
     df=df.rename(columns={0:"LCA"})
     return df.round(3)
 
+def remove_alternatives(x, y):
+    if x > y:
+        return np.nan
+    else:
+        return x
 
 # def extract_LCA_new(dict_list):
 #     matchobj=dict_list[0]["Match object"]
@@ -62,7 +67,7 @@ def create_random_data(demand_count, supply_count, demand_gwp=lca.TIMBER_GWP, su
     supply['Gwp_factor'] = supply_gwp
     # Change index names
     demand.index = map(lambda text: 'D' + str(text), demand.index)
-    supply.index = map(lambda text: 'R' + str(text), supply.index)
+    supply.index = map(lambda text: 'S' + str(text), supply.index)
     return demand.round(2), supply.round(2)
 
 
@@ -85,7 +90,7 @@ def display_graph(matching, graph_type='rows', show_weights=True, show_result=Tr
             source = matching.graph.vs.find(label=index) 
             try:
                 target = matching.graph.vs.find(label=pair['Supply_id'])
-                edge = smatchingelf.graph.es.select(_between = ([source.index], [target.index]))
+                edge = matching.graph.es.select(_between = ([source.index], [target.index]))
                 edge_color[edge.indices[0]] = "black" #"red"
                 edge_width[edge.indices[0]] = 2.5
             except ValueError:

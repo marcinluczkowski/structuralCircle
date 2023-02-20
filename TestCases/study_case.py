@@ -10,6 +10,7 @@ import numpy as np
 
 
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
+score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
 
 
 # ========== SCENARIO 1 ============== 

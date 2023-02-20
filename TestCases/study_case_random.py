@@ -67,6 +67,7 @@ supply['Height'] = supply.apply(lambda row: row['Area']**(0.5), axis=1)   # deri
 supply['Is_new'] = [False for i in range(SUPPLY_COUNT)]
 supply.index = ['R' + str(num) for num in supply.index]
 
-result_rndm2 = run_matching(demand=demand, supply = supply, constraints=constraint_dict, add_new=False, 
-            milp=True, sci_milp = False)
+
+score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
+result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=False, greedy_single=True, bipartite=True)
 

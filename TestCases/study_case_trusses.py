@@ -101,7 +101,10 @@ if __name__ == "__main__":
 
     all_elem_df['Section'] = (round(all_elem_df['Width']*100,2)).map(str) + 'x' + (round(all_elem_df['Height']*100,2)).map(str)
 
-    # hm.plot_hexbin(all_elem_df)
+
+    plot_kwargs = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.labelsize' : 20}
+    #hm.plot_hexbin(all_elem_df, font_scale=2)
+    hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1)
 
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
@@ -113,23 +116,21 @@ if __name__ == "__main__":
     
     amounts = [
         # test
-        # [15,10],
-        # [25,20],
+        [15,10],
+        [25,20],
         # [35,30],
         # variable ratios
-        [985,15],
-        [970,30],
-        [941,59],
-        [889,111],
-        [800,200],
-        [667,333],
-        [500,500],
-        [333,667],
-        [200,800],
-        [111,889],
-        [59,941],
-        [30,970],
-        [15,985],
+
+        # [980,20],
+        # [909,91],
+        # [833,167],
+        # [667,333],
+        # [500,500],
+        # [333,667],
+        # [167,833],
+        # [91,909],
+        # [20,980],
+
         # variable count
         # [1,10],
         # [2,20],
@@ -149,7 +150,6 @@ if __name__ == "__main__":
 
     results_score_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "Scipy_MILP"])
     results_time_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "Scipy_MILP"])
-    results_old_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "Scipy_MILP"])
 
     for x in amounts:
         N_D, N_S = x
@@ -187,17 +187,18 @@ if __name__ == "__main__":
             # actual result:
             # new_row[res['Name']] = round(res['Match object'].result, 3)
 
-        results_score_df.loc[f"{N_D}:{N_S}"] = new_score_row
-        results_old_df.loc[f"{N_D}:{N_S}"] = new_old_row
-        results_time_df.loc[f"{N_D}:{N_S}"] = new_time_row
 
-    hm.plot_savings(results_score_df)
-    hm.plot_old(results_old_df)
-    hm.plot_time(results_time_df)
+        results_df.loc[f"{N_D}x{N_S}"] = new_row
+        results_time_df.loc[f"{N_D}x{N_S}"] = new_time_row
+    
+    hm.plot_savings(results_df, **plot_kwargs)
+    hm.plot_time(results_time_df, **plot_kwargs)
+
     
     print(results_score_df)
     print(results_old_df)
     print(results_time_df)
+
 
     # Save to CSV:
     name = "var_ratios"
@@ -209,9 +210,10 @@ if __name__ == "__main__":
     # hm.plot_savings(result_table)
     # print(result_df.transpose())
 
-    # hm.plot_histograms(all_elem_df)
+
+    #hm.plot_histograms(all_elem_df)
     # hm.plot_scatter(all_elem_df)
     # hm.plot_bubble(demand, supply)
-    # hm.plot_hexbin(demand, supply)
+    hm.plot_hexbin(demand, supply)
 
     pass

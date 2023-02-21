@@ -644,7 +644,7 @@ if __name__ == "__main__":
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
     demand, supply = hm.create_random_data(demand_count=4, supply_count=5)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
-    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True)
+    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)
     simple_results = hm.extract_results_df(result)
     print("Simple pairs:")

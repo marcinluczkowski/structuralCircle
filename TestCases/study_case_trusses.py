@@ -120,27 +120,29 @@ if __name__ == "__main__":
         [25,20],
         # [35,30],
         # variable ratios
-
-        # [980,20],
-        # [909,91],
-        # [833,167],
+        # [985,15],
+        # [970,30],
+        # [941,59],
+        # [889,111],
+        # [800,200],
         # [667,333],
         # [500,500],
         # [333,667],
-        # [167,833],
-        # [91,909],
-        # [20,980],
-
+        # [200,800],
+        # [111,889],
+        # [59,941],
+        # [30,970],
+        # [15,985],
         # variable count
-        # [1,10],
-        # [2,20],
-        # [4,40],
-        # [8,80],
-        # [16,160],
-        # [32,320],
-        # [64,640],
-        # [128,1280],
-        # [256,2560],
+        [1,10],
+        [2,20],
+        [4,40],
+        [8,80],
+        [16,160],
+        [32,320],
+        [64,640],
+        [128,1280],
+        [256,2560],
         # only without MIP
         # [512,5120],
         # [1024,10240],
@@ -148,8 +150,9 @@ if __name__ == "__main__":
         # [4096,40960],
         ]
 
-    results_score_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "Scipy_MILP"])
-    results_time_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "Scipy_MILP"])
+    results_score_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "MILP"])
+    results_time_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "MILP"])
+    results_old_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "MILP"])
 
     for x in amounts:
         N_D, N_S = x
@@ -169,7 +172,7 @@ if __name__ == "__main__":
         
         # Run the matching
         result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = False,
-        milp=False, sci_milp=False, greedy_single=True, bipartite=True) 
+        milp=True, sci_milp=False, greedy_single=True, bipartite=True) 
 
         pairs = hm.extract_pairs_df(result)
         # Print results
@@ -201,10 +204,10 @@ if __name__ == "__main__":
 
 
     # Save to CSV:
-    name = "var_ratios"
-    results_score_df.to_csv(f'Result_{name}_score.csv', index=True)
-    #results_old_df.to_csv(f'Result_{name}_substituted.csv', index=True)
-    results_time_df.to_csv(f'Result_{name}_time.csv', index=True)
+    # name = "var_amount_less_5k"
+    # results_score_df.to_csv(f'Results/Result_{name}_score.csv', index=True)
+    # results_old_df.to_csv(f'Results/Result_{name}_substituted.csv', index=True)
+    # results_time_df.to_csv(f'Results/Result_{name}_time.csv', index=True)
 
 
     # hm.plot_savings(result_table)

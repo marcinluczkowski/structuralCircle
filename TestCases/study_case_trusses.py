@@ -87,104 +87,6 @@ def pick_random(n_a, n_b, elements, whole_trusses=True):
     return flat_set_a, flat_set_b
 
 
-### ADD PLOTS
-
-def plot_histograms(df):
-    
-    # csfont = {'fontname':'Times New Roman'}
-    # plt.rcParams.update({'font.size': 22}) # must set in top
-    plt.rcParams['font.size'] = 12
-    plt.rcParams["font.family"] = "Times New Roman"
-
-    ### List unique values of width/height:
-    # TODO redo the histogram so that names are displayed, not area.
-    df['Cross-sections'] = df['Width'].astype(str) + "x" + df['Height'].astype(str)
-    
-    ### Plot the histogram of truss elements:
-    df.hist(column=['Length', 'Area'], bins=20)
- 
-    # plt.Axes.set_axisbelow(b=True)
-    plt.title('Area')
-    plt.show()
-
-
-def plot_scatter(df):
-
-    ### Scatter plot of all elements width/height:
-    df.plot.scatter(x='Width', y='Height')
-    plt.xlabel('Width')
-    plt.ylabel('Height')
-    plt.show()
-
-
-def plot_hexbin(demand, supply):
-    # TODO try https://seaborn.pydata.org/examples/hexbin_marginals.html
-    pass
-
-
-def plot_bubble(demand, supply):
-
-    # if close to one another, don't add but increase size:
-    demand_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
-    tolerance_length = 2.5
-    tolerance_area = 0.002
-    dot_size = 70
-
-    for index, row in demand.iterrows():
-        if demand_chart.empty:
-            # add first bubble
-            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        # check if similiar bubble already present:
-        elif demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].empty:
-            # not, so add new bubble
-            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        else:
-            # already present, so increase the bubble size:
-            ind = demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
-            demand_chart.at[ind,'dot_size'] = demand_chart.at[ind,'dot_size'] +1
-
-    demand_chart['dot_size_scaled'] = dot_size * (demand_chart['dot_size']**0.5)
-
-    supply_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
-    for index, row in supply.iterrows():
-        if supply_chart.empty:
-            # add first bubble
-            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        # check if similiar bubble already present:
-        elif supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].empty:
-            # not, so add new bubble
-            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        else:
-            # already present, so increase the bubble size:
-            ind = supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
-            supply_chart.at[ind,'dot_size'] = supply_chart.at[ind,'dot_size'] +1
-
-    supply_chart['dot_size_scaled'] = dot_size * (supply_chart['dot_size']**0.5)
-
-    plt.scatter(demand_chart.Length, demand_chart.Area, s=list(demand_chart.dot_size_scaled), c='b', alpha=0.5, label='Demand')
-    plt.scatter(supply_chart.Length, supply_chart.Area, s=list(supply_chart.dot_size_scaled), c='g', alpha=0.5, label='Supply')
-
-    lgnd = plt.legend(loc="lower right")
-    lgnd.legendHandles[0]._sizes = [50]
-    lgnd.legendHandles[1]._sizes = [50]
-
-    plt.xlabel("Length", size=16)
-    plt.ylabel("Area", size=16)
-
-    for i, row in demand_chart.iterrows():
-        if row['dot_size'] < 10:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
-        else:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
-    for i, row in supply_chart.iterrows():
-        if row['dot_size'] < 10:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
-        else:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
-
-    plt.show()
-
-
 if __name__ == "__main__":
     
     # Generate a set of unique trusses from CSV file:
@@ -195,6 +97,10 @@ if __name__ == "__main__":
     all_elements = [item for sublist in truss_elements for item in sublist]
     all_elem_df = pd.DataFrame(all_elements)
 
+    all_elem_df['Section'] = (round(all_elem_df['Width']*100,2)).map(str) + 'x' + (round(all_elem_df['Height']*100,2)).map(str)
+
+    hm.plot_hexbin(all_elem_df)
+
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
 
@@ -204,6 +110,7 @@ if __name__ == "__main__":
     # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
     
     amounts = [
+<<<<<<< HEAD
          [980,20],
          [909,91]#,
         #  [833,167],
@@ -213,30 +120,75 @@ if __name__ == "__main__":
         #  [167,833],
         #  [91,909],
         #  [20,980]
+=======
+        # test
+        # [15,10],
+        # [25,20],
+        # [35,30],
+        # variable ratios
+        [980,20],
+        [909,91],
+        [833,167],
+        [667,333],
+        [500,500],
+        [333,667],
+        [167,833],
+        [91,909],
+        [20,980],
+        # variable count
+        # [1,9],
+        # [10,90],
+        # [20,180],
+        # [50,450],
+        # [100,900],
+        # [200,1800],
+        # [500,4500],
+        # [1000,9000],
+>>>>>>> LCA_outside_matching
         ]    
-    
+
+    results_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "Scipy_MILP"])
+    results_time_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "Scipy_MILP"])
+
     for x in amounts:
         N_D, N_S = x
+<<<<<<< HEAD
         set_a, set_b = pick_random(int(N_D/10), int(N_S/10), truss_elements, whole_trusses=True)
+=======
+
+        print(f"DEMANDxSUPPLY: {N_D}x{N_S}")
+
+        set_a, set_b = pick_random(N_D, N_S, truss_elements, whole_trusses=False)
+>>>>>>> LCA_outside_matching
         demand = pd.DataFrame(set_a)
         demand.index = ['D' + str(num) for num in demand.index]
-
         demand["Gwp_factor"] = lca.TIMBER_GWP
 
         supply = pd.DataFrame(set_b)
         supply.index = ['S' + str(num) for num in supply.index]
         supply["Gwp_factor"] = lca.TIMBER_REUSE_GWP
+        
+        # hm.plot_hexbin(demand, supply)
+        
         # Run the matching
+<<<<<<< HEAD
         plot_histograms(demand)
         #plot_histograms(supply)
         """
         result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True,
+=======
+        result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = False,
+>>>>>>> LCA_outside_matching
         milp=False, sci_milp=True, greedy_single=True, bipartite=True) 
 
         pairs = hm.extract_pairs_df(result)
         # Print results
         # print(pairs)
+
+        new_row = {}
+        new_time_row = {}
         for res in result:
+<<<<<<< HEAD
             result_table.append([
             res['Name'],
             0.0, #res['PercentNew']
@@ -246,14 +198,37 @@ if __name__ == "__main__":
         
         print(f"{N_D}x{N_S}")
         """
+=======
+            # score saved result:
+            new_row[res['Name']] = round(100 - 100*res['Match object'].result/res['Match object'].demand.Score.sum(), 2)
+            new_time_row[res['Name']] = round(res['Time'], 2)
+            # actual result:
+            # new_row[res['Name']] = round(res['Match object'].result, 3)
+>>>>>>> LCA_outside_matching
 
-    result_df = pd.DataFrame(result_table)
+        results_df.loc[f"{N_D}x{N_S}"] = new_row
+        results_time_df.loc[f"{N_D}x{N_S}"] = new_time_row
 
-    print(result_df.transpose())
+    hm.plot_savings(results_df)
+    hm.plot_time(results_time_df)
+    
+    print(results_df)
+    print(results_time_df)
 
+<<<<<<< HEAD
     #plot_histograms(all_elem_df)
     # plot_scatter(all_elem_df)
     # plot_bubble(demand, supply)
     # plot_hexbin(demand, supply)
     
+=======
+    # hm.plot_savings(result_table)
+    # print(result_df.transpose())
+
+    # hm.plot_histograms(all_elem_df)
+    # hm.plot_scatter(all_elem_df)
+    # hm.plot_bubble(demand, supply)
+    # hm.plot_hexbin(demand, supply)
+
+>>>>>>> LCA_outside_matching
     pass

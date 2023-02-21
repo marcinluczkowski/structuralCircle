@@ -99,9 +99,9 @@ if __name__ == "__main__":
 
     all_elem_df['Section'] = (round(all_elem_df['Width']*100,2)).map(str) + 'x' + (round(all_elem_df['Height']*100,2)).map(str)
 
-    test_plot_args = {'font.family':'serif','font.serif':['Times New Roman'], 'xtick.bottom' : 'False'}
-    hm.plot_hexbin(all_elem_df, **test_plot_args)
-
+    plot_kwargs = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.labelsize' : 20}
+    #hm.plot_hexbin(all_elem_df, font_scale=2)
+    hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1)
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
 
@@ -175,18 +175,18 @@ if __name__ == "__main__":
         results_df.loc[f"{N_D}x{N_S}"] = new_row
         results_time_df.loc[f"{N_D}x{N_S}"] = new_time_row
     
-    hm.plot_savings(results_df, **test_plot_args)
-    hm.plot_time(results_time_df, **test_plot_args)
+    hm.plot_savings(results_df, **plot_kwargs)
+    hm.plot_time(results_time_df, **plot_kwargs)
     
     print(results_df)
     print(results_time_df)
 
-    hm.plot_savings(result_table, **test_plot_args)
+    hm.plot_savings(result_table, **plot_kwargs)
     print(results_df.transpose())
 
     #hm.plot_histograms(all_elem_df)
     # hm.plot_scatter(all_elem_df)
     # hm.plot_bubble(demand, supply)
-    # hm.plot_hexbin(demand, supply)
+    hm.plot_hexbin(demand, supply)
 
     pass

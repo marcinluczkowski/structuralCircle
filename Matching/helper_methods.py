@@ -78,24 +78,38 @@ def plot_scatter(df, **kwargs):
 
 
 
-def plot_hexbin(df, style = 'ticks',  **kwargs):
+def plot_hexbin(df, style = 'ticks', font_scale = 1.1,  **kwargs):
     # Based on https://seaborn.pydata.org/examples/hexbin_marginals.html
-    #plt.figure()
-    #sns.set(style = 'ticks', rc = kwargs)
-    #sns.set_theme(style = 'ticks', rc = kwargs)
-    #sns.set_style(rc = kwargs)    # TODO Sverre, try with section names: sns.jointplot(x=df['Length'], y=df['Section'], kind="hex", color="#4CB391")
-    sns.set_style(style = style, rc = kwargs)
+    #plt.figure()    
+    # TODO Sverre, try with section names: sns.jointplot(x=df['Length'], y=df['Section'], kind="hex", color="#4CB391")
+    
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
     g = sns.jointplot(x=df['Length'], y=df['Area'], kind="hex", color="#4CB391")
     
     #g.set_axis_labels(**kwargs)
     # sns.jointplot(x=supply['Length'], y=supply['Area'], kind="hex", color="#eb4034")
     plt.show()
 
+def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.1,  **kwargs):
+    """Plot the Cross Section and length histogram using remapped values"""
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs) # set styling configuration
+    
+    # get all unique areas
+    cross_secs = ['36x36', '36x48', '36x72', '36x98', '48x48', '48x98', '98x136', '98x148', '148x223']
+     
+    map_dict = {a:cs for a, cs in zip(sorted(unique_values), cross_secs)}
+    map_dict2 = {a:(i+1) for i, a in enumerate(sorted(unique_values))}
+    df['Cross Sections'] = df.Area.map(map_dict2).astype(int)
+    g = sns.jointplot(x=df['Length'], y=df['Cross Sections'], kind="hex", color="#4CB391")
+    g.ax_joint.set_yticks(list(map_dict2.values()))
+    g.ax_joint.set_yticklabels(cross_secs)
+    plt.show()
+    pass
 
 
-def plot_savings(result_df, style = 'ticks', **kwargs):
-    plt.figure()
-    sns.set_style(style=style, rc = kwargs)
+def plot_savings(result_df, style = 'ticks', font_scale = 1.1, **kwargs):
+    #plt.figure()
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
 
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
@@ -103,9 +117,9 @@ def plot_savings(result_df, style = 'ticks', **kwargs):
     plt.xticks(rotation=20)
     plt.show()
 
-def plot_time(result_df, style = 'ticks', **kwargs):
-    plt.figure()
-    sns.set_style(style=style, rc = kwargs)
+def plot_time(result_df, style = 'ticks', font_scale = 1.1, **kwargs):
+    #plt.figure()
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
     plot.set(yscale="log", xlabel='Test case', ylabel='Time [s]')
     plt.xticks(rotation=20)

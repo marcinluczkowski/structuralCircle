@@ -188,22 +188,22 @@ if __name__ == "__main__":
             # new_row[res['Name']] = round(res['Match object'].result, 3)
 
 
-        results_df.loc[f"{N_D}x{N_S}"] = new_row
+        results_score_df.loc[f"{N_D}x{N_S}"] = new_score_row
         results_time_df.loc[f"{N_D}x{N_S}"] = new_time_row
     
-    hm.plot_savings(results_df, **plot_kwargs)
+    hm.plot_savings(results_score_df, **plot_kwargs)
     hm.plot_time(results_time_df, **plot_kwargs)
 
     
     print(results_score_df)
-    print(results_old_df)
+    #print(results_old_df)
     print(results_time_df)
 
 
     # Save to CSV:
     name = "var_ratios"
     results_score_df.to_csv(f'Result_{name}_score.csv', index=True)
-    results_old_df.to_csv(f'Result_{name}_substituted.csv', index=True)
+    #results_old_df.to_csv(f'Result_{name}_substituted.csv', index=True)
     results_time_df.to_csv(f'Result_{name}_time.csv', index=True)
 
 

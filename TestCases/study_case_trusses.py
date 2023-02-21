@@ -11,6 +11,7 @@ import pandas as pd
 import random
 import matplotlib.pyplot as plt
 import LCA as lca
+import math
 
 class truss():
     def __init__(self) -> None:
@@ -62,18 +63,19 @@ def elements_from_trusses(trusses):
     return ts
 
 
-def pick_random(n_a, n_b, elements, whole_trusses=True):
+def pick_random(n_a, n_b, elements, whole_trusses=True, duplicates=False):
     
     random.seed(2023)  # Preserve the same seed to replicate the results
 
     if not whole_trusses:
         elements = [item for sublist in elements for item in sublist]
 
-    if n_a + n_b > len(elements):
-        raise Exception("You can't pick more elements than are available in the set!")
+    if n_a + n_b < len(elements):
+        selected = random.sample(elements, n_a + n_b)
+    else:
+        # more than in the set - allow duplicates
+        selected = random.sample(elements, n_a + n_b, counts=[math.ceil((n_a + n_b)/len(elements))]*len(elements))
 
-    selected = random.sample(elements, n_a + n_b)
-    
     set_a = selected[0:n_a]
     set_b = selected[n_a:len(selected)]
 
@@ -99,9 +101,11 @@ if __name__ == "__main__":
 
     all_elem_df['Section'] = (round(all_elem_df['Width']*100,2)).map(str) + 'x' + (round(all_elem_df['Height']*100,2)).map(str)
 
+
     plot_kwargs = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.labelsize' : 20}
     #hm.plot_hexbin(all_elem_df, font_scale=2)
     hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1)
+
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
 
@@ -116,6 +120,7 @@ if __name__ == "__main__":
         [25,20],
         # [35,30],
         # variable ratios
+
         # [980,20],
         # [909,91],
         # [833,167],
@@ -125,24 +130,31 @@ if __name__ == "__main__":
         # [167,833],
         # [91,909],
         # [20,980],
-        # variable count
-        # [1,9],
-        # [10,90],
-        # [20,180],
-        # [50,450],
-        # [100,900],
-        # [200,1800],
-        # [500,4500],
-        # [1000,9000],
-        ]    
 
-    results_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "Scipy_MILP"])
+        # variable count
+        # [1,10],
+        # [2,20],
+        # [4,40],
+        # [8,80],
+        # [16,160],
+        # [32,320],
+        # [64,640],
+        # [128,1280],
+        # [256,2560],
+        # only without MIP
+        # [512,5120],
+        # [1024,10240],
+        # [2048,20480],
+        # [4096,40960],
+        ]
+
+    results_score_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "Scipy_MILP"])
     results_time_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "Scipy_MILP"])
-    
+
     for x in amounts:
         N_D, N_S = x
 
-        print(f"DEMANDxSUPPLY: {N_D}x{N_S}")
+        print(f"DEMAND-SUPPLY: {N_D}:{N_S}")
 
         set_a, set_b = pick_random(N_D, N_S, truss_elements, whole_trusses=False)
         demand = pd.DataFrame(set_a)
@@ -157,32 +169,47 @@ if __name__ == "__main__":
         
         # Run the matching
         result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = False,
-        milp=False, sci_milp=True, greedy_single=True, bipartite=True) 
+        milp=False, sci_milp=False, greedy_single=True, bipartite=True) 
 
         pairs = hm.extract_pairs_df(result)
         # Print results
         # print(pairs)
 
-        new_row = {}
+        new_score_row = {}
+        new_old_row = {}
         new_time_row = {}
         for res in result:
+            res['Match object'].pairs['Supply_id'].fillna('none', inplace=True)
             # score saved result:
-            new_row[res['Name']] = round(100 - 100*res['Match object'].result/res['Match object'].demand.Score.sum(), 2)
+            new_score_row[res['Name']] = round(100 - 100*res['Match object'].result/res['Match object'].demand.Score.sum(), 2)
+            new_old_row[res['Name']] = round( 100* len(res['Match object'].pairs['Supply_id'].map(lambda x: x[0] == 'S')) / res['Match object'].pairs.count()[0] , 2)
             new_time_row[res['Name']] = round(res['Time'], 2)
             # actual result:
             # new_row[res['Name']] = round(res['Match object'].result, 3)
+
 
         results_df.loc[f"{N_D}x{N_S}"] = new_row
         results_time_df.loc[f"{N_D}x{N_S}"] = new_time_row
     
     hm.plot_savings(results_df, **plot_kwargs)
     hm.plot_time(results_time_df, **plot_kwargs)
+
     
-    print(results_df)
+    print(results_score_df)
+    print(results_old_df)
     print(results_time_df)
 
-    hm.plot_savings(result_table, **plot_kwargs)
-    print(results_df.transpose())
+
+    # Save to CSV:
+    name = "var_ratios"
+    results_score_df.to_csv(f'Result_{name}_score.csv', index=True)
+    results_old_df.to_csv(f'Result_{name}_substituted.csv', index=True)
+    results_time_df.to_csv(f'Result_{name}_time.csv', index=True)
+
+
+    # hm.plot_savings(result_table)
+    # print(result_df.transpose())
+
 
     #hm.plot_histograms(all_elem_df)
     # hm.plot_scatter(all_elem_df)

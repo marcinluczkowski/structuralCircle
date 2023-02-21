@@ -114,7 +114,16 @@ def plot_savings(result_df, style = 'ticks', font_scale = 1.1, **kwargs):
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
     plot.set(xlabel='Test case', ylabel='% of score saved')
-    plt.xticks(rotation=20)
+    plt.xticks(rotation=30)
+    plt.show()
+
+def plot_old(result_df):
+    plt.figure()
+    sns.set_theme(style="whitegrid")
+    # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
+    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
+    plot.set(xlabel='Test case', ylabel='% of elements substituted by reuse')
+    plt.xticks(rotation=30)
     plt.show()
 
 def plot_time(result_df, style = 'ticks', font_scale = 1.1, **kwargs):
@@ -122,7 +131,7 @@ def plot_time(result_df, style = 'ticks', font_scale = 1.1, **kwargs):
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
     plot.set(yscale="log", xlabel='Test case', ylabel='Time [s]')
-    plt.xticks(rotation=20)
+    plt.xticks(rotation=30)
     plt.show()
 
 def plot_bubble(demand, supply, **kwargs):

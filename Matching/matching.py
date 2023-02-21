@@ -29,7 +29,7 @@ logging.basicConfig(
 
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
-    def __init__(self, demand, supply, score_function_string, add_new=False, multi=False, constraints={}, solution_limit=60):
+    def __init__(self, demand, supply, score_function_string, add_new=False, multi=False, constraints={}, solution_limit=120):
         """_summary_
 
         :param demand: _description_

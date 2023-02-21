@@ -95,12 +95,12 @@ def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.1,  **k
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs) # set styling configuration
     
     # get all unique areas
-    cross_secs = ['36x36', '36x48', '36x72', '36x98', '48x48', '48x98', '98x136', '98x148', '148x223']
+    cross_secs = ['(36x36)', '(36x48)', '(36x148)', '(36x198)', '(48x148)', '(48x198)', '(61x198)', '(73x198)', '(73x223)']
      
     map_dict = {a:cs for a, cs in zip(sorted(unique_values), cross_secs)}
     map_dict2 = {a:(i+1) for i, a in enumerate(sorted(unique_values))}
-    df['Cross Sections'] = df.Area.map(map_dict2).astype(int)
-    g = sns.jointplot(x=df['Length'], y=df['Cross Sections'], kind="hex", color="#4CB391")
+    df['Cross Sections [mm]'] = df.Area.map(map_dict2).astype(int)
+    g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391")
     g.ax_joint.set_yticks(list(map_dict2.values()))
     g.ax_joint.set_yticklabels(cross_secs)
     plt.show()

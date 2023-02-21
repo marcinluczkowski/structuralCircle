@@ -204,21 +204,20 @@ if __name__ == "__main__":
     # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
     
     amounts = [
-        [15,10]
-        # [980,20],
-        # [909,91],
-        # [833,167],
-        # [667,333],
-        # [500,500],
-        # [333,667],
-        # [167,833],
-        # [91,909],
-        # [20,980]
+         [980,20],
+         [909,91]#,
+        #  [833,167],
+        #  [667,333],
+        #  [500,500],
+        #  [333,667],
+        #  [167,833],
+        #  [91,909],
+        #  [20,980]
         ]    
     
     for x in amounts:
         N_D, N_S = x
-        set_a, set_b = pick_random(N_D, N_S, truss_elements, whole_trusses=False)
+        set_a, set_b = pick_random(int(N_D/10), int(N_S/10), truss_elements, whole_trusses=True)
         demand = pd.DataFrame(set_a)
         demand.index = ['D' + str(num) for num in demand.index]
 
@@ -228,6 +227,9 @@ if __name__ == "__main__":
         supply.index = ['S' + str(num) for num in supply.index]
         supply["Gwp_factor"] = lca.TIMBER_REUSE_GWP
         # Run the matching
+        plot_histograms(demand)
+        #plot_histograms(supply)
+        """
         result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True,
         milp=False, sci_milp=True, greedy_single=True, bipartite=True) 
 
@@ -243,14 +245,15 @@ if __name__ == "__main__":
             ])
         
         print(f"{N_D}x{N_S}")
+        """
 
     result_df = pd.DataFrame(result_table)
 
     print(result_df.transpose())
 
-    # plot_histograms(all_elem_df)
+    #plot_histograms(all_elem_df)
     # plot_scatter(all_elem_df)
     # plot_bubble(demand, supply)
     # plot_hexbin(demand, supply)
-
+    
     pass

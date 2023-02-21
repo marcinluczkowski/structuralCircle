@@ -49,8 +49,8 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
 #--- CREATE AND EVALUATE ---
 score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
-result_slette = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, solution_limit = 120, 
-                sci_milp=True, milp=False, greedy_single=True, bipartite=True)
+result_slette = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = False, solution_limit = 120, 
+                sci_milp=False, milp=False, greedy_single=True, bipartite=True)
 
 
 slette_pairs = hm.extract_pairs_df(result_slette)

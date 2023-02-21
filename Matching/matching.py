@@ -304,6 +304,105 @@ class Matching():
         for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])  
         
+
+    # TODO (SIGURD) WORK IN PROGRESS: MAKING A NEW GENETIC ALGORITHM
+    @_matching_decorator
+    def match_genetic_algorithm_SIGURD(self):
+        #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
+        solutions_per_population = len(self.supply)
+        number_of_buckets = len(self.demand)
+
+        #Initializing a random population
+        initial_population = np.array(([[random.randint(0,1) for x in range(len(self.supply)*len(self.demand))] for y in range(len(self.supply))]))
+
+        #test = self.weights["N0"]
+        #weight_cols = self.weights.columns.values.tolist()
+        #test2 = np.array_split(initial_population[0], number_of_buckets)
+        #toNum = self.weights.to_numpy().flatten()
+        test3 = 3
+        #Fitness function to calculate fitness value of chromosomes
+        #Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA
+        
+        def fitness_func(solution, solution_idx):
+            fitness = 0
+            weight_cols = self.weights.columns.values.tolist()
+            weights_1d_array = self.weights.to_numpy().flatten() 
+            
+            """
+            for i in range(len(solution)):
+                #if solution[i] == 1 and not np.isnan(weights_1d_array[i]):
+                #    fitness -= weights_1d_array[i]
+                if solution[i] == 1:
+                    if np.isnan(weights_1d_array[i]): #Element cannot be matched => penalty
+                        fitness += 10e4
+                    else:
+                        fitness += weights_1d_array[i]
+            if fitness == 0: #To ensure that not matching elements is a reward for the algorithm
+                fitness = 10e10
+            #    else:
+            #        if np.isnan(weights_1d_array[i]): #Element is not matched and should not be matched => reward
+            #            fitness += 0.1
+            #        else: #Element is not matched, but could have been matched
+            #            fitness += 10e5
+
+            return 1.0/fitness
+            """
+
+            
+            #Trying something new where each bucket must have one solution
+            solutions = np.array_split(solution, number_of_buckets)
+            weights = np.array_split(weights_1d_array, number_of_buckets)
+            max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
+            penalty = 10*max_weight
+            #penalty = 10e5
+            indexes_of_matches = []
+            for i in range(len(solutions)):
+                num_matches_in_bracket = 0
+                for j in range(len(solutions[i])):
+                    if solutions[i][j] == 1:
+                        num_matches_in_bracket += 1
+                        indexes_of_matches.append(j)
+                        if np.isnan(weights[i][j]): #Element cannot be matched => penalty
+                            fitness += penalty #Penalty
+                        else:
+                            fitness += weights[i][j]
+                            
+                if num_matches_in_bracket > 1 or num_matches_in_bracket < 1:
+                    fitness += penalty #Penalty
+            
+            index_duplicates = {x for x in indexes_of_matches if indexes_of_matches.count(x) > 1}
+            if len(index_duplicates) > 0: #Means some demand elements are assigned the same supply element
+                fitness += penalty
+            
+                    
+
+            return 1.0/fitness
+            
+            
+        ga_instance = pygad.GA(
+            num_generations=50,
+            num_parents_mating=2,
+            fitness_func=fitness_func, #len(initial_population),
+            # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
+            # (also possible with: gene_space=[0, 1])
+            #random_mutation_min_val=0,
+            #random_mutation_max_val=2,   # upper bound exclusive, so only 0 and 1
+            #mutation_by_replacement=True,
+            gene_type=int,
+            parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+            keep_parents=-1, #keep all parents
+            crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+            mutation_type="inversion",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+            mutation_num_genes=1,
+            mutation_percent_genes=0.1,
+            initial_population=initial_population
+            )
+        ga_instance.run()
+        logging.debug(ga_instance.initial_population)
+        logging.debug(ga_instance.population)
+        solution, solution_fitness, solution_idx = ga_instance.best_solution()
+        test4 = 4
+
     @_matching_decorator
     def match_genetic_algorithm(self):
         """Match using Evolutionary/Genetic Algorithm"""
@@ -629,6 +728,9 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
     if genetic:
         matching.match_genetic_algorithm()
         matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
+        #NOTE DELETE AFTER (SIGURD)
+        matching.match_genetic_algorithm_SIGURD()
     # TODO convert list of dfs to single df
     return matches
 
@@ -642,7 +744,7 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=4, supply_count=5)
+    demand, supply = hm.create_random_data(demand_count=2, supply_count=10)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
     result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)

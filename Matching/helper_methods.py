@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import rc
 import igraph as ig
 import logging
 import LCA as lca
@@ -49,7 +50,7 @@ def remove_alternatives(x, y):
 
 ### ADD PLOTS
 
-def plot_histograms(df):
+def plot_histograms(df, **kwargs):
     
     # csfont = {'fontname':'Times New Roman'}
     # plt.rcParams.update({'font.size': 22}) # must set in top
@@ -68,7 +69,7 @@ def plot_histograms(df):
     plt.show()
 
 
-def plot_scatter(df):
+def plot_scatter(df, **kwargs):
     ### Scatter plot of all elements width/height:
     df.plot.scatter(x='Width', y='Height')
     plt.xlabel('Width')
@@ -77,36 +78,40 @@ def plot_scatter(df):
 
 
 
-def plot_hexbin(df):
+def plot_hexbin(df, style = 'ticks',  **kwargs):
     # Based on https://seaborn.pydata.org/examples/hexbin_marginals.html
-    plt.figure()
-    sns.set(font="Verdana")
-    sns.set_theme(style="ticks")
-    # TODO Sverre, try with section names: sns.jointplot(x=df['Length'], y=df['Section'], kind="hex", color="#4CB391")
-    sns.jointplot(x=df['Length'], y=df['Area'], kind="hex", color="#4CB391")
+    #plt.figure()
+    #sns.set(style = 'ticks', rc = kwargs)
+    #sns.set_theme(style = 'ticks', rc = kwargs)
+    #sns.set_style(rc = kwargs)    # TODO Sverre, try with section names: sns.jointplot(x=df['Length'], y=df['Section'], kind="hex", color="#4CB391")
+    sns.set_style(style = style, rc = kwargs)
+    g = sns.jointplot(x=df['Length'], y=df['Area'], kind="hex", color="#4CB391")
+    
+    #g.set_axis_labels(**kwargs)
     # sns.jointplot(x=supply['Length'], y=supply['Area'], kind="hex", color="#eb4034")
     plt.show()
 
 
 
-def plot_savings(result_df):
+def plot_savings(result_df, style = 'ticks', **kwargs):
     plt.figure()
-    sns.set_theme(style="whitegrid")
+    sns.set_style(style=style, rc = kwargs)
+
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
     plot.set(xlabel='Test case', ylabel='% of score saved')
     plt.xticks(rotation=20)
     plt.show()
 
-def plot_time(result_df):
+def plot_time(result_df, style = 'ticks', **kwargs):
     plt.figure()
-    sns.set_theme(style="whitegrid")
+    sns.set_style(style=style, rc = kwargs)
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
     plot.set(yscale="log", xlabel='Test case', ylabel='Time [s]')
     plt.xticks(rotation=20)
     plt.show()
 
-def plot_bubble(demand, supply):
+def plot_bubble(demand, supply, **kwargs):
 
     # if close to one another, don't add but increase size:
     demand_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])

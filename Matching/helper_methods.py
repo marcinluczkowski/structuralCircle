@@ -127,4 +127,30 @@ def display_graph(matching, graph_type='rows', show_weights=True, show_result=Tr
         )
         plt.show()
 
+def extract_genetic_solution(weights, best_solution, num_buckets):
+    result = weights.copy(deep = True)
+    buckets = np.array_split(best_solution, num_buckets)
+    demands = weights.index
+    weight_cols = weights.columns.values.tolist()
+    match_column = []
+    for i in range(len(buckets)):
+        index = np.where(buckets[i] == 1)[0] #Finding matches
+        if len(index) == 0:
+            match = ["No match"]
+        else:
+            match = [weight_cols[x] for x in index]
+        match_column.append(match)
+    result["Matches from genetic"] = match_column
+    return result
+            
+
+
+
+                
+
+                
+
+
+
+
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

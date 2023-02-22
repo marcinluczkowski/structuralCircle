@@ -313,7 +313,7 @@ class Matching():
         number_of_buckets = len(self.demand)
 
         #Initializing a random population
-        initial_population = np.array(([[random.randint(0,1) for x in range(len(self.supply)*len(self.demand))] for y in range(len(self.supply))]))
+        initial_population = np.array(([[random.randint(0,1) for x in range(len(self.supply)*len(self.demand))] for y in range(len(self.supply)*10)]))
 
         #test = self.weights["N0"]
         #weight_cols = self.weights.columns.values.tolist()
@@ -353,7 +353,7 @@ class Matching():
             solutions = np.array_split(solution, number_of_buckets)
             weights = np.array_split(weights_1d_array, number_of_buckets)
             max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
-            penalty = 10*max_weight
+            penalty = 3*max_weight
             #penalty = 10e5
             indexes_of_matches = []
             for i in range(len(solutions)):
@@ -380,8 +380,8 @@ class Matching():
             
             
         ga_instance = pygad.GA(
-            num_generations=50,
-            num_parents_mating=2,
+            num_generations=30,
+            num_parents_mating=solutions_per_population,
             fitness_func=fitness_func, #len(initial_population),
             # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
             # (also possible with: gene_space=[0, 1])
@@ -394,13 +394,15 @@ class Matching():
             crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
             mutation_type="inversion",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
             mutation_num_genes=1,
-            mutation_percent_genes=0.1,
+            #mutation_percent_genes=0.1,
             initial_population=initial_population
             )
         ga_instance.run()
         logging.debug(ga_instance.initial_population)
         logging.debug(ga_instance.population)
         solution, solution_fitness, solution_idx = ga_instance.best_solution()
+        
+        see_result_from_genetic = hm.extract_genetic_solution(self.weights, solution, number_of_buckets)
         test4 = 4
 
     @_matching_decorator
@@ -744,7 +746,7 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=2, supply_count=10)
+    demand, supply = hm.create_random_data(demand_count=3, supply_count=6)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
     result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)

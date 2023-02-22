@@ -93,6 +93,7 @@ if __name__ == "__main__":
     
     # Generate a set of unique trusses from CSV file:
     PATH = "Data\\CSV files trusses\\truss_all_types_beta_4.csv"
+    #PATH =  "Data\\CSV files trusses\\truss_all_types_beta_second_version.csv" Test with another dataset
     trusses = create_trusses_from_JSON(PATH)
     truss_elements = elements_from_trusses(trusses)
 
@@ -102,9 +103,9 @@ if __name__ == "__main__":
     all_elem_df['Section'] = (round(all_elem_df['Width']*100,2)).map(str) + 'x' + (round(all_elem_df['Height']*100,2)).map(str)
 
 
-    plot_kwargs = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.labelsize' : 20}
-    #hm.plot_hexbin(all_elem_df, font_scale=2)
-    # hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1)
+    plot_kwargs = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.labelsize' : 15}
+    #hm.plot_hexbin(all_elem_df, font_scale=1)
+    #hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1)
 
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
@@ -118,7 +119,7 @@ if __name__ == "__main__":
         # test
         [15,10],
         [25,20],
-        [35,30],
+        [35,30]
         # variable ratios
         # [985,15],
         # [970,30],
@@ -154,6 +155,8 @@ if __name__ == "__main__":
     results_time_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "MILP"])
     results_old_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "MILP"])
 
+    supply_ass_df_list = []
+    supply_ass_names = []
     for x in amounts:
         N_D, N_S = x
 
@@ -172,9 +175,13 @@ if __name__ == "__main__":
         
         # Run the matching
         result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = False,
-        milp=True, sci_milp=False, greedy_single=True, bipartite=True) 
+                            milp=True, sci_milp=False, greedy_single=True, greedy_plural=True, bipartite=True) 
 
-        pairs = hm.extract_pairs_df(result)
+        pairs = hm.extract_pairs_df(result) # get matching pairs
+        supply_assignments_df = hm.get_assignment_df(pairs, supply_ids= supply.index)
+        supply_ass_df_list.append(supply_assignments_df) # append assignments for solution to list. 
+        supply_ass_names.append(f'{N_D}_{N_S}')
+        #supply_assignments_df['Length'] = supply.Length
         # Print results
         # print(pairs)
 
@@ -195,8 +202,14 @@ if __name__ == "__main__":
         results_old_df.loc[f"{N_D}:{N_S}"] = new_old_row
         results_time_df.loc[f"{N_D}:{N_S}"] = new_time_row
     
-    hm.plot_savings(results_score_df, **plot_kwargs)
-    hm.plot_old(results_old_df, **plot_kwargs)
+    normalised_score_df = results_score_df.apply(lambda row: row / max(row), axis = 1).multiply(100).round(2)
+    normalised_old_df = results_old_df.apply(lambda row: row / max(row), axis = 1).multiply(100).round(2)
+
+    
+    #hm.plot_savings(results_score_df, **plot_kwargs)
+    hm.plot_savings(normalised_score_df, **plot_kwargs) # Added by Sverre
+    #hm.plot_old(results_old_df, **plot_kwargs)
+    hm.plot_old(normalised_old_df, **plot_kwargs) # Added by Sverre to see effect of normalising numbers
     hm.plot_time(results_time_df, **plot_kwargs)
 
     
@@ -221,5 +234,17 @@ if __name__ == "__main__":
     # hm.plot_scatter(all_elem_df)
     # hm.plot_bubble(demand, supply)
     # hm.plot_hexbin(demand, supply)
+
+    # --- write supply assignment dfs to Excel
+    time_1 = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
+    name_1 = "Assignments"
+    assignment_path = f'Results/Supply Assignments/{time_1}_{name_1}_score.xlsx'
+    write_assignments = False
+    if write_assignments:
+        with pd.ExcelWriter(assignment_path) as writer:
+            for i, df_sheet in enumerate(supply_ass_df_list):
+                df_sheet.to_excel(writer, sheet_name = f'Elements {supply_ass_names[i]}')
+    
+
 
     pass

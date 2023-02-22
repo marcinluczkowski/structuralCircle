@@ -113,13 +113,13 @@ def plot_savings(result_df, style = 'ticks', font_scale = 1.1, **kwargs):
 
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
-    plot.set(xlabel='Test case', ylabel='% of score saved')
+    plot.set(xlabel='Test case', ylabel='Score saved')
     plt.xticks(rotation=30)
     plt.show()
 
-def plot_old(result_df):
+def plot_old(result_df, style = 'ticks', font_scale = 1.1, **kwargs):
     plt.figure()
-    sns.set_theme(style="whitegrid")
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
     plot.set(xlabel='Test case', ylabel='% of elements substituted by reuse')

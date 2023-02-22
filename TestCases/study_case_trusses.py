@@ -104,7 +104,7 @@ if __name__ == "__main__":
 
     plot_kwargs = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.labelsize' : 20}
     #hm.plot_hexbin(all_elem_df, font_scale=2)
-    hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1)
+    # hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1)
 
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         # test
         [15,10],
         [25,20],
-        # [35,30],
+        [35,30],
         # variable ratios
         # [985,15],
         # [970,30],
@@ -134,15 +134,15 @@ if __name__ == "__main__":
         # [30,970],
         # [15,985],
         # variable count
-        [1,10],
-        [2,20],
-        [4,40],
-        [8,80],
-        [16,160],
-        [32,320],
-        [64,640],
-        [128,1280],
-        [256,2560],
+        # [1,10],
+        # [2,20],
+        # [4,40],
+        # [8,80],
+        # [16,160],
+        # [32,320],
+        # [64,640],
+        # [128,1280],
+        # [256,2560],
         # only without MIP
         # [512,5120],
         # [1024,10240],
@@ -184,30 +184,33 @@ if __name__ == "__main__":
         for res in result:
             res['Match object'].pairs['Supply_id'].fillna('none', inplace=True)
             # score saved result:
-            new_score_row[res['Name']] = round(100 - 100*res['Match object'].result/res['Match object'].demand.Score.sum(), 2)
-            new_old_row[res['Name']] = round( 100* len(res['Match object'].pairs['Supply_id'].map(lambda x: x[0] == 'S')) / res['Match object'].pairs.count()[0] , 2)
+            new_score_row[res['Name']] = round(res['Match object'].demand.Score.sum() - res['Match object'].result, 2)
+            new_old_row[res['Name']] = round( 100* res['Match object'].pairs['Supply_id'].map(lambda x: x[0] == 'S').sum() / res['Match object'].pairs.count()[0] , 2)
             new_time_row[res['Name']] = round(res['Time'], 2)
             # actual result:
             # new_row[res['Name']] = round(res['Match object'].result, 3)
 
 
-        results_score_df.loc[f"{N_D}x{N_S}"] = new_score_row
-        results_time_df.loc[f"{N_D}x{N_S}"] = new_time_row
+        results_score_df.loc[f"{N_D}:{N_S}"] = new_score_row
+        results_old_df.loc[f"{N_D}:{N_S}"] = new_old_row
+        results_time_df.loc[f"{N_D}:{N_S}"] = new_time_row
     
     hm.plot_savings(results_score_df, **plot_kwargs)
+    hm.plot_old(results_old_df, **plot_kwargs)
     hm.plot_time(results_time_df, **plot_kwargs)
 
     
     print(results_score_df)
-    #print(results_old_df)
+    print(results_old_df)
     print(results_time_df)
 
 
     # Save to CSV:
     # name = "var_amount_less_5k"
-    # results_score_df.to_csv(f'Results/Result_{name}_score.csv', index=True)
-    # results_old_df.to_csv(f'Results/Result_{name}_substituted.csv', index=True)
-    # results_time_df.to_csv(f'Results/Result_{name}_time.csv', index=True)
+    # time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
+    # results_score_df.to_csv(f'Results/{time}_Result_{name}_score.csv', index=True)
+    # results_old_df.to_csv(f'Results/{time}_Result_{name}_substituted.csv', index=True)
+    # results_time_df.to_csv(f'Results/{time}_Result_{name}_time.csv', index=True)
 
 
     # hm.plot_savings(result_table)
@@ -217,6 +220,6 @@ if __name__ == "__main__":
     #hm.plot_histograms(all_elem_df)
     # hm.plot_scatter(all_elem_df)
     # hm.plot_bubble(demand, supply)
-    hm.plot_hexbin(demand, supply)
+    # hm.plot_hexbin(demand, supply)
 
     pass

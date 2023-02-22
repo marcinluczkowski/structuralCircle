@@ -36,6 +36,22 @@ def extract_results_df(dict_list):
     df=df.rename(columns={0:"LCA"})
     return df.round(3)
 
+def get_assignment_df(matching_pairs_df, supply_ids, only_old = True):
+    """Takes the matching pairs df and returns a new df with all supply element ids as index and the list of demand element
+    elements assigned to it in columns. One column per method used to match"""
+    df = pd.DataFrame(data = None, index = supply_ids, columns= matching_pairs_df.columns)
+    columns = matching_pairs_df.columns
+    for s in supply_ids:
+        new_row_lst = [matching_pairs_df[col].index[list(map(lambda s_id: s_id == s, matching_pairs_df[col]))].to_list() for col in columns]
+        df.loc[s, columns] = new_row_lst
+        # for col in columns:
+        #     bool_array = list(map(lambda s_id: s_id == s, matching_pairs_df[col]))
+        #     df.loc[s, col] = matching_pairs_df[col].index[bool_array].to_list()
+    if only_old: # remove new elements from df. 
+        df = df[df.index.str.contains('S')]
+    return df
+
+
 def remove_alternatives(x, y):
     if x > y:
         return np.nan

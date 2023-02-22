@@ -68,6 +68,8 @@ print(simple_results)
 dem = result_simple[0]['Match object'].demand
 sup = result_simple[0]['Match object'].supply
 
+assignment_summary_df = hm.get_assignment_df(simple_pairs, sup.index) # create overview of element assignments
+
 
 indices = list(dem.index)
 simple_el_ids = simple_pairs.mask(simple_pairs.isna(), indices, axis = 0) # replace NaN values with the intital index.

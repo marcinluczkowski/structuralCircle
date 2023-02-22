@@ -66,7 +66,7 @@ def remove_alternatives(x, y):
 
 ### ADD PLOTS
 
-def plot_histograms(df, **kwargs):
+def plot_histograms(df, save_fig = False, **kwargs):
     
     # csfont = {'fontname':'Times New Roman'}
     # plt.rcParams.update({'font.size': 22}) # must set in top
@@ -82,6 +82,11 @@ def plot_histograms(df, **kwargs):
  
     # plt.Axes.set_axisbelow(b=True)
     plt.title('Area')
+
+    if save_fig:
+        f_name = 'histogram'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
     plt.show()
 
 
@@ -94,7 +99,7 @@ def plot_scatter(df, **kwargs):
 
 
 
-def plot_hexbin(df, style = 'ticks', font_scale = 1.1,  **kwargs):
+def plot_hexbin(df, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwargs):
     # Based on https://seaborn.pydata.org/examples/hexbin_marginals.html
     #plt.figure()    
     # TODO Sverre, try with section names: sns.jointplot(x=df['Length'], y=df['Section'], kind="hex", color="#4CB391")
@@ -104,9 +109,14 @@ def plot_hexbin(df, style = 'ticks', font_scale = 1.1,  **kwargs):
     
     #g.set_axis_labels(**kwargs)
     # sns.jointplot(x=supply['Length'], y=supply['Area'], kind="hex", color="#eb4034")
+        
+    if save_fig:
+        f_name = 'hexbin'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
     plt.show()
 
-def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.1,  **kwargs):
+def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwargs):
     """Plot the Cross Section and length histogram using remapped values"""
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs) # set styling configuration
     
@@ -119,11 +129,15 @@ def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.1,  **k
     g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391")
     g.ax_joint.set_yticks(list(map_dict2.values()))
     g.ax_joint.set_yticklabels(cross_secs)
+
+    if save_fig:
+        f_name = 'hexbin_mapped'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
     plt.show()
-    pass
 
 
-def plot_savings(result_df, style = 'ticks', font_scale = 1.1, **kwargs):
+def plot_savings(result_df, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
     #plt.figure()
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
 
@@ -131,23 +145,38 @@ def plot_savings(result_df, style = 'ticks', font_scale = 1.1, **kwargs):
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
     plot.set(xlabel='Test case', ylabel='Score saved')
     plt.xticks(rotation=30)
+
+    if save_fig:
+        f_name = "score saved"
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
     plt.show()
 
-def plot_old(result_df, style = 'ticks', font_scale = 1.1, **kwargs):
+def plot_old(result_df, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
     plt.figure()
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
     plot.set(xlabel='Test case', ylabel='% of elements substituted by reuse')
     plt.xticks(rotation=30)
+
+    if save_fig:
+        f_name = 'reused elements'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
+
     plt.show()
 
-def plot_time(result_df, style = 'ticks', font_scale = 1.1, **kwargs):
+def plot_time(result_df, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
     #plt.figure()
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
     plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
     plot.set(yscale="log", xlabel='Test case', ylabel='Time [s]')
     plt.xticks(rotation=30)
+    if save_fig:
+        f_name = 'time plot'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
     plt.show()
 
 def plot_bubble(demand, supply, **kwargs):

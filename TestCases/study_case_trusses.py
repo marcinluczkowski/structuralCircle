@@ -43,7 +43,6 @@ def create_trusses_from_JSON(csv_path):
             trusses.append(new_truss)
     return trusses
 
-
 def elements_from_trusses(trusses):
     es = []
     ts = []
@@ -104,8 +103,9 @@ if __name__ == "__main__":
 
 
     plot_kwargs = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.labelsize' : 15}
+    save_figs = True
     #hm.plot_hexbin(all_elem_df, font_scale=1)
-    #hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1)
+    hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1, save_fig = save_figs, **plot_kwargs)
 
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
@@ -117,9 +117,9 @@ if __name__ == "__main__":
     
     amounts = [
         # test
-        [15,10],
-        [25,20],
-        [35,30]
+        # [15,10],
+        # [25,20],
+        # [35,30]
         # variable ratios
         # [985,15],
         # [970,30],
@@ -135,20 +135,20 @@ if __name__ == "__main__":
         # [30,970],
         # [15,985],
         # variable count
-        # [1,10],
-        # [2,20],
-        # [4,40],
-        # [8,80],
-        # [16,160],
-        # [32,320],
-        # [64,640],
-        # [128,1280],
-        # [256,2560],
-        # only without MIP
-        # [512,5120],
-        # [1024,10240],
-        # [2048,20480],
-        # [4096,40960],
+        [1,10],
+        [2,20],
+        [4,40],
+        [8,80],
+        [16,160],
+        [32,320],
+        [64,640],
+        [128,1280],
+        [256,2560],
+        #only without MIP
+        [512,5120],
+        [1024,10240],
+        #[2048,20480],
+        #[4096,40960],
         ]
 
     results_score_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "MILP"])
@@ -175,7 +175,7 @@ if __name__ == "__main__":
         
         # Run the matching
         result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = False,
-                            milp=True, sci_milp=False, greedy_single=True, greedy_plural=True, bipartite=True) 
+                            milp=True, sci_milp=False, greedy_single=True, greedy_plural=True, bipartite=True, solution_limit= 400) 
 
         pairs = hm.extract_pairs_df(result) # get matching pairs
         supply_assignments_df = hm.get_assignment_df(pairs, supply_ids= supply.index)
@@ -207,10 +207,10 @@ if __name__ == "__main__":
 
     
     #hm.plot_savings(results_score_df, **plot_kwargs)
-    hm.plot_savings(normalised_score_df, **plot_kwargs) # Added by Sverre
+    hm.plot_savings(normalised_score_df, save_fig = save_figs, **plot_kwargs) # Added by Sverre
     #hm.plot_old(results_old_df, **plot_kwargs)
-    hm.plot_old(normalised_old_df, **plot_kwargs) # Added by Sverre to see effect of normalising numbers
-    hm.plot_time(results_time_df, **plot_kwargs)
+    hm.plot_old(normalised_old_df, save_fig = save_figs, **plot_kwargs) # Added by Sverre to see effect of normalising numbers
+    hm.plot_time(results_time_df, save_fig = save_figs, **plot_kwargs)
 
     
     print(results_score_df)

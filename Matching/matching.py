@@ -315,13 +315,13 @@ class Matching():
         #NOTE DELETE AFTER IF NOT WORKING: Testing with not including new elements in the genetic algorithm search
         #
         #
-        col_names = self.supply.index.tolist()
+        supply_names = self.supply.index.tolist()
         index_first_new = self.supply.index.tolist().index("N0")
-        col_names_only_reuse = col_names[:index_first_new]
-        supply_without_new = self.supply[[col_names_only_reuse]].copy()
+        supply_names_only_reuse = supply_names[:index_first_new]
+        #supply_without_new = self.supply[[col_names_only_reuse]].copy()
 
         #Initializing a random population
-        initial_population = np.array(([[random.randint(0,1) for x in range(len(self.supply)*len(self.demand))] for y in range(len(self.supply)*10)]))
+        initial_population = np.array(([[random.randint(0,1) for x in range(len(supply_names_only_reuse)*len(self.demand))] for y in range(len(supply_names_only_reuse)*10)]))
 
         #test = self.weights["N0"]
         #weight_cols = self.weights.columns.values.tolist()
@@ -333,8 +333,11 @@ class Matching():
         
         def fitness_func(solution, solution_idx):
             fitness = 0
-            weight_cols = self.weights.columns.values.tolist()
-            weights_1d_array = self.weights.to_numpy().flatten() 
+            supply_names = self.supply.index.tolist()
+            index_first_new = self.supply.index.tolist().index("N0")
+            supply_names_only_reuse = supply_names[:index_first_new]
+            weight_only_reuse = self.weights[supply_names_only_reuse].copy()
+            weights_1d_array = weight_only_reuse.to_numpy().flatten() 
             
             """
             for i in range(len(solution)):
@@ -381,14 +384,13 @@ class Matching():
             index_duplicates = {x for x in indexes_of_matches if indexes_of_matches.count(x) > 1}
             if len(index_duplicates) > 0: #Means some demand elements are assigned the same supply element
                 fitness += penalty
-            
-                    
+                  
 
-            return -fitness
+            return 1.0/fitness
             
             
         ga_instance = pygad.GA(
-            num_generations=30,
+            num_generations=50,
             num_parents_mating=int(np.ceil(solutions_per_population/2)*2),
             fitness_func=fitness_func, #len(initial_population),
             # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
@@ -757,7 +759,7 @@ if __name__ == "__main__":
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
     demand, supply = hm.create_random_data(demand_count=10, supply_count=5)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
-    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True, genetic=True)
+    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=False, bipartite=False, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)
     simple_results = hm.extract_results_df(result)
     print("Simple pairs:")

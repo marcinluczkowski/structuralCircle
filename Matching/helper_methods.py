@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import igraph as ig
 import logging
 import LCA as lca
+import random as rd
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 
@@ -45,30 +46,51 @@ def remove_alternatives(x, y):
 #     return sum
 
 
-def create_random_data(demand_count, supply_count, demand_lat, demand_lon, supply_coords, demand_gwp=lca.TIMBER_GWP, supply_gwp=lca.TIMBER_REUSE_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
+def create_random_data_demand(demand_count, demand_lat, demand_lon, demand_gwp=lca.TIMBER_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()
-    supply = pd.DataFrame()
+   
     # create element lenghts
     demand['Length'] = ((length_max/2 + 1) - length_min) * np.random.random_sample(size = demand_count) + length_min
-    supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
     # create element areas independent of the length. Can change this back to Artur's method later, but I want to see the effect of even more randomness. 
     demand['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = demand_count) + area_min
-    supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
     # intertia moment
     demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
-    supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
     # height - assuming square cross sections
     demand['Height'] = np.power(demand['Area'], 0.5)
-    supply['Height'] = np.power(supply['Area'], 0.5)
     # gwp_factor
     demand['Gwp_factor'] = demand_gwp
-    supply['Gwp_factor'] = supply_gwp
+    demand["Demand_lat"]=demand_lat
+    demand["Demand_lon"]=demand_lon
+
     # Change index names
     demand.index = map(lambda text: 'D' + str(text), demand.index)
+    return demand.round(4)
+
+def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,supply_gwp=lca.TIMBER_REUSE_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
+    np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
+    supply = pd.DataFrame()
+    supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
+    supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
+    supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    supply['Height'] = np.power(supply['Area'], 0.5)
+    supply['Gwp_factor'] = supply_gwp
+    supply["Demand_lat"]=demand_lat
+    supply["Demand_lon"]=demand_lon
+    supply["Location"]=0
+    supply["Supply_lat"]=0
+    supply["Supply_lon"]=0
+    
+    for row in range(len(supply)):
+        lokasjon=rd.randint(0, len(supply_coords)-1)
+        supply.loc[row,"Supply_lat"]=supply_coords.loc[lokasjon,"Lat"]
+        supply.loc[row,"Supply_lon"]=supply_coords.loc[lokasjon,"Lon"]
+        supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Place"]
     supply.index = map(lambda text: 'S' + str(text), supply.index)
-    return demand.round(2), supply.round(2)
+
+    return supply.round(4)
+
 
 
 def display_graph(matching, graph_type='rows', show_weights=True, show_result=True):

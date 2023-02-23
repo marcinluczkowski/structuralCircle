@@ -29,7 +29,7 @@ logging.basicConfig(
 
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
-    def __init__(self, demand, supply, score_function_string, add_new=False, multi=False, constraints={}, solution_limit=60):
+    def __init__(self, demand, supply, score_function_string_demand, score_function_string_supply, add_new=False, multi=False, constraints={}, solution_limit=60):
         """_summary_
 
         :param demand: _description_
@@ -48,16 +48,26 @@ class Matching():
         :type solution_limit: int, optional
         """
         self.demand = demand.infer_objects()
+        self.supply = supply.infer_objects()
+        self.score_function_string_demand = score_function_string_demand
+        self.score_function_string_supply = score_function_string_supply
+        
+        pd.set_option('display.max_columns', 10)
+
+        self.demand['Score'] = self.demand.eval(score_function_string_demand)
+
+        self.supply['Score'] = self.supply.eval(score_function_string_supply)
+
         if add_new: # just copy designed to supply set, so that they act as new products
             demand_copy = self.demand.copy(deep = True)
             try:
                 # Rename Dx to Nx. This works only when the indices are already named "D"
-                demand_copy.rename(index=dict(zip(demand.index.values.tolist(), [sub.replace('D', 'N') for sub in demand.index.values.tolist()] )), inplace=True)
+                demand_copy.rename(index=dict(zip(self.demand.index.values.tolist(), [sub.replace('D', 'N') for sub in self.demand.index.values.tolist()] )), inplace=True)
             except AttributeError:
                 pass
-            self.supply = pd.concat((supply, demand_copy), ignore_index=False).infer_objects()
+            self.supply = pd.concat((self.supply, demand_copy), ignore_index=False).infer_objects()
         else:
-            self.supply = supply.infer_objects()
+            self.supply = self.supply.infer_objects()
         self.multi = multi
         self.graph = None
         self.result = None  #saves latest result of the matching
@@ -65,12 +75,12 @@ class Matching():
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
         # self.weights = None
         self.constraints = constraints
-        self.score_function_string = score_function_string
+        
+
         self.solution_time = None
         self.solution_limit = solution_limit           
        
-        self.demand['Score'] = self.demand.eval(score_function_string)
-        self.supply['Score'] = self.supply.eval(score_function_string)
+        
 
         # create incidence and weight for the method
         self.incidence = self.evaluate_incidence()
@@ -127,7 +137,7 @@ class Matching():
         # create a new dataframe with values from supply, except for the Length, which is from demand set (cut supply)
         eval_df = self.supply.iloc[el_locs0[1]].reset_index(drop=True)
         eval_df['Length'] = self.demand.iloc[el_locs0[0]]['Length'].reset_index(drop=True)
-        eval_score = eval_df.eval(self.score_function_string)
+        eval_score = eval_df.eval(self.score_function_string_supply)
         weights[el_locs0[0], el_locs0[1]] = eval_score.to_numpy()     
         end = time.time()  
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
@@ -602,13 +612,13 @@ class Matching():
         #compare_df['OK'] = np.where(compare_df['Length Assigned'] <= compare_df['Length Capacity'], True, False)
         
   
-def run_matching(demand, supply, score_function_string, constraints = None, add_new = True, solution_limit = 120,
+def run_matching(demand, supply, score_function_string_demand,score_function_string_supply, constraints = None, add_new = True, solution_limit = 120,
                 bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
     # create matching object 
-    matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string, constraints=constraints, add_new=add_new, multi = True, solution_limit=solution_limit)
+    matching = Matching(demand=demand, supply=supply, score_function_string_demand=score_function_string_demand, score_function_string_supply=score_function_string_supply,constraints=constraints, add_new=add_new, multi = True, solution_limit=solution_limit)
     matches =[] # results to return
     headers = []
     if greedy_single:

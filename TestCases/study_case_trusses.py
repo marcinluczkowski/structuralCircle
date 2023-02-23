@@ -92,6 +92,8 @@ if __name__ == "__main__":
     
     # Generate a set of unique trusses from CSV file:
     PATH = "Data\\CSV files trusses\\truss_all_types_beta_4.csv"
+    save_figs = True
+    save_csv = True
     #PATH =  "Data\\CSV files trusses\\truss_all_types_beta_second_version.csv" Test with another dataset
     trusses = create_trusses_from_JSON(PATH)
     truss_elements = elements_from_trusses(trusses)
@@ -103,9 +105,9 @@ if __name__ == "__main__":
 
 
     plot_kwargs = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.labelsize' : 15}
-    save_figs = True
+    
     #hm.plot_hexbin(all_elem_df, font_scale=1)
-    hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1, save_fig = save_figs, **plot_kwargs)
+    #hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1, save_fig = save_figs, **plot_kwargs)
 
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
@@ -135,17 +137,17 @@ if __name__ == "__main__":
         # [30,970],
         # [15,985],
         # variable count
-        [1,10],
-        [2,20],
-        [4,40],
-        [8,80],
-        [16,160],
-        [32,320],
-        [64,640],
-        [128,1280],
-        [256,2560],
+        # [1,10],
+        # [2,20],
+        # [4,40],
+        # [8,80],
+        # [16,160],
+        # [32,320],
+        # [64,640],
+        # [128,1280],
+        # [256,2560],
         #only without MIP
-        [512,5120],
+        # [512,5120],
         [1024,10240],
         #[2048,20480],
         #[4096,40960],
@@ -175,7 +177,7 @@ if __name__ == "__main__":
         
         # Run the matching
         result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = False,
-                            milp=True, sci_milp=False, greedy_single=True, greedy_plural=True, bipartite=True, solution_limit= 400) 
+                            milp=True, sci_milp=False, greedy_single=True, greedy_plural=True, bipartite=True, solution_limit= 1600) 
 
         pairs = hm.extract_pairs_df(result) # get matching pairs
         supply_assignments_df = hm.get_assignment_df(pairs, supply_ids= supply.index)
@@ -219,11 +221,12 @@ if __name__ == "__main__":
 
 
     # Save to CSV:
-    # name = "var_amount_less_5k"
-    # time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
-    # results_score_df.to_csv(f'Results/{time}_Result_{name}_score.csv', index=True)
-    # results_old_df.to_csv(f'Results/{time}_Result_{name}_substituted.csv', index=True)
-    # results_time_df.to_csv(f'Results/{time}_Result_{name}_time.csv', index=True)
+    if save_csv:
+        name = "var_amount_less_5k"
+        time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
+        results_score_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)
+        results_old_df.to_csv(f'Results/{time}_Result_{name}_substituted.csv', index=True)
+        results_time_df.to_csv(f'Results/{time}_Result_{name}_time.csv', index=True)
 
 
     # hm.plot_savings(result_table)
@@ -239,7 +242,7 @@ if __name__ == "__main__":
     time_1 = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
     name_1 = "Assignments"
     assignment_path = f'Results/Supply Assignments/{time_1}_{name_1}_score.xlsx'
-    write_assignments = False
+    write_assignments = True
     if write_assignments:
         with pd.ExcelWriter(assignment_path) as writer:
             for i, df_sheet in enumerate(supply_ass_df_list):

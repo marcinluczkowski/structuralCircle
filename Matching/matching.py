@@ -44,7 +44,7 @@ class Matching():
         :type multi: bool, optional
         :param constraints: _description_, defaults to {}
         :type constraints: dict, optional
-        :param solution_limit: _description_, defaults to 60
+        :param solution_limit: stop matching algorithm when reaching this limit., defaults to 60 [s]
         :type solution_limit: int, optional
         """
         self.demand = demand.infer_objects()
@@ -474,7 +474,6 @@ class Matching():
         #TODO Evaluate if the cost function is the best we can have. 
         # the CP Solver works only on integers. Consequently, all values are multiplied by 1000 before solving the
         m_fac = 10000
-        max_time = self.solution_limit
         # --- Create the data needed for the solver ---        
         data = {} # initiate empty dictionary
         data['lengths'] = (self.demand.Length * m_fac).astype(int)
@@ -533,7 +532,7 @@ class Matching():
         model.Maximize(cp_model.LinearExpr.Sum(objective))
         # --- Solve ---
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = max_time
+        solver.parameters.max_time_in_seconds = self.solution_limit
         status = solver.Solve(model)
         test = solver.ObjectiveValue()
         index_series = self.supply.index
@@ -602,7 +601,7 @@ class Matching():
         #compare_df['OK'] = np.where(compare_df['Length Assigned'] <= compare_df['Length Capacity'], True, False)
         
   
-def run_matching(demand, supply, score_function_string, constraints = None, add_new = True, solution_limit = 120,
+def run_matching(demand, supply, score_function_string, constraints = None, add_new = True, solution_limit = 800,
                 bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""

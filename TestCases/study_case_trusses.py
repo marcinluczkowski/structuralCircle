@@ -225,8 +225,8 @@ if __name__ == "__main__":
         name = "var_amount_less_5k"
         time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
         results_score_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)
-        results_old_df.to_csv(f'Results/{time}_Result_{name}_substituted.csv', index=True)
-        results_time_df.to_csv(f'Results/{time}_Result_{name}_time.csv', index=True)
+        results_old_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_substituted.csv', index=True)
+        results_time_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_time.csv', index=True)
 
 
     # hm.plot_savings(result_table)

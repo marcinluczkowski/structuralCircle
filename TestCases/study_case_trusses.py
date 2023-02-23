@@ -219,11 +219,13 @@ if __name__ == "__main__":
 
 
     # Save to CSV:
-    # name = "var_amount_less_5k"
-    # time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
-    # results_score_df.to_csv(f'Results/{time}_Result_{name}_score.csv', index=True)
-    # results_old_df.to_csv(f'Results/{time}_Result_{name}_substituted.csv', index=True)
-    # results_time_df.to_csv(f'Results/{time}_Result_{name}_time.csv', index=True)
+    # name = "var_ratio_google"
+    # name = "var_amount_less_5k_google"
+    name = "var_amount_more_5k_google"
+    time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
+    results_score_df.to_csv(f'Results/{time}_Result_{name}_score.csv', index=True)
+    results_old_df.to_csv(f'Results/{time}_Result_{name}_substituted.csv', index=True)
+    results_time_df.to_csv(f'Results/{time}_Result_{name}_time.csv', index=True)
 
 
     # hm.plot_savings(result_table)

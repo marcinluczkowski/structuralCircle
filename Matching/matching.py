@@ -312,6 +312,14 @@ class Matching():
         solutions_per_population = len(self.supply)
         number_of_buckets = len(self.demand)
 
+        #NOTE DELETE AFTER IF NOT WORKING: Testing with not including new elements in the genetic algorithm search
+        #
+        #
+        col_names = self.supply.index.tolist()
+        index_first_new = self.supply.index.tolist().index("N0")
+        col_names_only_reuse = col_names[:index_first_new]
+        supply_without_new = self.supply[[col_names_only_reuse]].copy()
+
         #Initializing a random population
         initial_population = np.array(([[random.randint(0,1) for x in range(len(self.supply)*len(self.demand))] for y in range(len(self.supply)*10)]))
 
@@ -376,12 +384,12 @@ class Matching():
             
                     
 
-            return 1.0/fitness
+            return -fitness
             
             
         ga_instance = pygad.GA(
             num_generations=30,
-            num_parents_mating=solutions_per_population,
+            num_parents_mating=int(np.ceil(solutions_per_population/2)*2),
             fitness_func=fitness_func, #len(initial_population),
             # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
             # (also possible with: gene_space=[0, 1])
@@ -392,8 +400,9 @@ class Matching():
             parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
             keep_parents=-1, #keep all parents
             crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            mutation_type="inversion",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            mutation_num_genes=1,
+            #mutation_type="swap",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+            #mutation_num_genes=int(solutions_per_population/5), Not needed if mutation_probability is set
+            #mutation_probability = 0.1,
             #mutation_percent_genes=0.1,
             initial_population=initial_population
             )
@@ -431,7 +440,7 @@ class Matching():
             fitness = 1.0 / output
             return fitness
         ga_instance = pygad.GA(
-            num_generations=20,
+            num_generations=30,
             num_parents_mating=2,
             fitness_func=fitness_func,
             sol_per_pop=10,
@@ -746,7 +755,7 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=3, supply_count=6)
+    demand, supply = hm.create_random_data(demand_count=10, supply_count=5)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
     result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)

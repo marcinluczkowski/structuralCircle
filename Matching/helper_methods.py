@@ -116,7 +116,8 @@ def plot_hexbin(df, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwar
 
     plt.show()
 
-def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwargs):
+def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.0, save_fig = False, 
+                        show_fig = False,  **kwargs):
     """Plot the Cross Section and length histogram using remapped values"""
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs) # set styling configuration
     
@@ -126,58 +127,91 @@ def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.1, save
     map_dict = {a:cs for a, cs in zip(sorted(unique_values), cross_secs)}
     map_dict2 = {a:(i+1) for i, a in enumerate(sorted(unique_values))}
     df['Cross Sections [mm]'] = df.Area.map(map_dict2).astype(int)
-    g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391")
+    g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391", bins = 2*len(cross_secs))
+    #g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hist", color="#4CB391")
     g.ax_joint.set_yticks(list(map_dict2.values()))
     g.ax_joint.set_yticklabels(cross_secs)
 
+    x_ticks = np.arange(df.Length.min()+1, df.Length.max()+2, 2)
+    g.ax_joint.set_xticks(x_ticks)
+    g.ax_joint.set_xticklabels(map(int, x_ticks))
+
     if save_fig:
         f_name = 'hexbin_mapped'
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+        plt.tight_layout()
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
+    if show_fig:
+        plt.show()
 
-    plt.show()
+def barplot_sns(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
+                show_fig = False, **kwargs):
+    """Add docstring""" 
+    if normalize:
+        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
+    
+    # Setting for the plot    
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
+
+    fig, ax = plt.suplots(1,1)
 
 
-def plot_savings(result_df, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
+def plot_savings(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
+                show_fig = False, ratio_amount = 'ratio', xlabel = 'Elements (Demand:Supply)', **kwargs):
+    """Add docstring"""
     #plt.figure()
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
+    if normalize: # normalize the dataframe according to best score in each row
+        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
 
+    # Setting for the plot    
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
+    fig, ax = plt.subplots(1,1)
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
-    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
-    plot.set(xlabel='Test case', ylabel='Score saved')
+    sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True, ax = ax)
+    ax.set(xlabel= xlabel, ylabel='Score saved')
     plt.xticks(rotation=30)
 
     if save_fig:
-        f_name = "score saved"
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+        f_name = f"score saved {ratio_amount}"
+        plt.tight_layout()
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
+    if show_fig:
+        plt.show()
 
-    plt.show()
+def plot_old(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
+                show_fig = False, ratio_amount = 'ratio', xlabel = 'Elements (Demand:Supply)', **kwargs):
+    "Add docstring"
+    fig, ax = plt.subplots(1,1)
+    if normalize: # normalize the dataframe according to best score in each row
+        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
 
-def plot_old(result_df, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
-    plt.figure()
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
-    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
-    plot.set(xlabel='Test case', ylabel='% of elements substituted by reuse')
+    sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True, ax = ax)
+    ax.set(xlabel= xlabel, ylabel='% of elements substituted by reuse')
     plt.xticks(rotation=30)
 
     if save_fig:
-        f_name = 'reused elements'
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+        f_name = f'reused elements {ratio_amount}'
+        plt.tight_layout()
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
 
+    if show_fig:
+        plt.show()
 
-    plt.show()
-
-def plot_time(result_df, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
+def plot_time(result_df, style = 'ticks', font_scale = 1.1, save_fig = False,
+            show_fig = False, ratio_amount = 'ratio', xlabel = 'Elements (Demand:Supply)', **kwargs):
+    """Add docstring"""
     #plt.figure()
+    fig, ax = plt.subplots(1,1)
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
-    plot.set(yscale="log", xlabel='Test case', ylabel='Time [s]')
+    sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True, ax = ax)
+    ax.set(yscale="log", xlabel = xlabel, ylabel='Time [s]')
     plt.xticks(rotation=30)
     if save_fig:
-        f_name = 'time plot'
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
-
-    plt.show()
+        f_name = f'time plot {ratio_amount}'
+        plt.tight_layout()
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
+    if show_fig:
+        plt.show()
 
 def plot_bubble(demand, supply, **kwargs):
 

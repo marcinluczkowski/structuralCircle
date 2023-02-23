@@ -123,19 +123,19 @@ if __name__ == "__main__":
         # [25,20],
         # [35,30]
         # variable ratios
-        [985,15],
-        [970,30],
-        [941,59],
-        [889,111],
-        [800,200],
-        [667,333],
-        [500,500],
-        [333,667],
-        [200,800],
-        [111,889],
-        [59,941],
-        [30,970],
-        [15,985],
+        # [985,15],
+        # [970,30],
+        # [941,59],
+        # [889,111],
+        # [800,200],
+        # [667,333],
+        # [500,500],
+        # [333,667],
+        # [200,800],
+        # [111,889],
+        # [59,941],
+        # [30,970],
+        # [15,985],
         # variable count
         # [1,10],
         # [2,20],
@@ -149,7 +149,7 @@ if __name__ == "__main__":
         # [512,5120],
         # [1024,10240],
         #only without MIP
-        #[2048,20480],
+        [2048,20480],
         #[4096,40960],
         ]
 
@@ -177,7 +177,7 @@ if __name__ == "__main__":
         
         # Run the matching
         result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = False,
-                            milp=True, sci_milp=False, greedy_single=True, greedy_plural=True, bipartite=True, solution_limit= 1600) 
+                            milp=True, sci_milp=False, greedy_single=True, greedy_plural=True, bipartite=True, solution_limit= 2000) 
 
         pairs = hm.extract_pairs_df(result) # get matching pairs
         supply_assignments_df = hm.get_assignment_df(pairs, supply_ids= supply.index)
@@ -223,8 +223,8 @@ if __name__ == "__main__":
     # Save to CSV:
 
     if save_csv:
-        #name = "var_amount_less_5k"
-        name = 'var_ratio'
+        name = "var_amount_22k"
+        #name = 'var_ratio'
         time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
         results_score_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)
         results_old_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_substituted.csv', index=True)

@@ -123,19 +123,19 @@ if __name__ == "__main__":
         # [25,20],
         # [35,30]
         # variable ratios
-        # [985,15],
-        # [970,30],
-        # [941,59],
-        # [889,111],
-        # [800,200],
-        # [667,333],
-        # [500,500],
-        # [333,667],
-        # [200,800],
-        # [111,889],
-        # [59,941],
-        # [30,970],
-        # [15,985],
+        [985,15],
+        [970,30],
+        [941,59],
+        [889,111],
+        [800,200],
+        [667,333],
+        [500,500],
+        [333,667],
+        [200,800],
+        [111,889],
+        [59,941],
+        [30,970],
+        [15,985],
         # variable count
         # [1,10],
         # [2,20],
@@ -145,10 +145,10 @@ if __name__ == "__main__":
         # [32,320],
         # [64,640],
         # [128,1280],
-        # [256,2560],
-        #only without MIP
+        # [256,2560],        
         # [512,5120],
-        [1024,10240],
+        # [1024,10240],
+        #only without MIP
         #[2048,20480],
         #[4096,40960],
         ]
@@ -223,7 +223,8 @@ if __name__ == "__main__":
     # Save to CSV:
 
     if save_csv:
-        name = "var_amount_less_5k"
+        #name = "var_amount_less_5k"
+        name = 'var_ratio'
         time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
         results_score_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)
         results_old_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_substituted.csv', index=True)

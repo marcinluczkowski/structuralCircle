@@ -309,7 +309,6 @@ class Matching():
     @_matching_decorator
     def match_genetic_algorithm_SIGURD(self):
         #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
-        solutions_per_population = len(self.supply)
         number_of_buckets = len(self.demand)
 
         #NOTE DELETE AFTER IF NOT WORKING: Testing with not including new elements in the genetic algorithm search
@@ -318,10 +317,11 @@ class Matching():
         supply_names = self.supply.index.tolist()
         index_first_new = self.supply.index.tolist().index("N0")
         supply_names_only_reuse = supply_names[:index_first_new]
+        solutions_per_population = len(supply_names_only_reuse) * 10
         #supply_without_new = self.supply[[col_names_only_reuse]].copy()
 
         #Initializing a random population
-        initial_population = np.array(([[random.randint(0,1) for x in range(len(supply_names_only_reuse)*len(self.demand))] for y in range(len(supply_names_only_reuse)*10)]))
+        initial_population = np.array(([[random.randint(0,1) for x in range(len(supply_names_only_reuse)*len(self.demand))] for y in range(solutions_per_population)]))
 
         #test = self.weights["N0"]
         #weight_cols = self.weights.columns.values.tolist()
@@ -372,18 +372,21 @@ class Matching():
                 num_matches_in_bracket = 0
                 for j in range(len(solutions[i])): #Each bucket
                     if solutions[i][j] == 1:
-                        num_matches_in_bracket += 1
-                        indexes_of_matches.append(j)
+                        #DELETE AFTER: TRIED DIFFERENT LOCATION OF THE TWO LINES UNDER HERE
+                        #num_matches_in_bracket += 1
+                        #indexes_of_matches.append(j)
                         if np.isnan(weights[i][j]): #Element cannot be matched => penalty
                             fitness += penalty*100 #Penalty
                         else:
                             fitness += weights[i][j]
+                            num_matches_in_bracket += 1
+                            indexes_of_matches.append(j)
                             
                 if num_matches_in_bracket > 1 or num_matches_in_bracket < 1:
                     fitness += penalty #Penalty
             
             index_duplicates = {x for x in indexes_of_matches if indexes_of_matches.count(x) > 1}
-            if len(index_duplicates) > 0: #Means some demand elements are assigned the same supply element
+            if len(index_duplicates) > 0: #Means some supply elements are assigned the same demand element
                 #fitness += penalty #Penalty
                 fitness = 0
                   
@@ -403,7 +406,7 @@ class Matching():
             #mutation_by_replacement=True,
             gene_type=int,
             parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            keep_parents=0, #-1 => keep all parents, 0 => keep none
+            keep_parents=-1, #-1 => keep all parents, 0 => keep none
             crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
             mutation_type="adaptive",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
             #mutation_num_genes=int(solutions_per_population/5), Not needed if mutation_probability is set

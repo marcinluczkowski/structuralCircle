@@ -376,7 +376,7 @@ class Matching():
                         #num_matches_in_bracket += 1
                         #indexes_of_matches.append(j)
                         if np.isnan(weights[i][j]): #Element cannot be matched => penalty
-                            fitness += penalty*100 #Penalty
+                            fitness += penalty #Penalty
                         else:
                             fitness += weights[i][j]
                             num_matches_in_bracket += 1
@@ -392,12 +392,12 @@ class Matching():
                   
             if fitness == 0: #Means that there is no matches
                 return fitness
-            return 1.0/fitness
+            return 10e4/fitness
             
             
         ga_instance = pygad.GA(
-            num_generations=10,
-            num_parents_mating=int(np.ceil(solutions_per_population/10)*10),
+            num_generations=len(self.demand)**2,
+            num_parents_mating=int(np.ceil(solutions_per_population)/2),
             fitness_func=fitness_func, #len(initial_population),
             # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
             # (also possible with: gene_space=[0, 1])
@@ -411,7 +411,7 @@ class Matching():
             mutation_type="adaptive",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
             #mutation_num_genes=int(solutions_per_population/5), Not needed if mutation_probability is set
             #mutation_probability = 0.2,
-            mutation_percent_genes= [30, 10], #[rate for low-quality solution, rate for high-quality solution]
+            mutation_percent_genes= [15, 5], #[rate for low-quality solution, rate for high-quality solution]
             save_best_solutions=True,
             initial_population=initial_population
             )
@@ -764,7 +764,7 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=2, supply_count=7)
+    demand, supply = hm.create_random_data(demand_count=10, supply_count=2)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
     result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=False, bipartite=False, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)

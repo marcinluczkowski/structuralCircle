@@ -126,13 +126,15 @@ def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.0, save
      
     map_dict = {a:cs for a, cs in zip(sorted(unique_values), cross_secs)}
     map_dict2 = {a:(i+1) for i, a in enumerate(sorted(unique_values))}
+    
+    df.rename({'Length':'Length [m]'}, axis = 1, inplace = True)
     df['Cross Sections [mm]'] = df.Area.map(map_dict2).astype(int)
-    g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391", bins = 2*len(cross_secs))
-    #g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hist", color="#4CB391")
+    g = sns.jointplot(x=df['Length [m]'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391") # "YlOrBr", #4CB391, #706e64
+    #g = sns.jointplot(x=df['Length [m]'], y=df['Cross Sections [mm]'], kind="hist", color="#4CB391")
     g.ax_joint.set_yticks(list(map_dict2.values()))
     g.ax_joint.set_yticklabels(cross_secs)
 
-    x_ticks = np.arange(df.Length.min()+1, df.Length.max()+2, 2)
+    x_ticks = np.arange(df['Length [m]'].min()+1, df['Length [m]'].max()+2, 2)
     g.ax_joint.set_xticks(x_ticks)
     g.ax_joint.set_xticklabels(map(int, x_ticks))
 
@@ -167,7 +169,7 @@ def plot_savings(result_df, normalize = True, style = 'ticks', font_scale = 1.1,
     fig, ax = plt.subplots(1,1)
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
     sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True, ax = ax)
-    ax.set(xlabel= xlabel, ylabel='Score saved')
+    ax.set(xlabel= xlabel, ylabel='Normalised Score(GWP) savings')
     plt.xticks(rotation=30)
 
     if save_fig:
@@ -186,7 +188,7 @@ def plot_old(result_df, normalize = True, style = 'ticks', font_scale = 1.1, sav
 
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
     sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True, ax = ax)
-    ax.set(xlabel= xlabel, ylabel='% of elements substituted by reuse')
+    ax.set(xlabel= xlabel, ylabel='Normalised % of reused elements')
     plt.xticks(rotation=30)
 
     if save_fig:

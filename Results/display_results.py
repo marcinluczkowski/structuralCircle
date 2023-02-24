@@ -25,16 +25,21 @@ var_time_df =  pd.read_csv('Results\\CSV_Matching\\2023-02-23_08-45_Result_var_a
 # Create global settings for all plots
 plot_kwargs = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.labelsize' : 28,
                 'axes.spines.right' : False, 'axes.spines.top' : False ,
-                'figure.figsize' : [12,8], 'ytick.major.size': 8.0, 'ytick.major.size': 8.0, 
-                'xtick.labelsize': 20.0, 'xtick.labelsize': 20.0,
-                'legend.fontsize' : 'large'}
+                'figure.figsize' : [13,8], 'xtick.major.size': 8.0, 'ytick.major.size': 8.0, 
+                'xtick.labelsize': 20.0, 'ytick.labelsize': 20.0,
+                'legend.fontsize' : 'large', 'lines.linewidth' : 3}
 save_figs = True
 show_figs = False
 #figsize = (10,10)
 # plot hexbin of all elements
-plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1, save_fig = save_figs, show_fig= show_figs, **plot_kwargs)
+plot_kwargs_hex = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.labelsize' : 12,
+                'axes.spines.right' : False, 'axes.spines.top' : False ,
+                'figure.figsize' : [12,8], 'ytick.major.size': 6.0, 'xtick.major.size': 6.0, 
+                'xtick.labelsize': 12.0, 'ytick.labelsize': 12.0,
+                'legend.fontsize' : 'large'}
+plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1, save_fig = save_figs, show_fig= show_figs, **plot_kwargs_hex)
 
-
+"""
 ratio_or_amount = 'amount'
 plot_savings(var_score_df, save_fig = save_figs, show_fig= show_figs, ratio_amount= ratio_or_amount, **plot_kwargs) 
 plot_old(var_sub_df, save_fig = save_figs,  show_fig= show_figs, ratio_amount= ratio_or_amount, **plot_kwargs) 
@@ -51,4 +56,4 @@ plot_savings(var_score_ratio_df, save_fig = save_figs, show_fig= show_figs, rati
 plot_old(var_sub_ratio_df, save_fig = save_figs,  show_fig= show_figs, ratio_amount= amount, **plot_kwargs) 
 plot_time(var_time_ratio_df, save_fig = save_figs,  show_fig= show_figs, ratio_amount= amount, **plot_kwargs)
 
-                            
+"""

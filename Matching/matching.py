@@ -317,7 +317,7 @@ class Matching():
         supply_names = self.supply.index.tolist()
         index_first_new = self.supply.index.tolist().index("N0")
         supply_names_only_reuse = supply_names[:index_first_new]
-        solutions_per_population = len(supply_names_only_reuse) * 10
+        solutions_per_population = len(supply_names_only_reuse) * 100
         #supply_without_new = self.supply[[col_names_only_reuse]].copy()
 
         #Initializing a random population
@@ -365,7 +365,7 @@ class Matching():
             weights = np.array_split(weights_1d_array, number_of_buckets)
             #TODO: (SIGURD) Add functionality so that the case where all weights are NAN is handled!
             max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
-            penalty = 3*max_weight
+            penalty = -10/(max_weight)
             #penalty = 10e5
             indexes_of_matches = []
             for i in range(len(solutions)):
@@ -378,42 +378,46 @@ class Matching():
                         if np.isnan(weights[i][j]): #Element cannot be matched => penalty
                             fitness += penalty #Penalty
                         else:
-                            fitness += weights[i][j]
+                            fitness += 1/weights[i][j]
                             num_matches_in_bracket += 1
                             indexes_of_matches.append(j)
                             
                 if num_matches_in_bracket > 1 or num_matches_in_bracket < 1:
-                    fitness += penalty #Penalty
+                    fitness += penalty
+                #elif num_matches_in_bracket < 1:
+                    #fitness += penalty
             
             index_duplicates = {x for x in indexes_of_matches if indexes_of_matches.count(x) > 1}
             if len(index_duplicates) > 0: #Means some supply elements are assigned the same demand element
                 #fitness += penalty #Penalty
-                fitness = 0
+                fitness = -10e10
                   
-            if fitness == 0: #Means that there is no matches
-                return fitness
-            return 10e4/fitness
+            return fitness
             
             
         ga_instance = pygad.GA(
-            num_generations=len(self.demand)**2,
-            num_parents_mating=int(np.ceil(solutions_per_population)/2),
+            initial_population=initial_population,
+            num_generations=int((len(self.demand)+len(self.supply))),
+            num_parents_mating=int(np.ceil(solutions_per_population/2)),
             fitness_func=fitness_func, #len(initial_population),
+            
             # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
             # (also possible with: gene_space=[0, 1])
-            #random_mutation_min_val=0,
-            #random_mutation_max_val=2,   # upper bound exclusive, so only 0 and 1
             #mutation_by_replacement=True,
             gene_type=int,
             parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            keep_parents=-1, #-1 => keep all parents, 0 => keep none
+            keep_elitism= int(np.ceil(solutions_per_population/4)),
+            #keep_parents=-1, #-1 => keep all parents, 0 => keep none
             crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            mutation_type="adaptive",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+            #mutation_type="adaptive",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+            mutation_type = "random",
             #mutation_num_genes=int(solutions_per_population/5), Not needed if mutation_probability is set
-            #mutation_probability = 0.2,
-            mutation_percent_genes= [15, 5], #[rate for low-quality solution, rate for high-quality solution]
+            mutation_probability = 0.4,
+            mutation_by_replacement=True,
+            random_mutation_min_val=0,
+            random_mutation_max_val=1,   # upper bound exclusive, so only 0 and 1
+            #mutation_percent_genes= [15, 5], #[rate for low-quality solution, rate for high-quality solution]
             save_best_solutions=True,
-            initial_population=initial_population
             )
         ga_instance.run()
         logging.debug(ga_instance.initial_population)
@@ -746,8 +750,8 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
         matching.match_scipy_milp()
         matches.append({'Name': 'Scipy_MILP','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if genetic:
-        matching.match_genetic_algorithm()
-        matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        #matching.match_genetic_algorithm()
+        #matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
         #NOTE DELETE AFTER (SIGURD)
         matching.match_genetic_algorithm_SIGURD()
@@ -764,7 +768,7 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=10, supply_count=2)
+    demand, supply = hm.create_random_data(demand_count=20, supply_count=10)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
     result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=False, bipartite=False, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)

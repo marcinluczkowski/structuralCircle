@@ -128,7 +128,11 @@ def display_graph(matching, graph_type='rows', show_weights=True, show_result=Tr
         plt.show()
 
 def extract_genetic_solution(weights, best_solution, num_buckets):
-    result = weights.copy(deep = True)
+    columns = weights.columns.values.tolist()
+    index_first_new = weights.columns.values.tolist().index("N0")
+    supply_names_only_reuse = columns[:index_first_new]
+
+    result = weights[supply_names_only_reuse].copy(deep = True)
     buckets = np.array_split(best_solution, num_buckets)
     demands = weights.index
     weight_cols = weights.columns.values.tolist()
@@ -141,6 +145,7 @@ def extract_genetic_solution(weights, best_solution, num_buckets):
             match = [weight_cols[x] for x in index]
         match_column.append(match)
     result["Matches from genetic"] = match_column
+    #result.to_csv('C:/temp/gen_test/result.csv')
     return result
             
 

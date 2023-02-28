@@ -84,6 +84,8 @@ class Matching():
 
         # create incidence and weight for the method
         self.incidence = self.evaluate_incidence()
+        print("Indidence:")
+        print(self.incidence)
         self.weights = self.evaluate_weights()
 
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
@@ -208,6 +210,7 @@ class Matching():
     @_matching_decorator
     def match_brute(self, plural_assign=False):
         """..."""
+        
         # TODO implement it
         pass
 
@@ -537,7 +540,7 @@ class Matching():
             for j in data['all_bins']:
                 objective.append(
                     #cp_model.LinearExpr.Term(x[i,j], coeff_array[i,j])
-                    cp_model.LinearExpr.Term(x[i,j], (self.demand.Score[i]*m_fac - coeff_array[i,j]))
+                    cp_model.LinearExpr.Term(x[i,j], (self.demand.Score[i]*m_fac+1 - coeff_array[i,j]))
                     )          
         #model.Maximize(cp_model.LinearExpr.Sum(objective))
         model.Maximize(cp_model.LinearExpr.Sum(objective))

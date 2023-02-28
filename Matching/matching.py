@@ -219,6 +219,8 @@ class Matching():
         """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
 
         sorted_weights = self.weights.join(self.demand.Score)
+
+
         sorted_weights = sorted_weights.sort_values(by='Score', axis=0, ascending=False)
         sorted_weights = sorted_weights.drop(columns=['Score'])
         #sorted_weights.replace(np.nan, np.inf, inplace=True)  

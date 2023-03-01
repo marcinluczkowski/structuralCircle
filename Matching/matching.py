@@ -16,6 +16,7 @@ from ortools.sat.python import cp_model
 from scipy.optimize import milp, LinearConstraint, NonlinearConstraint, Bounds
 import helper_methods as hm
 import LCA as lca
+import itertools
 
 
 logging.basicConfig(
@@ -207,10 +208,47 @@ class Matching():
 
     ### MATCHING ALGORITHMS
 
+    def add_pair_brute(pairs,demand_id, supply_id):
+        """Execute matrix matching"""
+        # add to match_map:
+        pairs.loc[demand_id, 'Supply_id'] = supply_id
+        return pairs
+    
+
+
+
+
     @_matching_decorator
     def match_brute(self, plural_assign=False):
-        """..."""
+        """Brute forces all possible solutions"""
+        from itertools import combinations
+        weights = self.weights.to_numpy()
+        #weights=hm.transform_weights(weights)
+        #print("Weights:")
+        #print(weights)
+
+        pairs_brute=pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id']) #saves latest array of pairs
         
+        n_columns=len(self.weights.columns)
+        n_rows=weights.shape[0]
+        print(n_columns)
+        print(n_rows)
+
+        count=0
+        arrays=[]
+        for combination in combinations(range(n_columns), 1):
+            arr = np.zeros(n_columns)
+            arr[list(combination)] = 1
+            arrays.append(arr)
+            print(arr)
+        for subset in itertools.permutations(arrays,len(self.demand)):
+            count+=1
+            print(subset)
+
+
+            
+        print("Count",count)
+    
         # TODO implement it
         pass
 
@@ -618,7 +656,7 @@ class Matching():
         
   
 def run_matching(demand, supply, score_function_string_demand,score_function_string_supply, constraints = None, add_new = True, solution_limit = 120,
-                bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False):
+                bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False,brute=True):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
@@ -643,6 +681,9 @@ def run_matching(demand, supply, score_function_string_demand,score_function_str
         matches.append({'Name': 'Scipy_MILP','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if genetic:
         matching.match_genetic_algorithm()
+        matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+    if brute:
+        matching.match_brute()
         matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     # TODO convert list of dfs to single df
     return matches

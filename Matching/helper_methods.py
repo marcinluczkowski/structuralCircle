@@ -40,6 +40,13 @@ def remove_alternatives(x, y):
     else:
         return x
 
+def transform_weights(weights):
+    """Transform the weight matrix to only contain one column with new elements"""
+    cols=list(weights.columns)[len(weights)-1:]
+    weights["New"]=weights[cols].sum(axis=1)
+    weights = weights.drop(columns=cols)
+    return weights
+
 # def extract_LCA_new(dict_list):
 #     matchobj=dict_list[0]["Match object"]
 #     sum=matchobj.demand["LCA"].sum()

@@ -99,7 +99,11 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
     return supply.round(4)
 
 
-
+def extract_brute_possibilities(incidence_matrix):
+    """Extracts all demand matching possibilities from incidence matrix"""
+    binary_incidence = incidence_matrix*1
+    
+    return 0 
 def display_graph(matching, graph_type='rows', show_weights=True, show_result=True):
     """Plot the graph and matching result"""
     if not matching.graph:

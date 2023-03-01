@@ -17,6 +17,7 @@ from scipy.optimize import milp, LinearConstraint, NonlinearConstraint, Bounds
 import helper_methods as hm
 import LCA as lca
 import itertools
+from itertools import combinations
 
 
 logging.basicConfig(
@@ -221,7 +222,57 @@ class Matching():
     @_matching_decorator
     def match_brute(self, plural_assign=False):
         """Brute forces all possible solutions"""
-        from itertools import combinations
+        
+        weights = self.weights
+        columns = weights.columns
+        #weights = self.weights.to_numpy()
+        #weights=hm.transform_weights(weights)
+        print("Weights:")
+        print(weights)
+
+        n_columns=len(self.weights.columns)
+        n_rows=weights.shape[0]
+        print(n_columns)
+        print(n_rows)
+
+        count=0
+        arrays=[]
+        bestmatch=[]
+        lowest_lca=10e10
+
+        for combination in combinations(range(n_columns), 1):
+            arr = np.zeros(n_columns)
+            arr[list(combination)] = 1
+            arrays.append(arr.tolist())
+            print(arr)
+        for subset in itertools.permutations(arrays,len(self.demand)):
+            count+=1
+            subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
+            if count==1 or count==2:
+                print(subset_df)
+                print(list(subset))
+            multiplum=weights.multiply(subset_df,fill_value=-1)
+            invalid_solution=multiplum.isin([-1]).any().any()
+            if not invalid_solution:
+                sum=multiplum.values.sum()
+                if sum<lowest_lca:
+                    lowest_lca=sum
+                    bestmatch=subset_df
+
+        print("Bestmatch:  ",bestmatch)
+        print("lowest LCA:  ",lowest_lca)
+        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
+        for pair in coordinates_of_pairs:
+            self.add_pair(pair[0],pair[1])
+
+        print("Count",count)
+    
+        # TODO implement it
+        pass
+
+    @_matching_decorator
+    def match_brute_upgraded(self, plural_assign=False):
+        """Brute forces all possible solutions"""
         
         weights = self.weights
         columns = weights.columns

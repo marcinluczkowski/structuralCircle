@@ -161,6 +161,33 @@ def extract_genetic_solution(weights, best_solution, num_buckets):
     result["Matches from genetic"] = match_column
     return result
             
+def print_genetic_solution(weights, best_solution, num_buckets):
+    result = weights.copy(deep = True)
+    buckets = np.array_split(best_solution, num_buckets)
+    demands = weights.index
+    weight_cols = weights.columns.values.tolist()
+    weight_cols = list(map(lambda x: x.replace("N0", "N"), weight_cols))
+    weight_cols.append("N0")
+    match_column = []
+    for i in range(len(buckets)):
+        index = np.where(buckets[i] == 1)[0] #Finding matches
+        if len(index) == 0:
+            match = ["No match"]
+        else:
+            match = [weight_cols[x] for x in index]
+        match_column.append(match)
+    result["Matches from genetic"] = match_column
+    return result
+
+def create_initial_population_genetic(n_demands, n_supplies, n_solutions):
+    #NOT USED
+    import random
+    population = []
+    for i in range(n_solutions):
+        solution = [random.randint(0,1) for x in range(n_supplies*n_demands)]
+        if solution not in population:
+            population.append(solution)
+    return population
 
 
 

@@ -328,6 +328,8 @@ class Matching():
 
         #Initializing a random population
         initial_population = np.array(([[random.randint(0,1) for x in range(len(supply_names)*len(self.demand))] for y in range(solutions_per_population)]))
+        a_pop = hm.create_initial_population_genetic(len(self.demand), len(supply_names), solutions_per_population)
+        a_l_pop = len(a_pop)
 
         #test = self.weights["N0"]
         #weight_cols = self.weights.columns.values.tolist()
@@ -339,6 +341,7 @@ class Matching():
         
         def fitness_func(solution, solution_idx):
             fitness = 0
+            reward = 0
             #supply_names = self.supply.index.tolist()
             #index_first_new = self.supply.index.tolist().index("N0")
             #supply_names_only_reuse = supply_names[:index_first_new]
@@ -374,7 +377,7 @@ class Matching():
             weights = np.array_split(weights_1d_array, number_of_buckets)
             #TODO: (SIGURD) Add functionality so that the case where all weights are NAN is handled!
             max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
-            penalty = -100/(max_weight)
+            penalty = -max_weight
             #penalty = 10e5
             indexes_of_matches = []
             for i in range(len(solutions)):
@@ -387,7 +390,7 @@ class Matching():
                         if np.isnan(weights[i][j]): #Element cannot be matched => penalty
                             fitness += penalty #Penalty
                         else:
-                            fitness += 1/weights[i][j]
+                            reward += weights[i][j]
                             num_matches_in_bracket += 1
                             new_element_index = len(solutions[i])-1
                             if not j == new_element_index: #Means that a supply element (not a new element) is matched with a demand element
@@ -402,7 +405,13 @@ class Matching():
             if len(index_duplicates) > 0: #Means some supply elements are assigned the same demand element
                 #fitness += penalty #Penalty
                 fitness = -10e10
+            elif reward != 0:
+                fitness += 100/reward
                   
+            return fitness
+        
+        def fitness_func_matrix(solution, solution_idx):
+            fitness = 0
             return fitness
             
             
@@ -417,7 +426,7 @@ class Matching():
             #mutation_by_replacement=True,
             gene_type=int,
             parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            keep_elitism= int(np.ceil(solutions_per_population/4)),
+            keep_elitism= int(np.ceil(solutions_per_population/2)),
             #keep_parents=-1, #-1 => keep all parents, 0 => keep none
             crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
             #mutation_type="adaptive",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
@@ -428,7 +437,7 @@ class Matching():
             random_mutation_min_val=0,
             random_mutation_max_val=1,   # upper bound exclusive, so only 0 and 1
             #mutation_percent_genes= [15, 5], #[rate for low-quality solution, rate for high-quality solution]
-            #save_best_solutions=True,
+            save_best_solutions=True,
             )
         ga_instance.run()
         logging.debug(ga_instance.initial_population)
@@ -436,6 +445,7 @@ class Matching():
         solution, solution_fitness, solution_idx = ga_instance.best_solution()
         
         see_result_from_genetic = hm.extract_genetic_solution(weights_new, solution, number_of_buckets)
+        printed_results = hm.print_genetic_solution(self.weights, solution, number_of_buckets)
         test4 = 4
         for index, row in see_result_from_genetic.iterrows():
             self.add_pair(index, row["Matches from genetic"])
@@ -750,6 +760,9 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
     if greedy_single:
         matching.match_greedy(plural_assign=False)
         matches.append({'Name': 'Greedy_single','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        result = hm.extract_pairs_df(matches)
+        print("\nGreedy result\n######################")
+        print(result)
     if greedy_plural:
         matching.match_greedy(plural_assign=True)
         matches.append({'Name': 'Greedy_plural', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
@@ -784,7 +797,7 @@ if __name__ == "__main__":
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
     demand, supply = hm.create_random_data(demand_count=4, supply_count=4)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
-    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, greedy_plural = True, bipartite=False, genetic=True)
+    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, greedy_plural = False, bipartite=False, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)
     simple_results = hm.extract_results_df(result)
     print("Simple pairs:")

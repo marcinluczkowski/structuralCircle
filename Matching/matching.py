@@ -310,18 +310,24 @@ class Matching():
     def match_genetic_algorithm_SIGURD(self):
         #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
         number_of_buckets = len(self.demand)
-
+        
         #NOTE DELETE AFTER IF NOT WORKING: Testing with not including new elements in the genetic algorithm search
         #
         #
+        """NOTE NEEDED IF NEW ELEMENTS ARE NOT CONCIDERED
         supply_names = self.supply.index.tolist()
         index_first_new = self.supply.index.tolist().index("N0")
         supply_names_only_reuse = supply_names[:index_first_new]
         solutions_per_population = len(supply_names_only_reuse) * 100
+        """
+        #NOTE (02.03.2023 Sigurd) Testing with only one column containing new elements
+        weights_new = hm.transform_weights(self.weights) #Create a new weight matrix with only one column representing all new elements
+        supply_names = weights_new.columns
+        solutions_per_population = len(supply_names) * 100
         #supply_without_new = self.supply[[col_names_only_reuse]].copy()
 
         #Initializing a random population
-        initial_population = np.array(([[random.randint(0,1) for x in range(len(supply_names_only_reuse)*len(self.demand))] for y in range(solutions_per_population)]))
+        initial_population = np.array(([[random.randint(0,1) for x in range(len(supply_names)*len(self.demand))] for y in range(solutions_per_population)]))
 
         #test = self.weights["N0"]
         #weight_cols = self.weights.columns.values.tolist()
@@ -333,11 +339,14 @@ class Matching():
         
         def fitness_func(solution, solution_idx):
             fitness = 0
-            supply_names = self.supply.index.tolist()
-            index_first_new = self.supply.index.tolist().index("N0")
-            supply_names_only_reuse = supply_names[:index_first_new]
-            weight_only_reuse = self.weights[supply_names_only_reuse].copy()
-            weights_1d_array = weight_only_reuse.to_numpy().flatten() 
+            #supply_names = self.supply.index.tolist()
+            #index_first_new = self.supply.index.tolist().index("N0")
+            #supply_names_only_reuse = supply_names[:index_first_new]
+            #weight_only_reuse = self.weights[supply_names_only_reuse].copy()
+            #weights_1d_array = weight_only_reuse.to_numpy().flatten() 
+            weights_new = hm.transform_weights(self.weights) #NOTE: MAY NOT BE SO GOOD TO RUN THIS FUNCTION EVERY TIME
+            weights_1d_array = weights_new.to_numpy().flatten()
+
             
             """
             for i in range(len(solution)):
@@ -365,7 +374,7 @@ class Matching():
             weights = np.array_split(weights_1d_array, number_of_buckets)
             #TODO: (SIGURD) Add functionality so that the case where all weights are NAN is handled!
             max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
-            penalty = -10/(max_weight)
+            penalty = -100/(max_weight)
             #penalty = 10e5
             indexes_of_matches = []
             for i in range(len(solutions)):
@@ -380,12 +389,14 @@ class Matching():
                         else:
                             fitness += 1/weights[i][j]
                             num_matches_in_bracket += 1
-                            indexes_of_matches.append(j)
+                            new_element_index = len(solutions[i])-1
+                            if not j == new_element_index: #Means that a supply element (not a new element) is matched with a demand element
+                                indexes_of_matches.append(j)
                             
-                if num_matches_in_bracket > 1 or num_matches_in_bracket < 1:
-                    fitness += penalty
-                #elif num_matches_in_bracket < 1:
-                    #fitness += penalty
+                if num_matches_in_bracket > 1:# or num_matches_in_bracket < 1:
+                    fitness += 10*penalty #Penalty for matching multiple supply elemenets to the same demand element
+                elif num_matches_in_bracket < 1:
+                    fitness += penalty #Penalty for not matching at all
             
             index_duplicates = {x for x in indexes_of_matches if indexes_of_matches.count(x) > 1}
             if len(index_duplicates) > 0: #Means some supply elements are assigned the same demand element
@@ -417,15 +428,17 @@ class Matching():
             random_mutation_min_val=0,
             random_mutation_max_val=1,   # upper bound exclusive, so only 0 and 1
             #mutation_percent_genes= [15, 5], #[rate for low-quality solution, rate for high-quality solution]
-            save_best_solutions=True,
+            #save_best_solutions=True,
             )
         ga_instance.run()
         logging.debug(ga_instance.initial_population)
         logging.debug(ga_instance.population)
         solution, solution_fitness, solution_idx = ga_instance.best_solution()
         
-        see_result_from_genetic = hm.extract_genetic_solution(self.weights, solution, number_of_buckets)
+        see_result_from_genetic = hm.extract_genetic_solution(weights_new, solution, number_of_buckets)
         test4 = 4
+        for index, row in see_result_from_genetic.iterrows():
+            self.add_pair(index, row["Matches from genetic"])
 
     @_matching_decorator
     def match_genetic_algorithm(self):
@@ -755,6 +768,7 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
 
         #NOTE DELETE AFTER (SIGURD)
         matching.match_genetic_algorithm_SIGURD()
+        matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     # TODO convert list of dfs to single df
     return matches
 
@@ -768,9 +782,9 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=20, supply_count=10)
+    demand, supply = hm.create_random_data(demand_count=4, supply_count=4)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
-    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=False, bipartite=False, genetic=True)
+    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, greedy_plural = True, bipartite=False, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)
     simple_results = hm.extract_results_df(result)
     print("Simple pairs:")

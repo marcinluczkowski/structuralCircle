@@ -44,6 +44,14 @@ def remove_alternatives(x, y):
 #     sum=matchobj.demand["LCA"].sum()
 #     return sum
 
+def transform_weights(weights):
+    """Transform the weight matrix to only contain one column with new elements"""
+    weights = weights.copy(deep = True)
+    cols=list(weights.columns)[-len(weights):]
+    weights["N"]=weights[cols].sum(axis=1)
+    weights = weights.drop(columns=cols)
+    return weights
+
 
 def create_random_data(demand_count, supply_count, demand_gwp=lca.TIMBER_GWP, supply_gwp=lca.TIMBER_REUSE_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
@@ -128,24 +136,29 @@ def display_graph(matching, graph_type='rows', show_weights=True, show_result=Tr
         plt.show()
 
 def extract_genetic_solution(weights, best_solution, num_buckets):
-    columns = weights.columns.values.tolist()
-    index_first_new = weights.columns.values.tolist().index("N0")
-    supply_names_only_reuse = columns[:index_first_new]
+    #columns = weights.columns.values.tolist()
+    #index_first_new = weights.columns.values.tolist().index("N0")
+    #supply_names_only_reuse = columns[:index_first_new]
 
-    result = weights[supply_names_only_reuse].copy(deep = True)
+    #result = weights[supply_names_only_reuse].copy(deep = True)
+    result = weights.copy(deep = True)
     buckets = np.array_split(best_solution, num_buckets)
     demands = weights.index
     weight_cols = weights.columns.values.tolist()
     match_column = []
     for i in range(len(buckets)):
         index = np.where(buckets[i] == 1)[0] #Finding matches
-        if len(index) == 0:
-            match = ["No match"]
+        if len(index) == 0 or len(index) > 1: #This happens either if a match is found or multiple supply-elements are matched with the same demand elemend => invalid solution
+            match = f"N{i}" #Set match to New element. 
+            if len(index) > 1:
+                logging.info("OBS: Multiple supply matched with one demand")
         else:
-            match = [weight_cols[x] for x in index]
+            match = weight_cols[index[0]]
+            if match == "N":
+                match = f"N{i}"
+            #match = [weight_cols[x] for x in index]
         match_column.append(match)
     result["Matches from genetic"] = match_column
-    #result.to_csv('C:/temp/gen_test/result.csv')
     return result
             
 

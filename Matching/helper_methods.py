@@ -103,7 +103,30 @@ def extract_brute_possibilities(incidence_matrix):
     """Extracts all demand matching possibilities from incidence matrix"""
     binary_incidence = incidence_matrix*1
     
-    return 0 
+    print("Binary incidence")
+    print(binary_incidence)
+    three_d_list=[]
+    incidence_list=binary_incidence.values.tolist()
+
+    print(incidence_list)
+    for row in incidence_list:
+        rowlist=[]
+        for i in range(len(row)):
+            if row[i]==1:
+                newlist=[0]*len(row)
+                newlist[i]=1
+                #strlist="".join(str(bit) for bit in newlist )
+                rowlist.append(newlist)
+        three_d_list.append(rowlist)
+
+
+    print("Three_DDDD_list:")
+    print(three_d_list)
+
+
+
+    return three_d_list 
+
 def display_graph(matching, graph_type='rows', show_weights=True, show_result=True):
     """Plot the graph and matching result"""
     if not matching.graph:

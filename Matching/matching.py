@@ -247,10 +247,15 @@ class Matching():
             print(arr)
         for subset in itertools.permutations(arrays,len(self.demand)):
             count+=1
+            
             subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
             if count==1 or count==2:
+                print("Subset:")
+                print(subset)
+
+                print("Subset DF: ")
                 print(subset_df)
-                print(list(subset))
+      
             multiplum=weights.multiply(subset_df,fill_value=-1)
             invalid_solution=multiplum.isin([-1]).any().any()
             if not invalid_solution:
@@ -275,39 +280,36 @@ class Matching():
         """Brute forces all possible solutions"""
         
         weights = self.weights
-        columns = weights.columns
         #weights = self.weights.to_numpy()
         #weights=hm.transform_weights(weights)
-        print("Weights:")
-        print(weights)
-
         n_columns=len(self.weights.columns)
         n_rows=weights.shape[0]
         print(n_columns)
         print(n_rows)
 
         count=0
-        arrays=[]
         bestmatch=[]
         lowest_lca=10e10
 
-        for combination in combinations(range(n_columns), 1):
-            arr = np.zeros(n_columns)
-            arr[list(combination)] = 1
-            arrays.append(arr.tolist())
-            print(arr)
-        for subset in itertools.permutations(arrays,len(self.demand)):
+
+        possible_solutions=hm.extract_brute_possibilities(self.incidence)
+
+        
+        for subset in itertools.product(*possible_solutions):
+            #subsetlist=list(subset) for sub in subset
             count+=1
             subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
-            if count==1 or count==2:
-                print(subset_df)
-                print(list(subset))
-            multiplum=weights.multiply(subset_df,fill_value=-1)
-            invalid_solution=multiplum.isin([-1]).any().any()
+            # if count==1 or count==2:
+            #     print(subset_df)
+            #     print(list(subset))
+            sum=subset_df.sum()
+            invalid_solution=(sum>1).any()
+           
             if not invalid_solution:
-                sum=multiplum.values.sum()
-                if sum<lowest_lca:
-                    lowest_lca=sum
+                multiplum=weights.multiply(subset_df,fill_value=0)
+                LCAsum=multiplum.values.sum()
+                if LCAsum<lowest_lca:
+                    lowest_lca=LCAsum
                     bestmatch=subset_df
 
         print("Bestmatch:  ",bestmatch)
@@ -752,8 +754,11 @@ def run_matching(demand, supply, score_function_string_demand,score_function_str
         matching.match_genetic_algorithm()
         matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if brute:
-        matching.match_brute()
-        matches.append({'Name': 'Brute','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        #matching.match_brute()
+        #matches.append({'Name': 'Brute','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matching.match_brute_upgraded()
+        matches.append({'Name': 'Brute_vol2','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
     # TODO convert list of dfs to single df
     return matches
 

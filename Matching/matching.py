@@ -321,10 +321,16 @@ class Matching():
         """
         #NOTE (02.03.2023 Sigurd) Testing with only one column containing new elements
         weights_new = hm.transform_weights(self.weights) #Create a new weight matrix with only one column representing all new elements
+        weights_1d_array = weights_new.to_numpy().flatten()
+        weights = np.array_split(weights_1d_array, number_of_buckets)
+        max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
+
+
+
         supply_names = weights_new.columns
         #solutions_per_population = len(supply_names) * 100 #"""Should be #len(supply_names) * 100# if random population with 50/50 0 and 1"""
         chromosome_length = len(supply_names) * len(self.demand)
-        requested_number_of_chromosomes = len(supply_names)*10
+        requested_number_of_chromosomes = len(supply_names)*100
 
         #initial_population = np.array(([[random.randint(0,1) for x in range(chromosome_length)] for y in range(solutions_per_population)]))
 
@@ -344,8 +350,10 @@ class Matching():
             #supply_names_only_reuse = supply_names[:index_first_new]
             #weight_only_reuse = self.weights[supply_names_only_reuse].copy()
             #weights_1d_array = weight_only_reuse.to_numpy().flatten() 
-            weights_new = hm.transform_weights(self.weights) #NOTE: MAY NOT BE SO GOOD TO RUN THIS FUNCTION EVERY TIME
-            weights_1d_array = weights_new.to_numpy().flatten()
+            
+            
+            #weights_new = hm.transform_weights(self.weights) #NOTE: MAY NOT BE SO GOOD TO RUN THIS FUNCTION EVERY TIME
+            #weights_1d_array = weights_new.to_numpy().flatten()
 
             
             """
@@ -371,9 +379,13 @@ class Matching():
             
             #Trying something new where each bucket must have one solution
             solutions = np.array_split(solution, number_of_buckets)
-            weights = np.array_split(weights_1d_array, number_of_buckets)
+
+            #weights = np.array_split(weights_1d_array, number_of_buckets)
+
             #TODO: (SIGURD) Add functionality so that the case where all weights are NAN is handled!
-            max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
+            
+            #max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
+            
             penalty = -max_weight
             #penalty = 10e5
             indexes_of_matches = []
@@ -434,7 +446,7 @@ class Matching():
             random_mutation_min_val=0,
             random_mutation_max_val=1,   # upper bound exclusive, so only 0 and 1
             #mutation_percent_genes= [15, 5], #[rate for low-quality solution, rate for high-quality solution]
-            save_best_solutions=True,
+            #save_best_solutions=True,
             )
 
         ga_instance.run()
@@ -454,21 +466,23 @@ class Matching():
         #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
         number_of_buckets = len(self.demand)
         weights_new = hm.transform_weights(self.weights) #Create a new weight matrix with only one column representing all new elements
+        weights_1d_array = weights_new.to_numpy().flatten()
+        weights = np.array_split(weights_1d_array, number_of_buckets)
+        max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
         supply_names = weights_new.columns
         #Initial population as a subset of actual possible solutions
-        new_sol = hm.create_initial_population_genetic(hm.transform_weights(self.incidence*1), weights_new, size_of_population = 100)
+        new_sol = hm.create_initial_population_genetic2(hm.transform_weights(self.incidence*1), weights_new, size_of_population = 100)
         #Fitness function to calculate fitness value of chromosomes
         #Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA
-        
+        print(f"population made with {len(new_sol)} chromosomes")
         def fitness_func(solution, solution_idx):
             fitness = 0
             reward = 0
-            weights_new = hm.transform_weights(self.weights) #NOTE: MAY NOT BE SO GOOD TO RUN THIS FUNCTION EVERY TIME
-            weights_1d_array = weights_new.to_numpy().flatten()
-            
+            #weights_new = hm.transform_weights(self.weights) #NOTE: MAY NOT BE SO GOOD TO RUN THIS FUNCTION EVERY TIME
+            #weights_1d_array = weights_new.to_numpy().flatten()
             solutions = np.array_split(solution, number_of_buckets)
-            weights = np.array_split(weights_1d_array, number_of_buckets)
-            max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
+            #weights = np.array_split(weights_1d_array, number_of_buckets)
+            #max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
             penalty = -max_weight
             indexes_of_matches = []
             for i in range(len(solutions)):
@@ -866,11 +880,13 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
         #matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
         #NOTE DELETE AFTER (SIGURD)
+        matching.match_genetic_algorithm_ALL_POSSIBILITIES()
+        matches.append({'Name': 'Genetic all possibilities','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
         matching.match_genetic_algorithm_RANDOM()
         matches.append({'Name': 'Genetic random','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
-        matching.match_genetic_algorithm_ALL_POSSIBILITIES()
-        matches.append({'Name': 'Genetic all possibilities','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        
     # TODO convert list of dfs to single df
     return matches
 
@@ -884,7 +900,7 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=8, supply_count=8)
+    demand, supply = hm.create_random_data(demand_count=10, supply_count=10)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
     result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, greedy_plural = False, bipartite=False, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)

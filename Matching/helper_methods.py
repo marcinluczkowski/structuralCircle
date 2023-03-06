@@ -184,7 +184,6 @@ def print_genetic_solution(weights, best_solution, num_buckets):
 def create_initial_population_genetic(binary_incidence, weights, size_of_population):
     three_d_list=[]
     all_possible_solutions = []
-    initial_population = []
     incidence_list=binary_incidence.values.tolist()
     count = 0
     #Creates a 3d list containing all possible locations of matches based on the incidence matrix
@@ -197,20 +196,24 @@ def create_initial_population_genetic(binary_incidence, weights, size_of_populat
                 rowlist.append(newlist)
         three_d_list.append(rowlist)
     for subset in itertools.product(*three_d_list):
-            random_number = random.randint(1,3)
             #subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
             #sum=subset_df.sum()
             #invalid_solution=(sum>1).any()
             column_sum = np.sum(list(subset), axis = 0)[:-1] #All sums of columns except the "New"-column
             invalid_solution = len([*filter(lambda x: x > 1, column_sum)]) > 0
-            if not invalid_solution and random_number == 1 and count <= size_of_population:
-                initial_population.append(sum(list(subset), []))
+            if not invalid_solution:
+                all_possible_solutions.append(sum(list(subset), []))
                 count += 1
-    #shuffeled = random.shuffle(all_possible_solutions)
-    #random.shuffle(all_possible_solutions)
-    #initial_population = all_possible_solutions[::3]
-    return initial_population
+    random.shuffle(all_possible_solutions)
+    return all_possible_solutions[:size_of_population]
 
+def create_random_population_genetic(chromosome_length, requested_population_size):
+    initial_population = []
+    for i in range(requested_population_size):
+        solution = [np.random.choice([0,1], p = [0.75, 0.25]) for x in range(chromosome_length)]
+        if solution not in initial_population:
+            initial_population.append(solution)
+    return initial_population
     
 
     

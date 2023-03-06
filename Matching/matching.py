@@ -307,13 +307,12 @@ class Matching():
 
     # TODO (SIGURD) WORK IN PROGRESS: MAKING A NEW GENETIC ALGORITHM
     @_matching_decorator
-    def match_genetic_algorithm_SIGURD(self):
+    def match_genetic_algorithm_RANDOM(self):
+        """Genetic algorithm with the initial population with random solutions (not necessary an actual population)"""
         #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
         number_of_buckets = len(self.demand)
         
-        #NOTE DELETE AFTER IF NOT WORKING: Testing with not including new elements in the genetic algorithm search
-        #
-        #
+
         """NOTE NEEDED IF NEW ELEMENTS ARE NOT CONCIDERED
         supply_names = self.supply.index.tolist()
         index_first_new = self.supply.index.tolist().index("N0")
@@ -323,21 +322,16 @@ class Matching():
         #NOTE (02.03.2023 Sigurd) Testing with only one column containing new elements
         weights_new = hm.transform_weights(self.weights) #Create a new weight matrix with only one column representing all new elements
         supply_names = weights_new.columns
-        solutions_per_population = len(supply_names) * 100
-        #supply_without_new = self.supply[[col_names_only_reuse]].copy()
-        new_sol = hm.create_initial_population_genetic(hm.transform_weights(self.incidence*1), weights_new, size_of_population = 100)
+        #solutions_per_population = len(supply_names) * 100 #"""Should be #len(supply_names) * 100# if random population with 50/50 0 and 1"""
+        chromosome_length = len(supply_names) * len(self.demand)
+        requested_number_of_chromosomes = len(supply_names)*10
 
+        #initial_population = np.array(([[random.randint(0,1) for x in range(chromosome_length)] for y in range(solutions_per_population)]))
+
+        initial_population = hm.create_random_population_genetic(chromosome_length, requested_number_of_chromosomes)
+        solutions_per_population = len(initial_population)
         #Initializing a random population
 
-        #initial_population = np.array(([[random.randint(0,1) for x in range(len(supply_names)*len(self.demand))] for y in range(solutions_per_population)]))
-
-        #a_pop = hm.create_initial_population_genetic(len(self.demand), len(supply_names), solutions_per_population)
-        #a_l_pop = len(a_pop)
-
-        #test = self.weights["N0"]
-        #weight_cols = self.weights.columns.values.tolist()
-        #test2 = np.array_split(initial_population[0], number_of_buckets)
-        #toNum = self.weights.to_numpy().flatten()
         test3 = 3
         #Fitness function to calculate fitness value of chromosomes
         #Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA
@@ -418,7 +412,6 @@ class Matching():
             fitness = 0
             return fitness
             
-        """OLD; BUT GOOD!
         ga_instance = pygad.GA(
             initial_population=initial_population,
             num_generations=int((len(self.demand)+len(self.supply))),
@@ -442,7 +435,72 @@ class Matching():
             random_mutation_max_val=1,   # upper bound exclusive, so only 0 and 1
             #mutation_percent_genes= [15, 5], #[rate for low-quality solution, rate for high-quality solution]
             save_best_solutions=True,
-            )"""
+            )
+
+        ga_instance.run()
+        logging.debug(ga_instance.initial_population)
+        logging.debug(ga_instance.population)
+        solution, solution_fitness, solution_idx = ga_instance.best_solution()
+        
+        see_result_from_genetic = hm.extract_genetic_solution(weights_new, solution, number_of_buckets)
+        printed_results = hm.print_genetic_solution(self.weights, solution, number_of_buckets)
+        test4 = 4
+        for index, row in see_result_from_genetic.iterrows():
+            self.add_pair(index, row["Matches from genetic"])
+
+    @_matching_decorator
+    def match_genetic_algorithm_ALL_POSSIBILITIES(self):
+        """Genetic algorithm than only uses a subset of possible solutions as the initial population"""
+        #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
+        number_of_buckets = len(self.demand)
+        weights_new = hm.transform_weights(self.weights) #Create a new weight matrix with only one column representing all new elements
+        supply_names = weights_new.columns
+        #Initial population as a subset of actual possible solutions
+        new_sol = hm.create_initial_population_genetic(hm.transform_weights(self.incidence*1), weights_new, size_of_population = 100)
+        #Fitness function to calculate fitness value of chromosomes
+        #Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA
+        
+        def fitness_func(solution, solution_idx):
+            fitness = 0
+            reward = 0
+            weights_new = hm.transform_weights(self.weights) #NOTE: MAY NOT BE SO GOOD TO RUN THIS FUNCTION EVERY TIME
+            weights_1d_array = weights_new.to_numpy().flatten()
+            
+            solutions = np.array_split(solution, number_of_buckets)
+            weights = np.array_split(weights_1d_array, number_of_buckets)
+            max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
+            penalty = -max_weight
+            indexes_of_matches = []
+            for i in range(len(solutions)):
+                num_matches_in_bracket = 0
+                for j in range(len(solutions[i])): #Each bucket
+                    if solutions[i][j] == 1:
+                        if np.isnan(weights[i][j]): #Element cannot be matched => penalty
+                            fitness += penalty #Penalty
+                        else:
+                            reward += weights[i][j]
+                            num_matches_in_bracket += 1
+                            new_element_index = len(solutions[i])-1
+                            if not j == new_element_index: #Means that a supply element (not a new element) is matched with a demand element
+                                indexes_of_matches.append(j)
+                            
+                if num_matches_in_bracket > 1:# or num_matches_in_bracket < 1:
+                    fitness += 10*penalty #Penalty for matching multiple supply elemenets to the same demand element
+                elif num_matches_in_bracket < 1:
+                    fitness += penalty #Penalty for not matching at all
+            
+            index_duplicates = {x for x in indexes_of_matches if indexes_of_matches.count(x) > 1}
+            if len(index_duplicates) > 0: #Means some supply elements are assigned the same demand element
+                fitness = -10e10
+            elif reward != 0:
+                fitness += 100/reward
+                  
+            return fitness
+        
+        def fitness_func_matrix(solution, solution_idx):
+            #TODO (SIGURD): Decrease run-time by doing matrix-multiplication to evaluate fitness of solution rather than double for-loop
+            fitness = 0
+            return fitness
         
         ga_instance = pygad.GA(
             initial_population=new_sol,
@@ -808,8 +866,11 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
         #matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
         #NOTE DELETE AFTER (SIGURD)
-        matching.match_genetic_algorithm_SIGURD()
-        matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matching.match_genetic_algorithm_RANDOM()
+        matches.append({'Name': 'Genetic random','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
+        matching.match_genetic_algorithm_ALL_POSSIBILITIES()
+        matches.append({'Name': 'Genetic all possibilities','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     # TODO convert list of dfs to single df
     return matches
 
@@ -823,7 +884,7 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=10, supply_count=10)
+    demand, supply = hm.create_random_data(demand_count=8, supply_count=8)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
     result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, greedy_plural = False, bipartite=False, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)

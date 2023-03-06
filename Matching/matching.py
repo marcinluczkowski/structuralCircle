@@ -209,33 +209,12 @@ class Matching():
 
     ### MATCHING ALGORITHMS
 
-    def add_pair_brute(pairs,demand_id, supply_id):
-        """Execute matrix matching"""
-        # add to match_map:
-        pairs.loc[demand_id, 'Supply_id'] = supply_id
-        return pairs
-    
-
-
-
-
     @_matching_decorator
     def match_brute(self, plural_assign=False):
         """Brute forces all possible solutions"""
         
         weights = self.weights
-        columns = weights.columns
-        #weights = self.weights.to_numpy()
-        #weights=hm.transform_weights(weights)
-        print("Weights:")
-        print(weights)
-
         n_columns=len(self.weights.columns)
-        n_rows=weights.shape[0]
-        print(n_columns)
-        print(n_rows)
-
-        count=0
         arrays=[]
         bestmatch=[]
         lowest_lca=10e10
@@ -246,16 +225,7 @@ class Matching():
             arrays.append(arr.tolist())
             print(arr)
         for subset in itertools.permutations(arrays,len(self.demand)):
-            count+=1
-            
             subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
-            if count==1 or count==2:
-                print("Subset:")
-                print(subset)
-
-                print("Subset DF: ")
-                print(subset_df)
-      
             multiplum=weights.multiply(subset_df,fill_value=-1)
             invalid_solution=multiplum.isin([-1]).any().any()
             if not invalid_solution:
@@ -263,64 +233,84 @@ class Matching():
                 if sum<lowest_lca:
                     lowest_lca=sum
                     bestmatch=subset_df
-
-        print("Bestmatch:  ",bestmatch)
-        print("lowest LCA:  ",lowest_lca)
         coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
         for pair in coordinates_of_pairs:
             self.add_pair(pair[0],pair[1])
-
-        print("Count",count)
-    
-        # TODO implement it
         pass
 
     @_matching_decorator
-    def match_brute_upgraded(self, plural_assign=False):
+    def match_brute_vol2(self, plural_assign=False):
         """Brute forces all possible solutions"""
         
         weights = self.weights
-        #weights = self.weights.to_numpy()
-        #weights=hm.transform_weights(weights)
-        n_columns=len(self.weights.columns)
-        n_rows=weights.shape[0]
-        print(n_columns)
-        print(n_rows)
-
         count=0
         bestmatch=[]
         lowest_lca=10e10
-
-
         possible_solutions=hm.extract_brute_possibilities(self.incidence)
-
-        
         for subset in itertools.product(*possible_solutions):
-            #subsetlist=list(subset) for sub in subset
             count+=1
             subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
-            # if count==1 or count==2:
-            #     print(subset_df)
-            #     print(list(subset))
             sum=subset_df.sum()
             invalid_solution=(sum>1).any()
-           
             if not invalid_solution:
                 multiplum=weights.multiply(subset_df,fill_value=0)
                 LCAsum=multiplum.values.sum()
                 if LCAsum<lowest_lca:
                     lowest_lca=LCAsum
                     bestmatch=subset_df
-
-        print("Bestmatch:  ",bestmatch)
-        print("lowest LCA:  ",lowest_lca)
         coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
         for pair in coordinates_of_pairs:
             self.add_pair(pair[0],pair[1])
-
-        print("Count",count)
-    
         # TODO implement it
+        pass
+
+
+    @_matching_decorator
+    def match_brute_vol3(self, plural_assign=False):
+        """Brute forces all possible solutions"""
+        
+        weights = self.weights
+        bestmatch=[]
+        lowest_lca=10e10
+        possible_solutions=hm.extract_brute_possibilities(self.incidence)
+
+        for subset in itertools.product(*possible_solutions):
+            column_sum=np.sum(list(subset),axis=0)[:-1]
+            invalid_solution=len([*filter(lambda x:x>1,column_sum)])>0
+            if not invalid_solution:
+                subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
+                multiplum=weights.multiply(subset_df,fill_value=0)
+                LCAsum=multiplum.values.sum()
+                if LCAsum<lowest_lca:
+                    lowest_lca=LCAsum
+                    bestmatch=subset_df
+        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
+        for pair in coordinates_of_pairs:
+            self.add_pair(pair[0],pair[1])
+        # TODO implement it
+        pass
+
+    @_matching_decorator
+    def match_brute_vol4(self, plural_assign=False):
+        """Brute forces all possible solutions"""
+        weights = self.weights
+        bestmatch=[]
+        lowest_lca=10e10
+        possible_solutions=hm.extract_brute_possibilities(self.incidence)
+        arrayweights=weights.to_numpy()
+        for subset in itertools.product(*possible_solutions):
+            column_sum=np.sum(list(subset),axis=0)[:-1]
+            invalid_solution=len([*filter(lambda x:x>1,column_sum)])>0
+            if not invalid_solution:
+                multiplum=np.multiply(arrayweights,subset)
+                LCAsum=np.nansum(multiplum)
+                if LCAsum<lowest_lca:
+                    lowest_lca=LCAsum
+                    bestmatch=subset
+        bestmatch=pd.DataFrame(data=list(bestmatch),index=weights.index,columns=weights.columns)
+        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
+        for pair in coordinates_of_pairs:
+            self.add_pair(pair[0],pair[1])
         pass
 
     @_matching_decorator
@@ -727,7 +717,7 @@ class Matching():
         
   
 def run_matching(demand, supply, score_function_string_demand,score_function_string_supply, constraints = None, add_new = True, solution_limit = 120,
-                bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False,brute=True):
+                bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False,brute=True,brutevol2=True,brutevol3=True,brutevol4=True):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
@@ -754,10 +744,19 @@ def run_matching(demand, supply, score_function_string_demand,score_function_str
         matching.match_genetic_algorithm()
         matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if brute:
-        #matching.match_brute()
-        #matches.append({'Name': 'Brute','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
-        matching.match_brute_upgraded()
+        matching.match_brute()
+        matches.append({'Name': 'Brute','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
+    if brutevol2:
+        matching.match_brute_vol2()
         matches.append({'Name': 'Brute_vol2','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+    if brutevol3:
+        matching.match_brute_vol3()
+        matches.append({'Name': 'Brute_vol3','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
+    if brutevol4:
+        matching.match_brute_vol4()
+        matches.append({'Name': 'Brute_vol4','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
     # TODO convert list of dfs to single df
     return matches

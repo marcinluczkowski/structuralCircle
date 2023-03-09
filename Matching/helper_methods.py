@@ -207,7 +207,8 @@ def create_initial_population_genetic(binary_incidence, weights, size_of_populat
     random.shuffle(all_possible_solutions)
     return all_possible_solutions[:size_of_population]
 
-def create_initial_population_genetic2(binary_incidence, weights, size_of_population):
+def create_initial_population_genetic2(binary_incidence, size_of_population, include_invalid_combinations):
+    """Good, but itertools.product has very long runtime!!!"""
     three_d_list=[]
     incidence_list=binary_incidence.values.tolist()
     valid_solutions = []
@@ -222,48 +223,54 @@ def create_initial_population_genetic2(binary_incidence, weights, size_of_popula
                 newlist[i]=1
                 rowlist.append(newlist)
         three_d_list.append(rowlist)
-    """
-    for subset in itertools.product(*three_d_list):
-            #subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
-            #sum=subset_df.sum()
-            #invalid_solution=(sum>1).any()
+
+    all_possible_solutions = list(itertools.product(*three_d_list)) #EXTREMELY LONG RUNTIME
+
+
+    if include_invalid_combinations:
+        if len(all_possible_solutions) < size_of_population:
+            samples = all_possible_solutions
+        else:
+            samples = random.sample(all_possible_solutions, size_of_population) #Takes n random elements from the list containing all possible solutions
+        #initial_population = map(lambda x,y: x.append(y.flatten()), initial_population, samples)
+        initial_population = [sum(list(x), []) for x in samples]
+    else:
+        number_of_possible_solutions = len(all_possible_solutions)
+        #sample_size = int(number_of_possible_solutions*0.05)
+        sample_size = max(int(np.sqrt(number_of_possible_solutions*np.log10(number_of_possible_solutions))), size_of_population*100)
+        #iterations = np.min(len(all_possible_solutions), size_of_population)
+        if len(all_possible_solutions) <= sample_size:
+            solutions = all_possible_solutions
+        else:
+            solutions = random.sample(all_possible_solutions, sample_size)
+        for subset in solutions:
             column_sum = np.sum(list(subset), axis = 0)[:-1] #All sums of columns except the "New"-column
             invalid_solution = len([*filter(lambda x: x > 1, column_sum)]) > 0
             if not invalid_solution:
-                all_possible_solutions.append(sum(list(subset), []))
-                count += 1
-    random.shuffle(all_possible_solutions)
-    """
+                valid_solutions.append(sum(list(subset), []))
+            
+        if len(valid_solutions) < size_of_population:
+            initial_population = valid_solutions
+        else:
+            initial_population = random.sample(valid_solutions, size_of_population)
+    return initial_population
 
-    all_possible_solutions = list(itertools.product(*three_d_list))
-    number_of_possible_solutions = len(all_possible_solutions)
-    #sample_size = int(number_of_possible_solutions*0.05)
-    sample_size = int(np.sqrt(number_of_possible_solutions*np.log10(number_of_possible_solutions)))
-    #iterations = np.min(len(all_possible_solutions), size_of_population)
-    if len(all_possible_solutions) <= sample_size:
-        solutions = all_possible_solutions
-    else:
-        solutions = random.sample(all_possible_solutions, sample_size)
-    for subset in solutions:
-        column_sum = np.sum(list(subset), axis = 0)[:-1] #All sums of columns except the "New"-column
-        invalid_solution = len([*filter(lambda x: x > 1, column_sum)]) > 0
-        if not invalid_solution:
-            valid_solutions.append(sum(list(subset), []))
-        
-    if len(valid_solutions) < size_of_population:
-        initial_population = valid_solutions
-    else:
-        initial_population = random.sample(valid_solutions, size_of_population)
-    #return initial_population
-    #TODO 06.03.2023 Sigurd: Just take size_of_population number of samples of all_possible 
+    
 
 def create_random_population_genetic(chromosome_length, requested_population_size):
     initial_population = []
-    for i in range(requested_population_size):
-        solution = [np.random.choice([0,1], p = [0.6, 0.4]) for x in range(chromosome_length)]
+    count = 0
+    for i in range(requested_population_size*100):
+        solution = [np.random.choice([0,1], p = [0.9, 0.1]) for x in range(chromosome_length)]
         if solution not in initial_population:
             initial_population.append(solution)
+            count += 1
+        if count == requested_population_size:
+            break
     return initial_population
+
+
+
     
 
     
@@ -278,3 +285,72 @@ def create_random_population_genetic(chromosome_length, requested_population_siz
 
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")
+
+
+"""Debugging"""
+###################
+
+def create_initial_population_genetic_debug(binary_incidence, weights, size_of_population, include_invalid_combinations):
+    three_d_list=[]
+    incidence_list=binary_incidence
+    valid_solutions = []
+    
+    count = 0
+    #Creates a 3d list containing all possible locations of matches based on the incidence matrix
+    for row in incidence_list:
+        rowlist=[]
+        for i in range(len(row)):
+            if row[i]==1:
+                newlist=[0]*len(row)
+                newlist[i]=1
+                rowlist.append(newlist)
+        three_d_list.append(rowlist)
+
+
+    all_possible_solutions = list(itertools.product(*three_d_list))
+
+
+
+    if include_invalid_combinations:
+        if len(all_possible_solutions) < size_of_population:
+            samples = all_possible_solutions
+        else:
+            samples = random.sample(all_possible_solutions, size_of_population) #Takes n random elements from the list containing all possible solutions
+        #initial_population = map(lambda x,y: x.append(y.flatten()), initial_population, samples)
+        initial_population = [sum(list(x), []) for x in samples]
+    else:
+        number_of_possible_solutions = len(all_possible_solutions)
+        #sample_size = int(number_of_possible_solutions*0.05)
+        sample_size = max(int(np.sqrt(number_of_possible_solutions*np.log10(number_of_possible_solutions))), size_of_population*100)
+        #iterations = np.min(len(all_possible_solutions), size_of_population)
+        if len(all_possible_solutions) <= sample_size:
+            solutions = all_possible_solutions
+        else:
+            solutions = random.sample(all_possible_solutions, sample_size)
+        for subset in solutions:
+            column_sum = np.sum(list(subset), axis = 0)[:-1] #All sums of columns except the "New"-column
+            invalid_solution = len([*filter(lambda x: x > 1, column_sum)]) > 0
+            if not invalid_solution:
+                valid_solutions.append(sum(list(subset), []))
+            
+        if len(valid_solutions) < size_of_population:
+            initial_population = valid_solutions
+        else:
+            initial_population = random.sample(valid_solutions, size_of_population)
+    return initial_population
+
+incidence =[[1, 1, 0, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 0, 1, 1, 1, 1],
+            [1, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 1],
+            [1, 1, 0, 1, 1, 1, 1]]
+
+wanted_solution = [0, 0, 0, 1, 0, 0, 0,
+                   0, 0, 0, 0, 0, 0, 1, 
+                   0, 1, 0, 0, 0, 0, 0, 
+                   1, 0, 0, 0, 0, 0, 0, 
+                   0, 0, 0, 0, 0, 0, 1, 
+                   0, 0, 0, 0, 1, 0, 0]
+
+test = create_initial_population_genetic_debug(incidence, 1, size_of_population= 100, include_invalid_combinations=False)

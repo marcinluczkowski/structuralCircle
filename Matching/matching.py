@@ -308,7 +308,7 @@ class Matching():
     # TODO (SIGURD) WORK IN PROGRESS: MAKING A NEW GENETIC ALGORITHM
     @_matching_decorator
     def match_genetic_algorithm_RANDOM(self):
-        """Genetic algorithm with the initial population with random solutions (not necessary an actual population)"""
+        """Genetic algorithm with the initial population with random solutions (not necessary an actual solution)"""
         #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
         number_of_buckets = len(self.demand)
         
@@ -324,78 +324,31 @@ class Matching():
         weights_1d_array = weights_new.to_numpy().flatten()
         weights = np.array_split(weights_1d_array, number_of_buckets)
         max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
-
-
-
         supply_names = weights_new.columns
-        #solutions_per_population = len(supply_names) * 100 #"""Should be #len(supply_names) * 100# if random population with 50/50 0 and 1"""
         chromosome_length = len(supply_names) * len(self.demand)
-        requested_number_of_chromosomes = len(supply_names)*100
-
-        #initial_population = np.array(([[random.randint(0,1) for x in range(chromosome_length)] for y in range(solutions_per_population)]))
+        requested_number_of_chromosomes = len(supply_names)**2
+        
+        #Initializing a random population
+        """Old way of making random population! Works quite nice, dont want to delete it yet"""
+        #initial_population = np.array(([[random.randint(0,1) for x in range(chromosome_length)] for y in range(requested_number_of_chromosomes)]))
 
         initial_population = hm.create_random_population_genetic(chromosome_length, requested_number_of_chromosomes)
         solutions_per_population = len(initial_population)
-        #Initializing a random population
 
-        test3 = 3
-        #Fitness function to calculate fitness value of chromosomes
-        #Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA
+        
         
         def fitness_func(solution, solution_idx):
+            """Fitness function to calculate fitness value of chromosomes
+            Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA"""
             fitness = 0
             reward = 0
-            #supply_names = self.supply.index.tolist()
-            #index_first_new = self.supply.index.tolist().index("N0")
-            #supply_names_only_reuse = supply_names[:index_first_new]
-            #weight_only_reuse = self.weights[supply_names_only_reuse].copy()
-            #weights_1d_array = weight_only_reuse.to_numpy().flatten() 
-            
-            
-            #weights_new = hm.transform_weights(self.weights) #NOTE: MAY NOT BE SO GOOD TO RUN THIS FUNCTION EVERY TIME
-            #weights_1d_array = weights_new.to_numpy().flatten()
-
-            
-            """
-            for i in range(len(solution)):
-                #if solution[i] == 1 and not np.isnan(weights_1d_array[i]):
-                #    fitness -= weights_1d_array[i]
-                if solution[i] == 1:
-                    if np.isnan(weights_1d_array[i]): #Element cannot be matched => penalty
-                        fitness += 10e4
-                    else:
-                        fitness += weights_1d_array[i]
-            if fitness == 0: #To ensure that not matching elements is a reward for the algorithm
-                fitness = 10e10
-            #    else:
-            #        if np.isnan(weights_1d_array[i]): #Element is not matched and should not be matched => reward
-            #            fitness += 0.1
-            #        else: #Element is not matched, but could have been matched
-            #            fitness += 10e5
-
-            return 1.0/fitness
-            """
-
-            
-            #Trying something new where each bucket must have one solution
             solutions = np.array_split(solution, number_of_buckets)
-
-            #weights = np.array_split(weights_1d_array, number_of_buckets)
-
-            #TODO: (SIGURD) Add functionality so that the case where all weights are NAN is handled!
-            
-            #max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
-            
             penalty = -max_weight
-            #penalty = 10e5
             indexes_of_matches = []
             for i in range(len(solutions)):
                 num_matches_in_bracket = 0
                 for j in range(len(solutions[i])): #Each bucket
                     if solutions[i][j] == 1:
-                        #DELETE AFTER: TRIED DIFFERENT LOCATION OF THE TWO LINES UNDER HERE
-                        #num_matches_in_bracket += 1
-                        #indexes_of_matches.append(j)
                         if np.isnan(weights[i][j]): #Element cannot be matched => penalty
                             fitness += penalty #Penalty
                         else:
@@ -412,7 +365,6 @@ class Matching():
             
             index_duplicates = {x for x in indexes_of_matches if indexes_of_matches.count(x) > 1}
             if len(index_duplicates) > 0: #Means some supply elements are assigned the same demand element
-                #fitness += penalty #Penalty
                 fitness = -10e10
             elif reward != 0:
                 fitness += 100/reward
@@ -456,7 +408,6 @@ class Matching():
         
         see_result_from_genetic = hm.extract_genetic_solution(weights_new, solution, number_of_buckets)
         printed_results = hm.print_genetic_solution(self.weights, solution, number_of_buckets)
-        test4 = 4
         for index, row in see_result_from_genetic.iterrows():
             self.add_pair(index, row["Matches from genetic"])
 
@@ -470,19 +421,17 @@ class Matching():
         weights = np.array_split(weights_1d_array, number_of_buckets)
         max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
         supply_names = weights_new.columns
+    
         #Initial population as a subset of actual possible solutions
-        new_sol = hm.create_initial_population_genetic2(hm.transform_weights(self.incidence*1), weights_new, size_of_population = 100)
-        #Fitness function to calculate fitness value of chromosomes
-        #Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA
-        print(f"population made with {len(new_sol)} chromosomes")
+        new_sol = hm.create_initial_population_genetic2(hm.transform_weights(self.incidence*1), size_of_population = len(supply_names)**2, include_invalid_combinations=False)
+
+        
         def fitness_func(solution, solution_idx):
+            """Fitness function to calculate fitness value of chromosomes
+            Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA"""
             fitness = 0
             reward = 0
-            #weights_new = hm.transform_weights(self.weights) #NOTE: MAY NOT BE SO GOOD TO RUN THIS FUNCTION EVERY TIME
-            #weights_1d_array = weights_new.to_numpy().flatten()
             solutions = np.array_split(solution, number_of_buckets)
-            #weights = np.array_split(weights_1d_array, number_of_buckets)
-            #max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
             penalty = -max_weight
             indexes_of_matches = []
             for i in range(len(solutions)):
@@ -527,7 +476,7 @@ class Matching():
             #mutation_by_replacement=True,
             gene_type=int,
             parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            keep_elitism= int(np.ceil(len(new_sol)/2)),
+            keep_elitism= int(np.ceil(len(new_sol)/4)),
             #keep_parents=-1, #-1 => keep all parents, 0 => keep none
             crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
             #mutation_type="adaptive",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
@@ -546,12 +495,11 @@ class Matching():
         
         see_result_from_genetic = hm.extract_genetic_solution(weights_new, solution, number_of_buckets)
         printed_results = hm.print_genetic_solution(self.weights, solution, number_of_buckets)
-        test4 = 4
         for index, row in see_result_from_genetic.iterrows():
             self.add_pair(index, row["Matches from genetic"])
 
     @_matching_decorator
-    def match_genetic_algorithm(self):
+    def match_genetic_algorithm_DEPRECIATED(self):
         """Match using Evolutionary/Genetic Algorithm"""
         # TODO implement the method
         # supply capacity - length:
@@ -879,7 +827,6 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
         #matching.match_genetic_algorithm()
         #matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
-        #NOTE DELETE AFTER (SIGURD)
         matching.match_genetic_algorithm_ALL_POSSIBILITIES()
         matches.append({'Name': 'Genetic all possibilities','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
@@ -900,7 +847,7 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=10, supply_count=10)
+    demand, supply = hm.create_random_data(demand_count=8, supply_count=8)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
     result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, greedy_plural = False, bipartite=False, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)

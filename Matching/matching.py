@@ -310,55 +310,50 @@ class Matching():
     def match_genetic_algorithm_RANDOM(self):
         """Genetic algorithm with the initial population with random solutions (not necessary an actual solution)"""
         #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
-        number_of_buckets = len(self.demand)
+        number_of_demand_elements = len(self.demand)
         
-
         """NOTE NEEDED IF NEW ELEMENTS ARE NOT CONCIDERED
         supply_names = self.supply.index.tolist()
         index_first_new = self.supply.index.tolist().index("N0")
         supply_names_only_reuse = supply_names[:index_first_new]
         solutions_per_population = len(supply_names_only_reuse) * 100
         """
-        #NOTE (02.03.2023 Sigurd) Testing with only one column containing new elements
         weights_new = hm.transform_weights(self.weights) #Create a new weight matrix with only one column representing all new elements
         weights_1d_array = weights_new.to_numpy().flatten()
-        weights = np.array_split(weights_1d_array, number_of_buckets)
+        weights = np.array_split(weights_1d_array, number_of_demand_elements)
         max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
         supply_names = weights_new.columns
         chromosome_length = len(supply_names) * len(self.demand)
         requested_number_of_chromosomes = len(supply_names)**2
         
-        #Initializing a random population
         """Old way of making random population! Works quite nice, dont want to delete it yet"""
         #initial_population = np.array(([[random.randint(0,1) for x in range(chromosome_length)] for y in range(requested_number_of_chromosomes)]))
-
-        initial_population = hm.create_random_population_genetic(chromosome_length, requested_number_of_chromosomes)
+        #Initializing a random population
+        initial_population = hm.create_random_population_genetic(chromosome_length, requested_number_of_chromosomes, probability_of_0=0.9, probability_of_1=0.1)
         solutions_per_population = len(initial_population)
 
-        
-        
         def fitness_func(solution, solution_idx):
             """Fitness function to calculate fitness value of chromosomes
             Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA"""
             fitness = 0
             reward = 0
-            solutions = np.array_split(solution, number_of_buckets)
+            solutions = np.array_split(solution, number_of_demand_elements)
             penalty = -max_weight
             indexes_of_matches = []
             for i in range(len(solutions)):
                 num_matches_in_bracket = 0
-                for j in range(len(solutions[i])): #Each bucket
+                for j in range(len(solutions[i])):
                     if solutions[i][j] == 1:
                         if np.isnan(weights[i][j]): #Element cannot be matched => penalty
                             fitness += penalty #Penalty
                         else:
-                            reward += weights[i][j]
+                            reward += weights[i][j] #LCA of match
                             num_matches_in_bracket += 1
                             new_element_index = len(solutions[i])-1
                             if not j == new_element_index: #Means that a supply element (not a new element) is matched with a demand element
                                 indexes_of_matches.append(j)
                             
-                if num_matches_in_bracket > 1:# or num_matches_in_bracket < 1:
+                if num_matches_in_bracket > 1:
                     fitness += 10*penalty #Penalty for matching multiple supply elemenets to the same demand element
                 elif num_matches_in_bracket < 1:
                     fitness += penalty #Penalty for not matching at all
@@ -376,12 +371,14 @@ class Matching():
             fitness = 0
             return fitness
             
+        #Using pygad-module
+        #TODO: Try parallization-module in pygad!
+        """Parameters are set by use of trial and error. These parameters have given a satisfactory solution"""
         ga_instance = pygad.GA(
             initial_population=initial_population,
             num_generations=int((len(self.demand)+len(self.supply))),
             num_parents_mating=int(np.ceil(solutions_per_population/2)),
-            fitness_func=fitness_func, #len(initial_population),
-            
+            fitness_func=fitness_func,
             # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
             # (also possible with: gene_space=[0, 1])
             #mutation_by_replacement=True,
@@ -389,65 +386,62 @@ class Matching():
             parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
             keep_elitism= int(np.ceil(solutions_per_population/2)),
             #keep_parents=-1, #-1 => keep all parents, 0 => keep none
-            crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            #mutation_type="adaptive",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+            crossover_type="single_point",
             mutation_type = "random",
             #mutation_num_genes=int(solutions_per_population/5), Not needed if mutation_probability is set
             mutation_probability = 0.4,
             mutation_by_replacement=True,
             random_mutation_min_val=0,
             random_mutation_max_val=1,   # upper bound exclusive, so only 0 and 1
-            #mutation_percent_genes= [15, 5], #[rate for low-quality solution, rate for high-quality solution]
-            #save_best_solutions=True,
+            #save_best_solutions=True, #Needs a lot of memory
             )
 
         ga_instance.run()
         logging.debug(ga_instance.initial_population)
         logging.debug(ga_instance.population)
         solution, solution_fitness, solution_idx = ga_instance.best_solution()
-        
-        see_result_from_genetic = hm.extract_genetic_solution(weights_new, solution, number_of_buckets)
-        printed_results = hm.print_genetic_solution(self.weights, solution, number_of_buckets)
-        for index, row in see_result_from_genetic.iterrows():
+        extracted_results = hm.extract_genetic_solution(weights_new, solution, number_of_demand_elements)
+        printed_results = hm.print_genetic_solution(self.weights, solution, number_of_demand_elements)
+        for index, row in extracted_results.iterrows():
             self.add_pair(index, row["Matches from genetic"])
 
     @_matching_decorator
     def match_genetic_algorithm_ALL_POSSIBILITIES(self):
         """Genetic algorithm than only uses a subset of possible solutions as the initial population"""
         #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
-        number_of_buckets = len(self.demand)
+        number_of_demand_elements = len(self.demand)
         weights_new = hm.transform_weights(self.weights) #Create a new weight matrix with only one column representing all new elements
         weights_1d_array = weights_new.to_numpy().flatten()
-        weights = np.array_split(weights_1d_array, number_of_buckets)
+        weights = np.array_split(weights_1d_array, number_of_demand_elements)
         max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
         supply_names = weights_new.columns
     
         #Initial population as a subset of actual possible solutions
-        new_sol = hm.create_initial_population_genetic2(hm.transform_weights(self.incidence*1), size_of_population = len(supply_names)**2, include_invalid_combinations=False)
+        new_sol = hm.create_initial_population_genetic(hm.transform_weights(self.incidence*1), size_of_population = len(supply_names)**2, include_invalid_combinations=False)
 
-        
+
         def fitness_func(solution, solution_idx):
             """Fitness function to calculate fitness value of chromosomes
             Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA"""
             fitness = 0
             reward = 0
-            solutions = np.array_split(solution, number_of_buckets)
+            solutions = np.array_split(solution, number_of_demand_elements)
             penalty = -max_weight
             indexes_of_matches = []
             for i in range(len(solutions)):
                 num_matches_in_bracket = 0
-                for j in range(len(solutions[i])): #Each bucket
+                for j in range(len(solutions[i])):
                     if solutions[i][j] == 1:
                         if np.isnan(weights[i][j]): #Element cannot be matched => penalty
                             fitness += penalty #Penalty
                         else:
-                            reward += weights[i][j]
+                            reward += weights[i][j] #LCA of match
                             num_matches_in_bracket += 1
                             new_element_index = len(solutions[i])-1
                             if not j == new_element_index: #Means that a supply element (not a new element) is matched with a demand element
                                 indexes_of_matches.append(j)
                             
-                if num_matches_in_bracket > 1:# or num_matches_in_bracket < 1:
+                if num_matches_in_bracket > 1:
                     fitness += 10*penalty #Penalty for matching multiple supply elemenets to the same demand element
                 elif num_matches_in_bracket < 1:
                     fitness += penalty #Penalty for not matching at all
@@ -465,37 +459,34 @@ class Matching():
             fitness = 0
             return fitness
         
+        #TODO: Try parallaization
+        """Parameters are set by use of trial and error. These parameters have given a satisfactory solution"""
         ga_instance = pygad.GA(
             initial_population=new_sol,
             num_generations=int((len(self.demand)+len(self.supply))),
             num_parents_mating=int(np.ceil(len(new_sol)/2)),
-            fitness_func=fitness_func, #len(initial_population),
-            
+            fitness_func=fitness_func,
             # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
             # (also possible with: gene_space=[0, 1])
-            #mutation_by_replacement=True,
             gene_type=int,
             parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
             keep_elitism= int(np.ceil(len(new_sol)/4)),
             #keep_parents=-1, #-1 => keep all parents, 0 => keep none
-            crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            #mutation_type="adaptive",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+            crossover_type="single_point", 
             mutation_type = "random",
             #mutation_num_genes=int(solutions_per_population/5), Not needed if mutation_probability is set
             mutation_probability = 0.2,
             mutation_by_replacement=True,
             random_mutation_min_val=0,
             random_mutation_max_val=1,   # upper bound exclusive, so only 0 and 1
-            #mutation_percent_genes= [15, 5], #[rate for low-quality solution, rate for high-quality solution]
             )
         ga_instance.run()
         logging.debug(ga_instance.initial_population)
         logging.debug(ga_instance.population)
         solution, solution_fitness, solution_idx = ga_instance.best_solution()
-        
-        see_result_from_genetic = hm.extract_genetic_solution(weights_new, solution, number_of_buckets)
-        printed_results = hm.print_genetic_solution(self.weights, solution, number_of_buckets)
-        for index, row in see_result_from_genetic.iterrows():
+        extract_solution = hm.extract_genetic_solution(weights_new, solution, number_of_demand_elements)
+        printed_results = hm.print_genetic_solution(self.weights, solution, number_of_demand_elements)
+        for index, row in extract_solution.iterrows():
             self.add_pair(index, row["Matches from genetic"])
 
     @_matching_decorator

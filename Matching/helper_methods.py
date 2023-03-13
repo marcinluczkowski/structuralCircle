@@ -85,7 +85,7 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
     supply["Supply_lon"]=0
     
     for row in range(len(supply)):
-        lokasjon=rd.randint(0, len(supply_coords)-1)
+        lokasjon=random.randint(0, len(supply_coords)-1)
         supply.loc[row,"Supply_lat"]=supply_coords.loc[lokasjon,"Lat"]
         supply.loc[row,"Supply_lon"]=supply_coords.loc[lokasjon,"Lon"]
         supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Place"]
@@ -101,8 +101,6 @@ def extract_brute_possibilities(incidence_matrix):
     """
     binary_incidence = incidence_matrix*1 #returnes incidence matrix with 1 and 0 instead od True/False
     
-    print("Binary incidence")
-    print(binary_incidence)
     three_d_list=[]
     incidence_list=binary_incidence.values.tolist()
     for row in incidence_list:

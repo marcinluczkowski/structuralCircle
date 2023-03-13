@@ -86,8 +86,6 @@ class Matching():
 
         # create incidence and weight for the method
         self.incidence = self.evaluate_incidence()
-        print("Indidence:")
-        print(self.incidence)
         self.weights = self.evaluate_weights()
 
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
@@ -210,7 +208,7 @@ class Matching():
     ### MATCHING ALGORITHMS
 
     @_matching_decorator
-    def match_brute(self, plural_assign=False):
+    def match_brute_DEPRECIATED(self, plural_assign=False):
         """Brute forces all possible solutions"""
         
         weights = self.weights
@@ -223,7 +221,6 @@ class Matching():
             arr = np.zeros(n_columns)
             arr[list(combination)] = 1
             arrays.append(arr.tolist())
-            print(arr)
         for subset in itertools.permutations(arrays,len(self.demand)):
             subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
             multiplum=weights.multiply(subset_df,fill_value=-1)
@@ -239,7 +236,7 @@ class Matching():
         pass
 
     @_matching_decorator
-    def match_brute_vol2(self, plural_assign=False):
+    def match_brute_DEPRECIATED_vol2(self, plural_assign=False):
         """Brute forces all possible solutions"""
         
         weights = self.weights
@@ -266,7 +263,7 @@ class Matching():
 
 
     @_matching_decorator
-    def match_brute_vol3(self, plural_assign=False):
+    def match_brute_DEPRECIATED_vol3(self, plural_assign=False):
         """Brute forces all possible solutions"""
         
         weights = self.weights
@@ -291,7 +288,7 @@ class Matching():
         pass
 
     @_matching_decorator
-    def match_brute_vol4(self, plural_assign=False):
+    def match_brute(self, plural_assign=False):
         """Brute forces all possible solutions"""
         weights = self.weights
         bestmatch=[]
@@ -746,17 +743,6 @@ def run_matching(demand, supply, score_function_string_demand,score_function_str
     if brute:
         matching.match_brute()
         matches.append({'Name': 'Brute','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
-
-    if brutevol2:
-        matching.match_brute_vol2()
-        matches.append({'Name': 'Brute_vol2','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
-    if brutevol3:
-        matching.match_brute_vol3()
-        matches.append({'Name': 'Brute_vol3','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
-
-    if brutevol4:
-        matching.match_brute_vol4()
-        matches.append({'Name': 'Brute_vol4','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
     # TODO convert list of dfs to single df
     return matches

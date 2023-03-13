@@ -29,7 +29,6 @@ def extract_results_df(dict_list):
     for run in dict_list:
         sub_df.append(run['Match object'].result)
         cols.append(run['Name'])
-    
     df = pd.DataFrame(sub_df, index= cols)    
     df=df.rename(columns={0:"LCA"})
     return df.round(3)
@@ -46,12 +45,6 @@ def transform_weights(weights):
     weights["New"]=weights[cols].sum(axis=1)
     weights = weights.drop(columns=cols)
     return weights
-
-# def extract_LCA_new(dict_list):
-#     matchobj=dict_list[0]["Match object"]
-#     sum=matchobj.demand["LCA"].sum()
-#     return sum
-
 
 def create_random_data_demand(demand_count, demand_lat, demand_lon, demand_gwp=lca.TIMBER_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
@@ -100,8 +93,11 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
 
 
 def extract_brute_possibilities(incidence_matrix):
-    """Extracts all demand matching possibilities from incidence matrix"""
-    binary_incidence = incidence_matrix*1
+    """Extracts all demand matching possibilities from incidence matrix.
+    
+    returns a 3D list where each outer list contains possibilities for each row based on incidence matrix.
+    """
+    binary_incidence = incidence_matrix*1 #returnes incidence matrix with 1 and 0 instead od True/False
     
     print("Binary incidence")
     print(binary_incidence)

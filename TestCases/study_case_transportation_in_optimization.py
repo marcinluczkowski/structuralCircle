@@ -23,8 +23,8 @@ supply_coords.loc[len(supply_coords)] = storlien
 
 
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-demand = hm.create_random_data_demand(demand_count = 8, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"])
-supply = hm.create_random_data_supply(supply_count=8,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords)
+demand = hm.create_random_data_demand(demand_count =6, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"])
+supply = hm.create_random_data_supply(supply_count=6,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords)
 supply.head()
 score_function_string_demand = "@lca.calculate_lca_demand(length=Length, area=Area, gwp_factor=Gwp_factor)"
 score_function_string_supply_transportation = "@lca.calculate_lca_supply(length=Length, area=Area, gwp_factor=Gwp_factor,demand_lat=Demand_lat,demand_lon=Demand_lon,supply_lat=Supply_lat,supply_lon=Supply_lon,include_transportation=True)"
@@ -32,7 +32,7 @@ score_function_string_supply_transportation = "@lca.calculate_lca_supply(length=
 #result_with_transportation = run_matching(demand, supply, score_function_string_demand,score_function_string_supply_transportation, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True,brute=True)
 score_function_string_supply_wo_transportation = "@lca.calculate_lca_supply(length=Length, area=Area, gwp_factor=Gwp_factor,demand_lat=Demand_lat,demand_lon=Demand_lon,supply_lat=Supply_lat,supply_lon=Supply_lon,include_transportation=False)"
 
-result_wo_transportation = run_matching(demand, supply, score_function_string_demand,score_function_string_supply_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,brute=False,brutevol2=True,brutevol3=True,brutevol4=True)
+result_wo_transportation = run_matching(demand, supply, score_function_string_demand,score_function_string_supply_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,brute=True)
 
 
 

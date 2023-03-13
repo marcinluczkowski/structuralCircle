@@ -34,8 +34,6 @@ def calculate_lca_supply(length, area,demand_lat,demand_lon,supply_lat,supply_lo
     return lca
 
 
-
-
 def calculate_driving_distance(A_lat, A_lon, B_lat, B_lon):
     """Calculates the driving distance between two coordinates and returns the result in meters
     - Coordinates as a String

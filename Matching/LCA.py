@@ -1,15 +1,17 @@
 import logging
 import requests
 import pandas as pd
-TIMBER_GWP = 28.9           # based on NEPD-3442-2053-EN
-TIMBER_REUSE_GWP = 2.25     # 0.0778*28.9 = 2.25 based on Eberhardt
-TRANSPORT_GWP = 96.0        # TODO kg/m3/t based on ????
-TIMBER_DENSITY = 491.0      # kg, based on NEPD-3442-2053-EN
+
+TIMBER_GWP = 28.9       # based on NEPD-3442-2053-EN
+TIMBER_REUSE_GWP = 2.25        # 0.0778*28.9 = 2.25 based on Eberhardt
+TRANSPORT_GWP = 96.0    # TODO kg/m3/t based on ????
+TIMBER_DENSITY = 491.0  # kg, based on NEPD-3442-2053-EN
 
 #TODO include in matchin
 
 def calculate_lca_demand(length, area, gwp_factor=TIMBER_GWP, density=TIMBER_DENSITY):
     """ Calculate Life Cycle Assessment """
+    # NOTE (Sigurd) This method assumes that only the needed length of a disassembled element is transported from location A to B, and that the remaining part is left on location A
     # TODO add processing
     # TODO add other impact categories than GWP
     volume = length * area
@@ -38,6 +40,8 @@ def calculate_driving_distance(A_lat, A_lon, B_lat, B_lon):
     """Calculates the driving distance between two coordinates and returns the result in meters
     - Coordinates as a String
     """
+
+    # TODO (Sigurd) Check if A or B should be first
     try:
         url = f"http://router.project-osrm.org/route/v1/car/{A_lat},{A_lon};{B_lat},{B_lon}?overview=false"
         req = requests.get(url)

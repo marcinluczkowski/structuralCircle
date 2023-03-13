@@ -749,12 +749,12 @@ def run_matching(demand, supply, score_function_string_demand,score_function_str
 
 
 if __name__ == "__main__":
-    DEMAND_JSON = sys.argv[1]
-    SUPPLY_JSON = sys.argv[2]
-    RESULT_FILE = sys.argv[3]
-    # DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
-    # SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
-    # RESULT_FILE = r"MatchingAlgorithms\result.csv"
+    #DEMAND_JSON = sys.argv[1]
+    #SUPPLY_JSON = sys.argv[2]
+    #RESULT_FILE = sys.argv[3]
+    DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
+    SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
+    RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
     demand, supply = hm.create_random_data(demand_count=4, supply_count=5)

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import igraph as ig
 import logging
 import LCA as lca
+import random as rd
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 
@@ -28,7 +29,6 @@ def extract_results_df(dict_list):
     for run in dict_list:
         sub_df.append(run['Match object'].result)
         cols.append(run['Name'])
-    
     df = pd.DataFrame(sub_df, index= cols)    
     df=df.rename(columns={0:"LCA"})
     return df.round(3)
@@ -39,37 +39,79 @@ def remove_alternatives(x, y):
     else:
         return x
 
-# def extract_LCA_new(dict_list):
-#     matchobj=dict_list[0]["Match object"]
-#     sum=matchobj.demand["LCA"].sum()
-#     return sum
+def transform_weights(weights):
+    """Transform the weight matrix to only contain one column with new elements"""
+    cols=list(weights.columns)[len(weights)-1:]
+    weights["New"]=weights[cols].sum(axis=1)
+    weights = weights.drop(columns=cols)
+    return weights
 
-
-def create_random_data(demand_count, supply_count, demand_gwp=lca.TIMBER_GWP, supply_gwp=lca.TIMBER_REUSE_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
+def create_random_data_demand(demand_count, demand_lat, demand_lon, demand_gwp=lca.TIMBER_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()
-    supply = pd.DataFrame()
+   
     # create element lenghts
     demand['Length'] = ((length_max/2 + 1) - length_min) * np.random.random_sample(size = demand_count) + length_min
-    supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
     # create element areas independent of the length. Can change this back to Artur's method later, but I want to see the effect of even more randomness. 
     demand['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = demand_count) + area_min
-    supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
     # intertia moment
     demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
-    supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
     # height - assuming square cross sections
     demand['Height'] = np.power(demand['Area'], 0.5)
-    supply['Height'] = np.power(supply['Area'], 0.5)
     # gwp_factor
     demand['Gwp_factor'] = demand_gwp
-    supply['Gwp_factor'] = supply_gwp
+    demand["Demand_lat"]=demand_lat
+    demand["Demand_lon"]=demand_lon
+
     # Change index names
     demand.index = map(lambda text: 'D' + str(text), demand.index)
-    supply.index = map(lambda text: 'S' + str(text), supply.index)
-    return demand.round(2), supply.round(2)
+    return demand.round(4)
 
+def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,supply_gwp=lca.TIMBER_REUSE_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
+    np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
+    supply = pd.DataFrame()
+    supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
+    supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
+    supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    supply['Height'] = np.power(supply['Area'], 0.5)
+    supply['Gwp_factor'] = supply_gwp
+    supply["Demand_lat"]=demand_lat
+    supply["Demand_lon"]=demand_lon
+    supply["Location"]=0
+    supply["Supply_lat"]=0
+    supply["Supply_lon"]=0
+    
+    for row in range(len(supply)):
+        lokasjon=rd.randint(0, len(supply_coords)-1)
+        supply.loc[row,"Supply_lat"]=supply_coords.loc[lokasjon,"Lat"]
+        supply.loc[row,"Supply_lon"]=supply_coords.loc[lokasjon,"Lon"]
+        supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Place"]
+    supply.index = map(lambda text: 'S' + str(text), supply.index)
+
+    return supply.round(4)
+
+
+def extract_brute_possibilities(incidence_matrix):
+    """Extracts all demand matching possibilities from incidence matrix.
+    
+    returns a 3D list where each outer list contains possibilities for each row based on incidence matrix.
+    """
+    binary_incidence = incidence_matrix*1 #returnes incidence matrix with 1 and 0 instead od True/False
+    
+    print("Binary incidence")
+    print(binary_incidence)
+    three_d_list=[]
+    incidence_list=binary_incidence.values.tolist()
+    for row in incidence_list:
+        rowlist=[]
+        for i in range(len(row)):
+            if row[i]==1:
+                newlist=[0]*len(row)
+                newlist[i]=1
+                rowlist.append(newlist)
+        three_d_list.append(rowlist)
+    return three_d_list 
 
 def display_graph(matching, graph_type='rows', show_weights=True, show_result=True):
     """Plot the graph and matching result"""

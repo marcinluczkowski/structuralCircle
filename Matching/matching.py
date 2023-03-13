@@ -16,6 +16,8 @@ from ortools.sat.python import cp_model
 from scipy.optimize import milp, LinearConstraint, NonlinearConstraint, Bounds
 import helper_methods as hm
 import LCA as lca
+import itertools
+from itertools import combinations
 
 
 logging.basicConfig(
@@ -29,7 +31,7 @@ logging.basicConfig(
 
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
-    def __init__(self, demand, supply, score_function_string, add_new=False, multi=False, constraints={}, solution_limit=60):
+    def __init__(self, demand, supply, score_function_string_demand, score_function_string_supply, add_new=False, multi=False, constraints={}, solution_limit=60):
         """_summary_
 
         :param demand: _description_
@@ -48,16 +50,26 @@ class Matching():
         :type solution_limit: int, optional
         """
         self.demand = demand.infer_objects()
+        self.supply = supply.infer_objects()
+        self.score_function_string_demand = score_function_string_demand
+        self.score_function_string_supply = score_function_string_supply
+        
+        pd.set_option('display.max_columns', 10)
+
+        self.demand['Score'] = self.demand.eval(score_function_string_demand)
+
+        self.supply['Score'] = self.supply.eval(score_function_string_supply)
+
         if add_new: # just copy designed to supply set, so that they act as new products
             demand_copy = self.demand.copy(deep = True)
             try:
                 # Rename Dx to Nx. This works only when the indices are already named "D"
-                demand_copy.rename(index=dict(zip(demand.index.values.tolist(), [sub.replace('D', 'N') for sub in demand.index.values.tolist()] )), inplace=True)
+                demand_copy.rename(index=dict(zip(self.demand.index.values.tolist(), [sub.replace('D', 'N') for sub in self.demand.index.values.tolist()] )), inplace=True)
             except AttributeError:
                 pass
-            self.supply = pd.concat((supply, demand_copy), ignore_index=False).infer_objects()
+            self.supply = pd.concat((self.supply, demand_copy), ignore_index=False).infer_objects()
         else:
-            self.supply = supply.infer_objects()
+            self.supply = self.supply.infer_objects()
         self.multi = multi
         self.graph = None
         self.result = None  #saves latest result of the matching
@@ -65,12 +77,12 @@ class Matching():
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
         # self.weights = None
         self.constraints = constraints
-        self.score_function_string = score_function_string
+        
+
         self.solution_time = None
         self.solution_limit = solution_limit           
        
-        self.demand['Score'] = self.demand.eval(score_function_string)
-        self.supply['Score'] = self.supply.eval(score_function_string)
+        
 
         # create incidence and weight for the method
         self.incidence = self.evaluate_incidence()
@@ -127,7 +139,7 @@ class Matching():
         # create a new dataframe with values from supply, except for the Length, which is from demand set (cut supply)
         eval_df = self.supply.iloc[el_locs0[1]].reset_index(drop=True)
         eval_df['Length'] = self.demand.iloc[el_locs0[0]]['Length'].reset_index(drop=True)
-        eval_score = eval_df.eval(self.score_function_string)
+        eval_score = eval_df.eval(self.score_function_string_supply)
         weights[el_locs0[0], el_locs0[1]] = eval_score.to_numpy()     
         end = time.time()  
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
@@ -196,9 +208,106 @@ class Matching():
     ### MATCHING ALGORITHMS
 
     @_matching_decorator
-    def match_brute(self, plural_assign=False):
-        """..."""
+    def match_brute_DEPRECIATED(self, plural_assign=False):
+        """Brute forces all possible solutions"""
+        
+        weights = self.weights
+        n_columns=len(self.weights.columns)
+        arrays=[]
+        bestmatch=[]
+        lowest_lca=10e10
+
+        for combination in combinations(range(n_columns), 1):
+            arr = np.zeros(n_columns)
+            arr[list(combination)] = 1
+            arrays.append(arr.tolist())
+        for subset in itertools.permutations(arrays,len(self.demand)):
+            subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
+            multiplum=weights.multiply(subset_df,fill_value=-1)
+            invalid_solution=multiplum.isin([-1]).any().any()
+            if not invalid_solution:
+                sum=multiplum.values.sum()
+                if sum<lowest_lca:
+                    lowest_lca=sum
+                    bestmatch=subset_df
+        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
+        for pair in coordinates_of_pairs:
+            self.add_pair(pair[0],pair[1])
+        pass
+
+    @_matching_decorator
+    def match_brute_DEPRECIATED_vol2(self, plural_assign=False):
+        """Brute forces all possible solutions"""
+        
+        weights = self.weights
+        count=0
+        bestmatch=[]
+        lowest_lca=10e10
+        possible_solutions=hm.extract_brute_possibilities(self.incidence)
+        for subset in itertools.product(*possible_solutions):
+            count+=1
+            subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
+            sum=subset_df.sum()
+            invalid_solution=(sum>1).any()
+            if not invalid_solution:
+                multiplum=weights.multiply(subset_df,fill_value=0)
+                LCAsum=multiplum.values.sum()
+                if LCAsum<lowest_lca:
+                    lowest_lca=LCAsum
+                    bestmatch=subset_df
+        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
+        for pair in coordinates_of_pairs:
+            self.add_pair(pair[0],pair[1])
         # TODO implement it
+        pass
+
+
+    @_matching_decorator
+    def match_brute_DEPRECIATED_vol3(self, plural_assign=False):
+        """Brute forces all possible solutions"""
+        
+        weights = self.weights
+        bestmatch=[]
+        lowest_lca=10e10
+        possible_solutions=hm.extract_brute_possibilities(self.incidence)
+
+        for subset in itertools.product(*possible_solutions):
+            column_sum=np.sum(list(subset),axis=0)[:-1]
+            invalid_solution=len([*filter(lambda x:x>1,column_sum)])>0
+            if not invalid_solution:
+                subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
+                multiplum=weights.multiply(subset_df,fill_value=0)
+                LCAsum=multiplum.values.sum()
+                if LCAsum<lowest_lca:
+                    lowest_lca=LCAsum
+                    bestmatch=subset_df
+        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
+        for pair in coordinates_of_pairs:
+            self.add_pair(pair[0],pair[1])
+        # TODO implement it
+        pass
+
+    @_matching_decorator
+    def match_brute(self, plural_assign=False):
+        """Brute forces all possible solutions"""
+        weights = self.weights
+        bestmatch=[]
+        lowest_lca=10e10
+        possible_solutions=hm.extract_brute_possibilities(self.incidence)
+        arrayweights=weights.to_numpy()
+        for subset in itertools.product(*possible_solutions):
+            column_sum=np.sum(list(subset),axis=0)[:-1]
+            invalid_solution=len([*filter(lambda x:x>1,column_sum)])>0
+            if not invalid_solution:
+                multiplum=np.multiply(arrayweights,subset)
+                LCAsum=np.nansum(multiplum)
+                if LCAsum<lowest_lca:
+                    lowest_lca=LCAsum
+                    bestmatch=subset
+        bestmatch=pd.DataFrame(data=list(bestmatch),index=weights.index,columns=weights.columns)
+        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
+        for pair in coordinates_of_pairs:
+            self.add_pair(pair[0],pair[1])
         pass
 
     @_matching_decorator
@@ -206,6 +315,8 @@ class Matching():
         """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
 
         sorted_weights = self.weights.join(self.demand.Score)
+
+
         sorted_weights = sorted_weights.sort_values(by='Score', axis=0, ascending=False)
         sorted_weights = sorted_weights.drop(columns=['Score'])
         #sorted_weights.replace(np.nan, np.inf, inplace=True)  
@@ -527,7 +638,7 @@ class Matching():
             for j in data['all_bins']:
                 objective.append(
                     #cp_model.LinearExpr.Term(x[i,j], coeff_array[i,j])
-                    cp_model.LinearExpr.Term(x[i,j], (self.demand.Score[i]*m_fac - coeff_array[i,j]))
+                    cp_model.LinearExpr.Term(x[i,j], (self.demand.Score[i]*m_fac+1 - coeff_array[i,j]))
                     )          
         #model.Maximize(cp_model.LinearExpr.Sum(objective))
         model.Maximize(cp_model.LinearExpr.Sum(objective))
@@ -602,13 +713,13 @@ class Matching():
         #compare_df['OK'] = np.where(compare_df['Length Assigned'] <= compare_df['Length Capacity'], True, False)
         
   
-def run_matching(demand, supply, score_function_string, constraints = None, add_new = True, solution_limit = 120,
-                bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False):
+def run_matching(demand, supply, score_function_string_demand,score_function_string_supply, constraints = None, add_new = True, solution_limit = 120,
+                bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False,brute=True,brutevol2=True,brutevol3=True,brutevol4=True):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
     # create matching object 
-    matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string, constraints=constraints, add_new=add_new, multi = True, solution_limit=solution_limit)
+    matching = Matching(demand=demand, supply=supply, score_function_string_demand=score_function_string_demand, score_function_string_supply=score_function_string_supply,constraints=constraints, add_new=add_new, multi = True, solution_limit=solution_limit)
     matches =[] # results to return
     headers = []
     if greedy_single:
@@ -629,6 +740,10 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
     if genetic:
         matching.match_genetic_algorithm()
         matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+    if brute:
+        matching.match_brute()
+        matches.append({'Name': 'Brute','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
     # TODO convert list of dfs to single df
     return matches
 

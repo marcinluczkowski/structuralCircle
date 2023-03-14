@@ -1,31 +1,49 @@
 import logging
 import requests
+import pandas as pd
 
-TIMBER_GWP = 28.9           # based on NEPD-3442-2053-EN
-TIMBER_REUSE_GWP = 2.25     # 0.0778*28.9 = 2.25 based on Eberhardt
-TRANSPORT_GWP = 96.0        # TODO kg/m3/t based on ????
-TIMBER_DENSITY = 491.0      # kg, based on NEPD-3442-2053-EN
+TIMBER_GWP = 28.9       # based on NEPD-3442-2053-EN
+TIMBER_REUSE_GWP = 2.25        # 0.0778*28.9 = 2.25 based on Eberhardt
+TRANSPORT_GWP = 96.0    # TODO kg/m3/t based on ????
+TIMBER_DENSITY = 491.0  # kg, based on NEPD-3442-2053-EN
 
-def calculate_lca(length, area, gwp_factor=TIMBER_GWP, location=[0.0,0.0,0.0,0.0], density=TIMBER_DENSITY, include_transportation=False):
+#TODO include in matchin
+
+def calculate_lca_demand(length, area, gwp_factor=TIMBER_GWP, density=TIMBER_DENSITY):
     """ Calculate Life Cycle Assessment """
+    # NOTE (Sigurd) This method assumes that only the needed length of a disassembled element is transported from location A to B, and that the remaining part is left on location A
     # TODO add processing
     # TODO add other impact categories than GWP
     volume = length * area
     lca = volume * gwp_factor
+    return lca
+
+def calculate_lca_supply(length, area,demand_lat,demand_lon,supply_lat,supply_lon,include_transportation,gwp_factor=TIMBER_GWP, density=TIMBER_DENSITY, ):
+    """ Calculate Life Cycle Assessment """
+    # TODO add processing
+    # TODO add other impact categories than GWP
+    
+    volume = length * area
+    lca = volume * gwp_factor
     if include_transportation:
-        A_lat, A_lon, B_lat, B_lon = location
-        distance = calculate_driving_distance(A_lat, A_lon, B_lat, B_lon)
+        coords=[demand_lat,demand_lon,supply_lat,supply_lon]
+        coordinates=pd.concat(coords,axis=1)
+        coordinates["Distance"]=coordinates.apply(lambda row: calculate_driving_distance(row.Supply_lat,row.Supply_lon,row.Demand_lat,row.Demand_lon),axis=1)
+        distance=coordinates["Distance"]
         transportation_LCA = calculate_transportation_LCA(volume, density, distance)
         logging.debug(f"Transportation LCA:", transportation_LCA)
         lca += transportation_LCA
     return lca
 
+
 def calculate_driving_distance(A_lat, A_lon, B_lat, B_lon):
     """Calculates the driving distance between two coordinates and returns the result in meters
     - Coordinates as a String
     """
+
+    # TODO (Sigurd) Check if A or B should be first
     try:
-        url = f"http://router.project-osrm.org/route/v1/car/{A_lon},{A_lat};{B_lon},{B_lat}?overview=false"
+        url = f"http://router.project-osrm.org/route/v1/car/{A_lat},{A_lon};{B_lat},{B_lon}?overview=false"
         req = requests.get(url)
         driving_distance_meter = req.json()["routes"][0]["distance"]
         distance = driving_distance_meter / 1000 #driving distance in km

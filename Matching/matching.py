@@ -16,6 +16,8 @@ from ortools.sat.python import cp_model
 from scipy.optimize import milp, LinearConstraint, NonlinearConstraint, Bounds
 import helper_methods as hm
 import LCA as lca
+import itertools
+from itertools import combinations
 
 
 logging.basicConfig(
@@ -29,7 +31,7 @@ logging.basicConfig(
 
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
-    def __init__(self, demand, supply, score_function_string, manual_match_list = None, add_new=False, multi=False, constraints={}, solution_limit=120):
+    def __init__(self, demand, supply, score_function_string_demand, score_function_string_supply, manual_match_list = None, add_new=False, multi=False, constraints={}, solution_limit=120):
         """_summary_
 
         :param demand: _description_
@@ -48,16 +50,26 @@ class Matching():
         :type solution_limit: int, optional
         """
         self.demand = demand.infer_objects()
+        self.supply = supply.infer_objects()
+        self.score_function_string_demand = score_function_string_demand
+        self.score_function_string_supply = score_function_string_supply
+        
+        pd.set_option('display.max_columns', 10)
+
+        self.demand['Score'] = self.demand.eval(score_function_string_demand)
+
+        self.supply['Score'] = self.supply.eval(score_function_string_supply)
+
         if add_new: # just copy designed to supply set, so that they act as new products
             demand_copy = self.demand.copy(deep = True)
             try:
                 # Rename Dx to Nx. This works only when the indices are already named "D"
-                demand_copy.rename(index=dict(zip(demand.index.values.tolist(), [sub.replace('D', 'N') for sub in demand.index.values.tolist()] )), inplace=True)
+                demand_copy.rename(index=dict(zip(self.demand.index.values.tolist(), [sub.replace('D', 'N') for sub in self.demand.index.values.tolist()] )), inplace=True)
             except AttributeError:
                 pass
-            self.supply = pd.concat((supply, demand_copy), ignore_index=False).infer_objects()
+            self.supply = pd.concat((self.supply, demand_copy), ignore_index=False).infer_objects()
         else:
-            self.supply = supply.infer_objects()
+            self.supply = self.supply.infer_objects()
         self.multi = multi
         self.graph = None
         self.result = None  #saves latest result of the matching
@@ -65,12 +77,12 @@ class Matching():
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
         # self.weights = None
         self.constraints = constraints
-        self.score_function_string = score_function_string
+        
+
         self.solution_time = None
         self.solution_limit = solution_limit           
        
-        self.demand['Score'] = self.demand.eval(score_function_string)
-        self.supply['Score'] = self.supply.eval(score_function_string)
+        
 
         # create incidence and weight for the method
         self.incidence = self.evaluate_incidence()
@@ -146,7 +158,7 @@ class Matching():
         # create a new dataframe with values from supply, except for the Length, which is from demand set (cut supply)
         eval_df = self.supply.iloc[el_locs0[1]].reset_index(drop=True)
         eval_df['Length'] = self.demand.iloc[el_locs0[0]]['Length'].reset_index(drop=True)
-        eval_score = eval_df.eval(self.score_function_string)
+        eval_score = eval_df.eval(self.score_function_string_supply)
         weights[el_locs0[0], el_locs0[1]] = eval_score.to_numpy()     
         end = time.time()  
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
@@ -248,9 +260,106 @@ class Matching():
     ### MATCHING ALGORITHMS
 
     @_matching_decorator
-    def match_brute(self, plural_assign=False):
+    def match_brute_DEPRECIATED(self, plural_assign=False):
+        """Brute forces all possible solutions"""
         
+        weights = self.weights
+        n_columns=len(self.weights.columns)
+        arrays=[]
+        bestmatch=[]
+        lowest_lca=10e10
+
+        for combination in combinations(range(n_columns), 1):
+            arr = np.zeros(n_columns)
+            arr[list(combination)] = 1
+            arrays.append(arr.tolist())
+        for subset in itertools.permutations(arrays,len(self.demand)):
+            subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
+            multiplum=weights.multiply(subset_df,fill_value=-1)
+            invalid_solution=multiplum.isin([-1]).any().any()
+            if not invalid_solution:
+                sum=multiplum.values.sum()
+                if sum<lowest_lca:
+                    lowest_lca=sum
+                    bestmatch=subset_df
+        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
+        for pair in coordinates_of_pairs:
+            self.add_pair(pair[0],pair[1])
+        pass
+
+    @_matching_decorator
+    def match_brute_DEPRECIATED_vol2(self, plural_assign=False):
+        """Brute forces all possible solutions"""
+        
+        weights = self.weights
+        count=0
+        bestmatch=[]
+        lowest_lca=10e10
+        possible_solutions=hm.extract_brute_possibilities(self.incidence)
+        for subset in itertools.product(*possible_solutions):
+            count+=1
+            subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
+            sum=subset_df.sum()
+            invalid_solution=(sum>1).any()
+            if not invalid_solution:
+                multiplum=weights.multiply(subset_df,fill_value=0)
+                LCAsum=multiplum.values.sum()
+                if LCAsum<lowest_lca:
+                    lowest_lca=LCAsum
+                    bestmatch=subset_df
+        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
+        for pair in coordinates_of_pairs:
+            self.add_pair(pair[0],pair[1])
         # TODO implement it
+        pass
+
+
+    @_matching_decorator
+    def match_brute_DEPRECIATED_vol3(self, plural_assign=False):
+        """Brute forces all possible solutions"""
+        
+        weights = self.weights
+        bestmatch=[]
+        lowest_lca=10e10
+        possible_solutions=hm.extract_brute_possibilities(self.incidence)
+
+        for subset in itertools.product(*possible_solutions):
+            column_sum=np.sum(list(subset),axis=0)[:-1]
+            invalid_solution=len([*filter(lambda x:x>1,column_sum)])>0
+            if not invalid_solution:
+                subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
+                multiplum=weights.multiply(subset_df,fill_value=0)
+                LCAsum=multiplum.values.sum()
+                if LCAsum<lowest_lca:
+                    lowest_lca=LCAsum
+                    bestmatch=subset_df
+        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
+        for pair in coordinates_of_pairs:
+            self.add_pair(pair[0],pair[1])
+        # TODO implement it
+        pass
+
+    @_matching_decorator
+    def match_brute(self, plural_assign=False):
+        """Brute forces all possible solutions"""
+        weights = self.weights
+        bestmatch=[]
+        lowest_lca=10e10
+        possible_solutions=hm.extract_brute_possibilities(self.incidence)
+        arrayweights=weights.to_numpy()
+        for subset in itertools.product(*possible_solutions):
+            column_sum=np.sum(list(subset),axis=0)[:-1]
+            invalid_solution=len([*filter(lambda x:x>1,column_sum)])>0
+            if not invalid_solution:
+                multiplum=np.multiply(arrayweights,subset)
+                LCAsum=np.nansum(multiplum)
+                if LCAsum<lowest_lca:
+                    lowest_lca=LCAsum
+                    bestmatch=subset
+        bestmatch=pd.DataFrame(data=list(bestmatch),index=weights.index,columns=weights.columns)
+        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
+        for pair in coordinates_of_pairs:
+            self.add_pair(pair[0],pair[1])
         pass
 
     @_matching_decorator
@@ -263,6 +372,8 @@ class Matching():
         #"""Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
 
         sorted_weights = self.weights.join(self.demand.Score)
+
+
         sorted_weights = sorted_weights.sort_values(by='Score', axis=0, ascending=False)
         sorted_weights = sorted_weights.drop(columns=['Score'])
         #sorted_weights.replace(np.nan, np.inf, inplace=True)  
@@ -361,8 +472,193 @@ class Matching():
         for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])  
         
+
+    # TODO (SIGURD) WORK IN PROGRESS: MAKING A NEW GENETIC ALGORITHM
     @_matching_decorator
-    def match_genetic_algorithm(self):
+    def match_genetic_algorithm_RANDOM(self):
+        """Genetic algorithm with the initial population with random solutions (not necessary an actual solution)"""
+        #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
+        number_of_demand_elements = len(self.demand)
+        
+        """NOTE NEEDED IF NEW ELEMENTS ARE NOT CONCIDERED
+        supply_names = self.supply.index.tolist()
+        index_first_new = self.supply.index.tolist().index("N0")
+        supply_names_only_reuse = supply_names[:index_first_new]
+        solutions_per_population = len(supply_names_only_reuse) * 100
+        """
+        weights_new = hm.transform_weights(self.weights) #Create a new weight matrix with only one column representing all new elements
+        weights_1d_array = weights_new.to_numpy().flatten()
+        weights = np.array_split(weights_1d_array, number_of_demand_elements)
+        max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
+        supply_names = weights_new.columns
+        chromosome_length = len(supply_names) * len(self.demand)
+        requested_number_of_chromosomes = len(supply_names)**2
+        
+        """Old way of making random population! Works quite nice, dont want to delete it yet"""
+        #initial_population = np.array(([[random.randint(0,1) for x in range(chromosome_length)] for y in range(requested_number_of_chromosomes)]))
+        #Initializing a random population
+        initial_population = hm.create_random_population_genetic(chromosome_length, requested_number_of_chromosomes, probability_of_0=0.9, probability_of_1=0.1)
+        solutions_per_population = len(initial_population)
+
+        def fitness_func(solution, solution_idx):
+            """Fitness function to calculate fitness value of chromosomes
+            Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA"""
+            fitness = 0
+            reward = 0
+            solutions = np.array_split(solution, number_of_demand_elements)
+            penalty = -max_weight
+            indexes_of_matches = []
+            for i in range(len(solutions)):
+                num_matches_in_bracket = 0
+                for j in range(len(solutions[i])):
+                    if solutions[i][j] == 1:
+                        if np.isnan(weights[i][j]): #Element cannot be matched => penalty
+                            fitness += penalty #Penalty
+                        else:
+                            reward += weights[i][j] #LCA of match
+                            num_matches_in_bracket += 1
+                            new_element_index = len(solutions[i])-1
+                            if not j == new_element_index: #Means that a supply element (not a new element) is matched with a demand element
+                                indexes_of_matches.append(j)
+                            
+                if num_matches_in_bracket > 1:
+                    fitness += 10*penalty #Penalty for matching multiple supply elemenets to the same demand element
+                elif num_matches_in_bracket < 1:
+                    fitness += penalty #Penalty for not matching at all
+            
+            index_duplicates = {x for x in indexes_of_matches if indexes_of_matches.count(x) > 1}
+            if len(index_duplicates) > 0: #Means some supply elements are assigned the same demand element
+                fitness = -10e10
+            elif reward != 0:
+                fitness += 100/reward
+                  
+            return fitness
+        
+        def fitness_func_matrix(solution, solution_idx):
+            #TODO (SIGURD): Decrease run-time by doing matrix-multiplication to evaluate fitness of solution rather than double for-loop
+            fitness = 0
+            return fitness
+            
+        #Using pygad-module
+        #TODO: Try parallization-module in pygad!
+        """Parameters are set by use of trial and error. These parameters have given a satisfactory solution"""
+        ga_instance = pygad.GA(
+            initial_population=initial_population,
+            num_generations=int((len(self.demand)+len(self.supply))),
+            num_parents_mating=int(np.ceil(solutions_per_population/2)),
+            fitness_func=fitness_func,
+            # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
+            # (also possible with: gene_space=[0, 1])
+            #mutation_by_replacement=True,
+            gene_type=int,
+            parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+            keep_elitism= int(np.ceil(solutions_per_population/2)),
+            #keep_parents=-1, #-1 => keep all parents, 0 => keep none
+            crossover_type="single_point",
+            mutation_type = "random",
+            #mutation_num_genes=int(solutions_per_population/5), Not needed if mutation_probability is set
+            mutation_probability = 0.4,
+            mutation_by_replacement=True,
+            random_mutation_min_val=0,
+            random_mutation_max_val=1,   # upper bound exclusive, so only 0 and 1
+            #save_best_solutions=True, #Needs a lot of memory
+            )
+
+        ga_instance.run()
+        logging.debug(ga_instance.initial_population)
+        logging.debug(ga_instance.population)
+        solution, solution_fitness, solution_idx = ga_instance.best_solution()
+        extracted_results = hm.extract_genetic_solution(weights_new, solution, number_of_demand_elements)
+        printed_results = hm.print_genetic_solution(self.weights, solution, number_of_demand_elements)
+        for index, row in extracted_results.iterrows():
+            self.add_pair(index, row["Matches from genetic"])
+
+    @_matching_decorator
+    def match_genetic_algorithm_ALL_POSSIBILITIES(self):
+        """Genetic algorithm than only uses a subset of possible solutions as the initial population"""
+        #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
+        number_of_demand_elements = len(self.demand)
+        weights_new = hm.transform_weights(self.weights) #Create a new weight matrix with only one column representing all new elements
+        weights_1d_array = weights_new.to_numpy().flatten()
+        weights = np.array_split(weights_1d_array, number_of_demand_elements)
+        max_weight = np.max(weights_1d_array[~np.isnan(weights_1d_array)])
+        supply_names = weights_new.columns
+    
+        #Initial population as a subset of actual possible solutions
+        new_sol = hm.create_initial_population_genetic(hm.transform_weights(self.incidence*1), size_of_population = len(supply_names)**2, include_invalid_combinations=False)
+
+
+        def fitness_func(solution, solution_idx):
+            """Fitness function to calculate fitness value of chromosomes
+            Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA"""
+            fitness = 0
+            reward = 0
+            solutions = np.array_split(solution, number_of_demand_elements)
+            penalty = -max_weight
+            indexes_of_matches = []
+            for i in range(len(solutions)):
+                num_matches_in_bracket = 0
+                for j in range(len(solutions[i])):
+                    if solutions[i][j] == 1:
+                        if np.isnan(weights[i][j]): #Element cannot be matched => penalty
+                            fitness += penalty #Penalty
+                        else:
+                            reward += weights[i][j] #LCA of match
+                            num_matches_in_bracket += 1
+                            new_element_index = len(solutions[i])-1
+                            if not j == new_element_index: #Means that a supply element (not a new element) is matched with a demand element
+                                indexes_of_matches.append(j)
+                            
+                if num_matches_in_bracket > 1:
+                    fitness += 10*penalty #Penalty for matching multiple supply elemenets to the same demand element
+                elif num_matches_in_bracket < 1:
+                    fitness += penalty #Penalty for not matching at all
+            
+            index_duplicates = {x for x in indexes_of_matches if indexes_of_matches.count(x) > 1}
+            if len(index_duplicates) > 0: #Means some supply elements are assigned the same demand element
+                fitness = -10e10
+            elif reward != 0:
+                fitness += 100/reward
+                  
+            return fitness
+        
+        def fitness_func_matrix(solution, solution_idx):
+            #TODO (SIGURD): Decrease run-time by doing matrix-multiplication to evaluate fitness of solution rather than double for-loop
+            fitness = 0
+            return fitness
+        
+        #TODO: Try parallaization
+        """Parameters are set by use of trial and error. These parameters have given a satisfactory solution"""
+        ga_instance = pygad.GA(
+            initial_population=new_sol,
+            num_generations=int((len(self.demand)+len(self.supply))),
+            num_parents_mating=int(np.ceil(len(new_sol)/2)),
+            fitness_func=fitness_func,
+            # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
+            # (also possible with: gene_space=[0, 1])
+            gene_type=int,
+            parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
+            keep_elitism= int(np.ceil(len(new_sol)/4)),
+            #keep_parents=-1, #-1 => keep all parents, 0 => keep none
+            crossover_type="single_point", 
+            mutation_type = "random",
+            #mutation_num_genes=int(solutions_per_population/5), Not needed if mutation_probability is set
+            mutation_probability = 0.2,
+            mutation_by_replacement=True,
+            random_mutation_min_val=0,
+            random_mutation_max_val=1,   # upper bound exclusive, so only 0 and 1
+            )
+        ga_instance.run()
+        logging.debug(ga_instance.initial_population)
+        logging.debug(ga_instance.population)
+        solution, solution_fitness, solution_idx = ga_instance.best_solution()
+        extract_solution = hm.extract_genetic_solution(weights_new, solution, number_of_demand_elements)
+        printed_results = hm.print_genetic_solution(self.weights, solution, number_of_demand_elements)
+        for index, row in extract_solution.iterrows():
+            self.add_pair(index, row["Matches from genetic"])
+
+    @_matching_decorator
+    def match_genetic_algorithm_DEPRECIATED(self):
         """Match using Evolutionary/Genetic Algorithm"""
         # TODO implement the method
         # supply capacity - length:
@@ -387,7 +683,7 @@ class Matching():
             fitness = 1.0 / output
             return fitness
         ga_instance = pygad.GA(
-            num_generations=20,
+            num_generations=30,
             num_parents_mating=2,
             fitness_func=fitness_func,
             sol_per_pop=10,
@@ -583,7 +879,7 @@ class Matching():
             for j in data['all_bins']:
                 objective.append(
                     #cp_model.LinearExpr.Term(x[i,j], coeff_array[i,j])
-                    cp_model.LinearExpr.Term(x[i,j], (self.demand.Score[i]*m_fac - coeff_array[i,j]))
+                    cp_model.LinearExpr.Term(x[i,j], (self.demand.Score[i]*m_fac+1 - coeff_array[i,j]))
                     )          
         #model.Maximize(cp_model.LinearExpr.Sum(objective))
         model.Maximize(cp_model.LinearExpr.Sum(objective))
@@ -685,24 +981,34 @@ def run_matching(demand, supply, score_function_string, manual_match_strings = N
         matching.match_scipy_milp()
         matches.append({'Name': 'MILP','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if genetic:
-        matching.match_genetic_algorithm()
-        matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        #matching.match_genetic_algorithm()
+        #matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
+        matching.match_genetic_algorithm_ALL_POSSIBILITIES()
+        matches.append({'Name': 'Genetic all possibilities','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
+        matching.match_genetic_algorithm_RANDOM()
+        matches.append({'Name': 'Genetic random','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+    if brute:
+        matching.match_brute()
+        matches.append({'Name': 'Brute','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
     # TODO convert list of dfs to single df
     return matches
 
 
 if __name__ == "__main__":
-    DEMAND_JSON = sys.argv[1]
-    SUPPLY_JSON = sys.argv[2]
-    RESULT_FILE = sys.argv[3]
-    # DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
-    # SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
-    # RESULT_FILE = r"MatchingAlgorithms\result.csv"
+    #DEMAND_JSON = sys.argv[1]
+    #SUPPLY_JSON = sys.argv[2]
+    #RESULT_FILE = sys.argv[3]
+    DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
+    SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
+    RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
     demand, supply = hm.create_random_data(demand_count=4, supply_count=5)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
-    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True)
+    result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, greedy_plural = False, bipartite=False, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)
     simple_results = hm.extract_results_df(result)
     print("Simple pairs:")

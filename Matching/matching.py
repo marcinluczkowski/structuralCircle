@@ -57,7 +57,6 @@ class Matching():
         pd.set_option('display.max_columns', 10)
 
         self.demand['Score'] = self.demand.eval(score_function_string_demand)
-
         self.supply['Score'] = self.supply.eval(score_function_string_supply)
 
         if add_new: # just copy designed to supply set, so that they act as new products
@@ -480,6 +479,12 @@ class Matching():
         def fitness_func_matrix(solution, solution_idx):
             #TODO (SIGURD): Decrease run-time by doing matrix-multiplication to evaluate fitness of solution rather than double for-loop
             fitness = 0
+            reward = 0
+            solutions = np.array_split(solution, number_of_demand_elements)
+            
+
+
+
             return fitness
             
         #Using pygad-module
@@ -899,7 +904,7 @@ class Matching():
         
   
 def run_matching(demand, supply, score_function_string_demand,score_function_string_supply, constraints = None, add_new = True, solution_limit = 120,
-                bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False,brute=True,brutevol2=True,brutevol3=True,brutevol4=True):
+                bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False,brute=False,brutevol2=False,brutevol3=False,brutevol4=False):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
@@ -911,8 +916,6 @@ def run_matching(demand, supply, score_function_string_demand,score_function_str
         matching.match_greedy(plural_assign=False)
         matches.append({'Name': 'Greedy_single','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
         result = hm.extract_pairs_df(matches)
-        print("\nGreedy result\n######################")
-        print(result)
     if greedy_plural:
         matching.match_greedy(plural_assign=True)
         matches.append({'Name': 'Greedy_plural', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
@@ -929,8 +932,8 @@ def run_matching(demand, supply, score_function_string_demand,score_function_str
         #matching.match_genetic_algorithm()
         #matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
-        matching.match_genetic_algorithm_ALL_POSSIBILITIES()
-        matches.append({'Name': 'Genetic all possibilities','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        #matching.match_genetic_algorithm_ALL_POSSIBILITIES()
+        #matches.append({'Name': 'Genetic all possibilities','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
         matching.match_genetic_algorithm_RANDOM()
         matches.append({'Name': 'Genetic random','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})

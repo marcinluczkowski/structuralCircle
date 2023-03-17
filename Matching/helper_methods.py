@@ -85,7 +85,7 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
     supply["Supply_lon"]=0
     
     for row in range(len(supply)):
-        lokasjon=rd.randint(0, len(supply_coords)-1)
+        lokasjon=random.randint(0, len(supply_coords)-1)
         supply.loc[row,"Supply_lat"]=supply_coords.loc[lokasjon,"Lat"]
         supply.loc[row,"Supply_lon"]=supply_coords.loc[lokasjon,"Lon"]
         supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Place"]
@@ -101,8 +101,6 @@ def extract_brute_possibilities(incidence_matrix):
     """
     binary_incidence = incidence_matrix*1 #returnes incidence matrix with 1 and 0 instead od True/False
     
-    print("Binary incidence")
-    print(binary_incidence)
     three_d_list=[]
     incidence_list=binary_incidence.values.tolist()
     for row in incidence_list:
@@ -301,5 +299,18 @@ def create_random_population_genetic(chromosome_length, requested_population_siz
         if count == requested_population_size:
             break
     return initial_population
+
+def export_dataframe_to_csv(dataframe, file_location):
+    dataframe.to_csv(file_location)
+
+def import_dataframe_from_csv(file_location):
+    dataframe = pd.read_csv(file_location)
+    row_names = list(dataframe.index)
+    new_row_names = list(dataframe["Unnamed: 0"])
+    row_dict = {row_names[i]: new_row_names[i] for i in range(len(row_names))}
+    dataframe.drop(columns=["Unnamed: 0"], inplace = True)
+    dataframe.rename(index=row_dict, inplace = True)
+    return dataframe
+
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

@@ -64,7 +64,8 @@ def elements_from_trusses(trusses):
 
 def pick_random(n_a, n_b, elements, whole_trusses=True, duplicates=False):
     
-    random.seed(2023)  # Preserve the same seed to replicate the results
+    #random.seed(2023)  # Preserve the same seed to replicate the results
+    random.seed(4)  # Preserve the same seed to replicate the results
 
     if not whole_trusses:
         elements = [item for sublist in elements for item in sublist]
@@ -137,19 +138,19 @@ if __name__ == "__main__":
         # [30,970],
         # [15,985],
         # variable count
-        # [1,10],
-        # [2,20],
-        # [4,40],
-        # [8,80],
-        # [16,160],
-        # [32,320],
-        # [64,640],
-        # [128,1280],
-        # [256,2560],        
-        # [512,5120],
-        # [1024,10240],
+        [1,10],
+        [2,20],
+        [4,40],
+        [8,80],
+        [16,160],
+        [32,320],
+        [64,640],
+        [128,1280],
+        [256,2560],        
+        [512,5120],
+        [1024,10240],
         #only without MIP
-        [2048,20480],
+        # [2048,20480],
         #[4096,40960],
         ]
 
@@ -223,7 +224,7 @@ if __name__ == "__main__":
     # Save to CSV:
 
     if save_csv:
-        name = "var_amount_22k"
+        name = "var_amount_10k"
         #name = 'var_ratio'
         time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
         results_score_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)
@@ -243,11 +244,14 @@ if __name__ == "__main__":
     # --- write supply assignment dfs to Excel
     time_1 = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
     name_1 = "Assignments"
-    assignment_path = f'Results/Supply Assignments/{time_1}_{name_1}_score.xlsx'
+    assignment_path = f'Results/Supply Assignments var amount/{time_1}_{name_1}_score.xlsx'
     write_assignments = True
     if write_assignments:
         with pd.ExcelWriter(assignment_path) as writer:
             for i, df_sheet in enumerate(supply_ass_df_list):
+                sum_row = df_sheet.applymap(lambda x : len(x) > 0).sum().to_frame().T
+                sum_row.rename({0: 'Total support els'}, inplace = True)
+                df_sheet = df_sheet.append(sum_row)
                 df_sheet.to_excel(writer, sheet_name = f'Elements {supply_ass_names[i]}')
     
 

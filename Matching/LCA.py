@@ -18,7 +18,7 @@ def calculate_lca_demand(length, area, gwp_factor=TIMBER_GWP, density=TIMBER_DEN
     lca = volume * gwp_factor
     return lca
 
-def calculate_lca_supply(length, area,demand_lat,demand_lon,supply_lat,supply_lon,include_transportation,gwp_factor=TIMBER_GWP, density=TIMBER_DENSITY, ):
+def calculate_lca_supply(length, area,demand_lat,demand_lon,supply_lat,supply_lon,include_transportation,gwp_factor=TIMBER_GWP, density=TIMBER_DENSITY):
     """ Calculate Life Cycle Assessment """
     # TODO add processing
     # TODO add other impact categories than GWP

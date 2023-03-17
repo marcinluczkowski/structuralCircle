@@ -165,7 +165,13 @@ class Matching():
         return pd.DataFrame(weights, index = self.incidence.index, columns = self.incidence.columns)
 
     def user_defined_pairs(self, constraint_list_user):
+        """user_defined_pairs _summary_
 
+        Parameters
+        ----------
+        constraint_list_user : _type_
+            _description_
+        """
         
         def evaluate_constraints_string(self, constraint_str):
 
@@ -960,7 +966,8 @@ def run_matching(demand, supply, score_function_string, manual_match_strings = N
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
     # create matching object 
-    matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string,manual_match_list=manual_match_strings,
+    matching = Matching(demand=demand, supply=supply, score_function_string_supply=score_function_string, score_function_string_demand=score_function_string,
+                        manual_match_list=manual_match_strings,
                         constraints=constraints, add_new=add_new, multi = True, solution_limit=solution_limit)
     
     matches =[] # results to return

@@ -435,6 +435,15 @@ class Matching():
         supply_names = weights_new.columns
         chromosome_length = len(supply_names) * len(self.demand)
         requested_number_of_chromosomes = len(supply_names)**2
+
+        #For matrix fitness function:
+        #############################
+
+        weights_negative = self.weights.copy(deep = True)
+        weights_negative.fillna(-1)
+        weights_negative_1d = weights_negative.to_numpy().flatten()
+        weights_matrix_negative = np.array_split(weights_negative_1d, number_of_demand_elements)
+        #############################
         
         """Old way of making random population! Works quite nice, dont want to delete it yet"""
         #initial_population = np.array(([[random.randint(0,1) for x in range(chromosome_length)] for y in range(requested_number_of_chromosomes)]))
@@ -480,8 +489,12 @@ class Matching():
             #TODO (SIGURD): Decrease run-time by doing matrix-multiplication to evaluate fitness of solution rather than double for-loop
             fitness = 0
             reward = 0
+            penalty = -max_weight
             solutions = np.array_split(solution, number_of_demand_elements)
+            product = np.multiply(solutions, weights_matrix_negative) 
+            number_nan_match = np.count_nonzero(x == -1.0) #Number of matches that are not allowed 
             
+
 
 
 

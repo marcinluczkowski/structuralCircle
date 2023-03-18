@@ -59,13 +59,198 @@ def remove_alternatives(x, y):
     else:
         return x
 
-def transform_weights(weights):
-    """Transform the weight matrix to only contain one column with new elements in stead of one column for each new element"""
-    weights = weights.copy(deep = True)
-    cols=list(weights.columns)[-len(weights):]
-    weights["N"]=weights[cols].sum(axis=1)
-    weights = weights.drop(columns=cols)
-    return weights
+# def extract_LCA_new(dict_list):
+#     matchobj=dict_list[0]["Match object"]
+#     sum=matchobj.demand["LCA"].sum()
+#     return sum
+
+
+### ADD PLOTS
+
+def plot_histograms(df, save_fig = False, **kwargs):
+    
+    # csfont = {'fontname':'Times New Roman'}
+    # plt.rcParams.update({'font.size': 22}) # must set in top
+    plt.rcParams['font.size'] = 12
+    plt.rcParams["font.family"] = "Times New Roman"
+
+    ### List unique values of width/height:
+    # TODO redo the histogram so that names are displayed, not area.
+    df['Cross-sections'] = df['Width'].astype(str) + "x" + df['Height'].astype(str)
+    
+    ### Plot the histogram of truss elements:
+    df.hist(column=['Length', 'Area'], bins=20)
+ 
+    # plt.Axes.set_axisbelow(b=True)
+    plt.title('Area')
+
+    if save_fig:
+        f_name = 'histogram'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
+    plt.show()
+
+
+def plot_scatter(df, **kwargs):
+    ### Scatter plot of all elements width/height:
+    df.plot.scatter(x='Width', y='Height')
+    plt.xlabel('Width')
+    plt.ylabel('Height')
+    plt.show()
+
+
+
+def plot_hexbin(df, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwargs):
+    # Based on https://seaborn.pydata.org/examples/hexbin_marginals.html
+    #plt.figure()    
+    # TODO Sverre, try with section names: sns.jointplot(x=df['Length'], y=df['Section'], kind="hex", color="#4CB391")
+    
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
+    g = sns.jointplot(x=df['Length'], y=df['Area'], kind="hex", color="#4CB391")
+    
+    #g.set_axis_labels(**kwargs)
+    # sns.jointplot(x=supply['Length'], y=supply['Area'], kind="hex", color="#eb4034")
+        
+    if save_fig:
+        f_name = 'hexbin'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
+    plt.show()
+
+def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwargs):
+    """Plot the Cross Section and length histogram using remapped values"""
+    sns.set_theme(style = style, font_scale = font_scale, height = 20, rc = kwargs) # set styling configuration
+    
+    # get all unique areas
+    cross_secs = ['(36x36)', '(36x48)', '(36x148)', '(36x198)', '(48x148)', '(48x198)', '(61x198)', '(73x198)', '(73x223)']
+     
+    map_dict = {a:cs for a, cs in zip(sorted(unique_values), cross_secs)}
+    map_dict2 = {a:(i+1) for i, a in enumerate(sorted(unique_values))}
+    df['Cross Sections [mm]'] = df.Area.map(map_dict2).astype(int)
+    g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391")
+    g.ax_joint.set_yticks(list(map_dict2.values()))
+    g.ax_joint.set_yticklabels(cross_secs)
+
+    if save_fig:
+        f_name = 'hexbin_mapped'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
+    plt.show()
+
+def barplot_sns(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
+                show_fig = False, **kwargs):
+    """Add docstring""" 
+    if normalize:
+        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
+
+def plot_savings(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
+    #plt.figure()
+    if normalize: # normalize the dataframe according to best score in each row
+        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
+
+    # Setting for the plot    
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
+
+    # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
+    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
+    plot.set(xlabel='Elements (Demand : Supply)', ylabel='Normalised score(GWP) savings')
+    plt.xticks(rotation=30)
+
+    if save_fig:
+        f_name = "score saved"
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
+    plt.show()
+
+def plot_old(result_df, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
+    plt.figure()
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
+    # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
+    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
+    plot.set(xlabel='Elements (Demand : Supply)', ylabel='Normalise % of substitutions')
+    plt.xticks(rotation=30)
+
+    if save_fig:
+        f_name = 'reused elements'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
+
+    plt.show()
+
+def plot_time(result_df, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
+    #plt.figure()
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
+    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
+    plot.set(yscale="log", xlabel='Elements (Demand : Supply)', ylabel='Time [s]')
+    plt.xticks(rotation=30)
+    if save_fig:
+        f_name = 'time plot'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
+    plt.show()
+
+def plot_bubble(demand, supply, **kwargs):
+
+    # if close to one another, don't add but increase size:
+    demand_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
+    tolerance_length = 2.5
+    tolerance_area = 0.002
+    dot_size = 70
+
+    for index, row in demand.iterrows():
+        if demand_chart.empty:
+            # add first bubble
+            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        # check if similiar bubble already present:
+        elif demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].empty:
+            # not, so add new bubble
+            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        else:
+            # already present, so increase the bubble size:
+            ind = demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
+            demand_chart.at[ind,'dot_size'] = demand_chart.at[ind,'dot_size'] +1
+
+    demand_chart['dot_size_scaled'] = dot_size * (demand_chart['dot_size']**0.5)
+
+    supply_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
+    for index, row in supply.iterrows():
+        if supply_chart.empty:
+            # add first bubble
+            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        # check if similiar bubble already present:
+        elif supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].empty:
+            # not, so add new bubble
+            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        else:
+            # already present, so increase the bubble size:
+            ind = supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
+            supply_chart.at[ind,'dot_size'] = supply_chart.at[ind,'dot_size'] +1
+
+    supply_chart['dot_size_scaled'] = dot_size * (supply_chart['dot_size']**0.5)
+
+    plt.scatter(demand_chart.Length, demand_chart.Area, s=list(demand_chart.dot_size_scaled), c='b', alpha=0.5, label='Demand')
+    plt.scatter(supply_chart.Length, supply_chart.Area, s=list(supply_chart.dot_size_scaled), c='g', alpha=0.5, label='Supply')
+
+    lgnd = plt.legend(loc="lower right")
+    lgnd.legendHandles[0]._sizes = [50]
+    lgnd.legendHandles[1]._sizes = [50]
+
+    plt.xlabel("Length", size=16)
+    plt.ylabel("Area", size=16)
+
+    for i, row in demand_chart.iterrows():
+        if row['dot_size'] < 10:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
+        else:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
+    for i, row in supply_chart.iterrows():
+        if row['dot_size'] < 10:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
+        else:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
+
+    plt.show()
+
 
 def create_random_data_demand(demand_count, demand_lat, demand_lon, demand_gwp=lca.TIMBER_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""

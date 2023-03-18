@@ -64,8 +64,8 @@ def elements_from_trusses(trusses):
 
 def pick_random(n_a, n_b, elements, whole_trusses=True, duplicates=False):
     
-    random.seed(2023)  # Preserve the same seed to replicate the results
-
+    #random.seed(2023)  # Preserve the same seed to replicate the results
+    random.seed(4)
     if not whole_trusses:
         elements = [item for sublist in elements for item in sublist]
 
@@ -268,8 +268,8 @@ if __name__ == "__main__":
     
     # Generate a set of unique trusses from CSV file:
     PATH = "Data\\CSV files trusses\\truss_all_types_beta_4.csv"
-    save_figs = False
-    save_csv = False
+    save_figs = True
+    save_csv = True
     #PATH =  "Data\\CSV files trusses\\truss_all_types_beta_second_version.csv" Test with another dataset
     trusses = create_trusses_from_JSON(PATH)
     truss_elements = elements_from_trusses(trusses)
@@ -286,7 +286,8 @@ if __name__ == "__main__":
     #hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1, save_fig = save_figs, **plot_kwargs)
 
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
-    score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
+    score_function_string_demand = "@lca.calculate_lca_demand(length=Length, area=Area, gwp_factor=Gwp_factor)"
+    score_function_string_supply = "@lca.calculate_lca_demand(length=Length, area=Area, gwp_factor=Gwp_factor)"
 
     result_table = []
 
@@ -297,7 +298,7 @@ if __name__ == "__main__":
         # test
         # [15,10],
         # [25,20],
-        # [35,30]
+        # [35,30],
         # variable ratios
         # [985,15],
         # [970,30],
@@ -317,13 +318,13 @@ if __name__ == "__main__":
         [2,20],
         [4,40],
         [8,80],
-        # [16,160],
-        # [32,320],
-        # [64,640],
-        # [128,1280],
-        # [256,2560],        
-        # [512,5120],
-        # [1024,10240],
+        [16,160],
+        [32,320],
+        [64,640],
+        [128,1280],
+        [256,2560],        
+        [512,5120],
+        [1024,10240],
         #only without MIP
         # [2048,20480],
         #[4096,40960],
@@ -352,7 +353,8 @@ if __name__ == "__main__":
         # hm.plot_hexbin(demand, supply)
         
         # Run the matching
-        result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = False,
+        result = run_matching(demand, supply, score_function_string_demand=score_function_string_demand, score_function_string_supply = score_function_string_supply,
+                            constraints = constraint_dict, add_new = False,
                             milp=True, sci_milp=False, greedy_single=True, greedy_plural=True, bipartite=True, solution_limit= 2000) 
 
         pairs = hm.extract_pairs_df(result) # get matching pairs
@@ -385,10 +387,10 @@ if __name__ == "__main__":
 
     
     #hm.plot_savings(results_score_df, **plot_kwargs)
-    hm.plot_savings(normalised_score_df, save_fig = save_figs, **plot_kwargs) # Added by Sverre
+    #hm.plot_savings(normalised_score_df, save_fig = save_figs, **plot_kwargs) # Added by Sverre
     #hm.plot_old(results_old_df, **plot_kwargs)
-    hm.plot_old(normalised_old_df, save_fig = save_figs, **plot_kwargs) # Added by Sverre to see effect of normalising numbers
-    hm.plot_time(results_time_df, save_fig = save_figs, **plot_kwargs)
+    #hm.plot_old(normalised_old_df, save_fig = save_figs, **plot_kwargs) # Added by Sverre to see effect of normalising numbers
+    #hm.plot_time(results_time_df, save_fig = save_figs, **plot_kwargs)
 
     
     print(results_score_df)
@@ -399,7 +401,7 @@ if __name__ == "__main__":
     # Save to CSV:
 
     if save_csv:
-        name = "var_amount_22k"
+        name = "var_amount_10k"
         #name = 'var_ratio'
         time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
         results_score_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)
@@ -419,11 +421,14 @@ if __name__ == "__main__":
     # --- write supply assignment dfs to Excel
     time_1 = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
     name_1 = "Assignments"
-    assignment_path = f'Results/Supply Assignments/{time_1}_{name_1}_score.xlsx'
-    write_assignments = False
+    assignment_path = f'Results/Supply Assignments/{time_1}_{name_1}_score_amount.xlsx'
+    write_assignments = True
     if write_assignments:
         with pd.ExcelWriter(assignment_path) as writer:
             for i, df_sheet in enumerate(supply_ass_df_list):
+                sum_row = df_sheet.applymap(lambda x : len(x) > 0).sum().to_frame().T
+                sum_row.rename({0: 'Total support els'}, inplace = True)
+                df_sheet = df_sheet.append(sum_row)
                 df_sheet.to_excel(writer, sheet_name = f'Elements {supply_ass_names[i]}')
     
 

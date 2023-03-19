@@ -314,20 +314,20 @@ if __name__ == "__main__":
         # [30,970],
         # [15,985],
         # variable count
-        [1,10],
-        [2,20],
-        [4,40],
-        [8,80],
-        [16,160],
-        [32,320],
-        [64,640],
-        [128,1280],
-        [256,2560],        
-        [512,5120],
-        [1024,10240],
+        # [1,10],
+        # [2,20],
+        # [4,40],
+        # [8,80],
+        # [16,160],
+        # [32,320],
+        # [64,640],
+        # [128,1280],
+        # [256,2560],        
+        # [512,5120],
+        # [1024,10240],
         #only without MIP
-        # [2048,20480],
-        #[4096,40960],
+        [2048,20480],
+        [4096,40960],
         ]
 
     results_score_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "MILP"])
@@ -355,7 +355,7 @@ if __name__ == "__main__":
         # Run the matching
         result = run_matching(demand, supply, score_function_string_demand=score_function_string_demand, score_function_string_supply = score_function_string_supply,
                             constraints = constraint_dict, add_new = False,
-                            milp=True, sci_milp=False, greedy_single=True, greedy_plural=True, bipartite=True, solution_limit= 2000) 
+                            milp=False, sci_milp=False, greedy_single=True, greedy_plural=True, bipartite=True, solution_limit= 20000) 
 
         pairs = hm.extract_pairs_df(result) # get matching pairs
         supply_assignments_df = hm.get_assignment_df(pairs, supply_ids= supply.index)
@@ -401,7 +401,7 @@ if __name__ == "__main__":
     # Save to CSV:
 
     if save_csv:
-        name = "var_amount_10k"
+        name = "var_amount_40k"
         #name = 'var_ratio'
         time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
         results_score_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)

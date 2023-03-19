@@ -86,7 +86,6 @@ class Matching():
         # create incidence and weight for the method
         self.incidence = self.evaluate_incidence()
         self.weights = self.evaluate_weights()
-
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
 
     def __copy__(self):

@@ -48,7 +48,7 @@ def transform_weights(weights):
     weights = weights.drop(columns=cols)
     return weights
 
-def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new_lon, demand_gwp=lca.TIMBER_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
+def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new_lon, demand_gwp=lca.TIMBER_GWP,gwp_price=lca.GWP_PRICE,new_price_per_m2=lca.NEW_ELEMENT_PRICE_TIMBER, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()
@@ -67,12 +67,14 @@ def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new
     demand["Demand_lon"]=demand_lon
     demand["Supply_lat"]=new_lat
     demand["Supply_lon"]=new_lon
+    demand["Price_per_m2"]=new_price_per_m2
+    demand["Gwp_price"]=gwp_price
 
     # Change index names
     demand.index = map(lambda text: 'D' + str(text), demand.index)
     return demand.round(4)
 
-def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,supply_gwp=lca.TIMBER_REUSE_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
+def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,supply_gwp=lca.TIMBER_REUSE_GWP,gwp_price=lca.GWP_PRICE,reused_prise_per_m2=lca.REUSED_ELEMENT_PRICE_TIMBER, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     supply = pd.DataFrame()
     supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
@@ -85,6 +87,8 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
     supply["Location"]=0
     supply["Supply_lat"]=0
     supply["Supply_lon"]=0
+    supply["Price_per_m2"]=reused_prise_per_m2
+    supply["Gwp_price"]=gwp_price
     
     for row in range(len(supply)):
         lokasjon=random.randint(0, len(supply_coords)-1)

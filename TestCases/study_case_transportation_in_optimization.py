@@ -6,9 +6,11 @@ import helper_methods as hm
 from matching import run_matching
 import LCA as lca
 
+#Where is the actual site where our elements must be transportet too
 demand_coordinates = {"Latitude": "10.3969", "Longitude": "63.4269"}
 
-#Defines the coordinates from where the NEW elementes are transported from
+#Defines the coordinates from where the NEW elementes are transported from, 
+#Moelv:
 #new_coordinates={"Latitude":"10.7005","Longitude":"60.9277"}
 new_coordinates = {"Latitude": "10.3969", "Longitude": "63.4269"}
 
@@ -31,9 +33,6 @@ demand = hm.create_random_data_demand(demand_count=12, demand_lat = demand_coord
 supply = hm.create_random_data_supply(supply_count=12,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords)
 
 
-
-
-
 score_function_string_wo_transportation = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor,demand_lat=Demand_lat,demand_lon=Demand_lon,supply_lat=Supply_lat,supply_lon=Supply_lon,include_transportation=False)"
 
 result_wo_transportation = run_matching(demand, supply, score_function_string_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,genetic=False,brute=False)
@@ -46,9 +45,6 @@ print("Simple results without transportation LCA")
 print(simple_results_wo_transportation)
 
 
-
-
-
 score_function_string_transportation = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor,demand_lat=Demand_lat,demand_lon=Demand_lon,supply_lat=Supply_lat,supply_lon=Supply_lon,include_transportation=True)"
 
 result_transportation = run_matching(demand, supply, score_function_string_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,genetic=False,brute=False)
@@ -59,8 +55,6 @@ print(simple_pairs_transportation)
 print()
 print("Simple results WITH transportation LCA")
 print(simple_results_transportation)
-
-
 
 
 score_function_string_score = "@lca.calculate_score(length=Length, area=Area, gwp_factor=Gwp_factor,demand_lat=Demand_lat,demand_lon=Demand_lon,supply_lat=Supply_lat,supply_lon=Supply_lon,price_per_m2=Price_per_m2,priceGWP=Gwp_price,include_transportation=True)"

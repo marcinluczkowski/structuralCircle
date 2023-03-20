@@ -31,10 +31,10 @@ def calculate_lca(length, area,demand_lat,demand_lon,supply_lat,supply_lon,inclu
     return lca
 
 
-def calculate_score(length, area,demand_lat,demand_lon,supply_lat,supply_lon,include_transportation,gwp_factor, price_per_m2,priceGWP, density=TIMBER_DENSITY):
+def calculate_score(length, area,demand_lat,demand_lon,supply_lat,supply_lon,include_transportation,gwp_factor,price_per_m2,priceGWP, density=TIMBER_DENSITY):
     """ Calculates a score, based on GWP and price for new elements. The score is total price for kg CO2 eq and price for elements. """
     # TODO add processing
-    # TODO add other impact categories than GWP
+    # TODO add other impact categories than GWP and price?
     
     volume = length * area
     score = volume * gwp_factor

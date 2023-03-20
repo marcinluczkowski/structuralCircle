@@ -413,6 +413,20 @@ class Matching():
             logging.info("graph contains unconnected subgraphs that could be separated")
         bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
         for match_edge in bipartite_matching.edges():
+            self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])
+
+    @_matching_decorator
+    def match_bipartite_graph_plural(self):
+        """Match using Maximum Bipartite Graphs. A maximum matching is a set of edges such that each vertex is
+        incident on at most one matched edge and the weight of such edges in the set is as large as possible."""
+        if not self.graph:
+            self.add_graph()
+        if self.graph.is_connected():
+            # TODO separate disjoint graphs for efficiency
+            logging.info("graph contains unconnected subgraphs that could be separated")
+        bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
+        
+        for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])  
         
 

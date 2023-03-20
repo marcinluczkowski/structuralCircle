@@ -300,4 +300,23 @@ def create_random_population_genetic(chromosome_length, requested_population_siz
             break
     return initial_population
 
+def add_graph_plural(demand_matrix, supply_matrix, weight_matrix, incidence_matrix):
+    """Add a graph notation based on incidence matrix"""
+    vertices = [0]*len(demand_matrix.index) + [1]*len(supply_matrix.index)
+    num_rows = len(demand_matrix.index)
+    edges = np.transpose(np.where(incidence_matrix))
+    edges = [[edge[0], edge[1]+num_rows] for edge in edges]
+    edge_weights = weight_matrix.to_numpy().reshape(-1,)
+    edge_weights = edge_weights[~np.isnan(edge_weights)]
+    # We need to reverse the weights, so that the higher the better. Because of this edge weights are initial score minus the replacement score:
+    edge_weights = (np.array([demand_matrix.Score[edge[0]] for edge in edges ])+0.0000001) - edge_weights 
+    # assemble graph
+    graph = ig.Graph.Bipartite(vertices, edges)
+    graph.es["label"] = edge_weights
+    graph.vs["label"] = list(demand_matrix.index)+list(supply_matrix.index) #vertice names
+    return graph
+
+#def add_cutt_off
+
+
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

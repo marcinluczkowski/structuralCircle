@@ -327,7 +327,7 @@ if __name__ == "__main__":
         # [1024,10240],
         #only without MIP
         [2048,20480],
-        [4096,40960],
+        # [4096,40960],
         ]
 
     results_score_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "MILP"])
@@ -401,7 +401,7 @@ if __name__ == "__main__":
     # Save to CSV:
 
     if save_csv:
-        name = "var_amount_40k"
+        name = "var_amount_20k"
         #name = 'var_ratio'
         time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
         results_score_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)

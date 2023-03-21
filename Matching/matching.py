@@ -29,7 +29,7 @@ logging.basicConfig(
 
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
-    def __init__(self, demand, supply, score_function_string, add_new=False, multi=False, constraints={}, solution_limit=120):
+    def __init__(self, demand, supply, score_function_string, add_new=False, constraints={}, solution_limit=120):
         """_summary_
 
         :param demand: _description_
@@ -40,8 +40,6 @@ class Matching():
         :type score_function_string: _type_
         :param add_new: _description_, defaults to False
         :type add_new: bool, optional
-        :param multi: _description_, defaults to False
-        :type multi: bool, optional
         :param constraints: _description_, defaults to {}
         :type constraints: dict, optional
         :param solution_limit: stop matching algorithm when reaching this limit., defaults to 60 [s]
@@ -58,7 +56,6 @@ class Matching():
             self.supply = pd.concat((supply, demand_copy), ignore_index=False).infer_objects()
         else:
             self.supply = supply.infer_objects()
-        self.multi = multi
         self.graph = None
         self.result = None  #saves latest result of the matching
         self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id']) #saves latest array of pairs
@@ -607,7 +604,7 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
     # create matching object 
-    matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string, constraints=constraints, add_new=add_new, multi = True, solution_limit=solution_limit)
+    matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string, constraints=constraints, add_new=add_new, solution_limit=solution_limit)
     matches =[] # results to return
     headers = []
     if greedy_single:

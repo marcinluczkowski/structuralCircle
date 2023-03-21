@@ -37,7 +37,7 @@ score_function_string_wo_transportation = "@lca.calculate_lca(length=Length, are
 
 result_wo_transportation = run_matching(demand, supply, score_function_string_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,genetic=False,brute=False)
 simple_pairs_wo_transportation = hm.extract_pairs_df(result_wo_transportation)
-simple_results_wo_transportation = hm.extract_results_df(result_wo_transportation)
+simple_results_wo_transportation = hm.extract_results_df(result_wo_transportation, column_name = "LCA")
 print("Simple pairs without transportation LCA:")
 print(simple_pairs_wo_transportation)
 print()
@@ -47,7 +47,7 @@ print(simple_results_wo_transportation)
 score_function_string_transportation = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor,distance = Distance, include_transportation=True)"
 result_transportation = run_matching(demand, supply, score_function_string_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,genetic=False,brute=False)
 simple_pairs_transportation = hm.extract_pairs_df(result_transportation)
-simple_results_transportation = hm.extract_results_df(result_transportation)
+simple_results_transportation = hm.extract_results_df(result_transportation, column_name = "LCA")
 print("Simple pairs WITH transportation LCA:")
 print(simple_pairs_transportation)
 print()
@@ -60,7 +60,7 @@ score_function_string_score = "@lca.calculate_score(length=Length, area=Area, gw
 
 result_score = run_matching(demand, supply, score_function_string_score, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,genetic=False,brute=False)
 simple_pairs_score = hm.extract_pairs_df(result_score)
-simple_results_score = hm.extract_results_df(result_score)
+simple_results_score = hm.extract_results_df(result_score, column_name = "Total cost (transport, emissions, material price)")
 print("Simple pairs with price:")
 print(simple_pairs_score)
 print()

@@ -23,7 +23,7 @@ def extract_pairs_df(dict_list):
     df.columns = cols
     return df
 
-def extract_results_df(dict_list):
+def extract_results_df(dict_list, column_name):
     """Creates a dataframe with the scores from each method"""
     sub_df = []
     cols = []
@@ -31,7 +31,7 @@ def extract_results_df(dict_list):
         sub_df.append(run['Match object'].result)
         cols.append(run['Name'])
     df = pd.DataFrame(sub_df, index= cols)    
-    df=df.rename(columns={0:"LCA"})
+    df=df.rename(columns={0: column_name})
     return df.round(3)
 
 def remove_alternatives(x, y):

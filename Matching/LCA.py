@@ -30,6 +30,7 @@ def calculate_score(length, area, include_transportation, distance, gwp_factor, 
     # TODO add processing
     # TODO add other impact categories than GWP and price?
     
+    #TODO: Store information about GWP and Price
     volume = length * area
     score = volume * gwp_factor
   

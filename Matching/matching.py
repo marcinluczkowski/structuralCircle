@@ -52,11 +52,11 @@ class Matching():
         self.demand = demand.infer_objects()
         self.supply = supply.infer_objects()
         self.score_function_string = score_function_string
+        self.evaluate_transportation()
         
         pd.set_option('display.max_columns', 10)
 
         self.demand['Score'] = self.demand.eval(score_function_string)
-
         self.supply['Score'] = self.supply.eval(score_function_string)
 
         if add_new: # just copy designed to supply set, so that they act as new products
@@ -93,6 +93,17 @@ class Matching():
         result = cls.__new__(cls)
         result.__dict__.update(self.__dict__)
         return result    
+    
+    def evaluate_transportation(self):
+        """Evaluates the driving distance for supply and demand elements"""
+        if "include_transportation=True" in self.score_function_string:
+            #Evaluating driving distance of supply elements
+            self.supply["Distance"] = self.supply.apply(lambda row: lca.calculate_driving_distance(row.Supply_lat,row.Supply_lon,row.Demand_lat,row.Demand_lon),axis=1)
+            #Evaluating driving distance of demand elements
+            self.demand["Distance"] = self.demand.apply(lambda row: lca.calculate_driving_distance(row.Supply_lat,row.Supply_lon,row.Demand_lat,row.Demand_lon),axis=1)
+        else:
+            self.supply["Distance"] = np.NaN
+            self.demand["Distance"] = np.NaN
 
     def evaluate_incidence(self):
         """Returns incidence matrix with true values where the element fit constraint criteria"""    

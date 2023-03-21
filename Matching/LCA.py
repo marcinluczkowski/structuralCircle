@@ -12,26 +12,20 @@ NEW_ELEMENT_PRICE_TIMBER=435 #Per m^2 https://www.landkredittbank.no/blogg/2021/
 REUSED_ELEMENT_PRICE_TIMBER=100 #Per m^2
 GWP_PRICE=0.6 #In kr:Per kg CO2, based on OECD
 
-#TODO include in matching
-
-def calculate_lca(length, area,demand_lat,demand_lon,supply_lat,supply_lon,include_transportation,gwp_factor, density=TIMBER_DENSITY, ):
+def calculate_lca(length, area, include_transportation, distance, gwp_factor, density=TIMBER_DENSITY):
     """ Calculate Life Cycle Assessment """
     # TODO add processing
     # TODO add other impact categories than GWP
     volume = length * area
     lca = volume * gwp_factor
     if include_transportation:
-        coords=[demand_lat,demand_lon,supply_lat,supply_lon]
-        coordinates=pd.concat(coords,axis=1)
-        coordinates["Distance"]=coordinates.apply(lambda row: calculate_driving_distance(row.Supply_lat,row.Supply_lon,row.Demand_lat,row.Demand_lon),axis=1)
-        distance=coordinates["Distance"]
         transportation_LCA = calculate_transportation_LCA(volume, density, distance)
         logging.debug(f"Transportation LCA:", transportation_LCA)
         lca += transportation_LCA
     return lca
 
 
-def calculate_score(length, area,demand_lat,demand_lon,supply_lat,supply_lon,include_transportation,gwp_factor,price_per_m2,priceGWP, density=TIMBER_DENSITY):
+def calculate_score(length, area, include_transportation, distance, gwp_factor, price_per_m2,priceGWP, density=TIMBER_DENSITY):
     """ Calculates a score, based on GWP and price for new elements. The score is total price for kg CO2 eq and price for elements. """
     # TODO add processing
     # TODO add other impact categories than GWP and price?
@@ -43,10 +37,6 @@ def calculate_score(length, area,demand_lat,demand_lon,supply_lat,supply_lon,inc
         score=score*priceGWP
 
     if include_transportation:
-        coords=[demand_lat,demand_lon,supply_lat,supply_lon]
-        coordinates=pd.concat(coords,axis=1)
-        coordinates["Distance"]=coordinates.apply(lambda row: calculate_driving_distance(row.Supply_lat,row.Supply_lon,row.Demand_lat,row.Demand_lon),axis=1)
-        distance=coordinates["Distance"]
         transportation_LCA = calculate_transportation_LCA(volume, density, distance)
         transportation_cost= calcultate_price_transport(volume,density,distance)
         logging.debug(f"Transportation LCA:", transportation_LCA)

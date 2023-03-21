@@ -456,17 +456,20 @@ class Matching():
             any_cutoff_found = False
             demand_index = match_edge.source_vertex["label"]
             supply_index = match_edge.target_vertex["label"]
-            cut_off_length = self.supply.loc[supply_index]["Length"] - self.demand.loc[demand_index]["Length"]
+            demand_length = self.demand.loc[demand_index]["Length"]
+            supply_length = self.supply.loc[supply_index]["Length"]
+            cut_off_length = float(self.supply.loc[supply_index]["Length"] - self.demand.loc[demand_index]["Length"])
             if cut_off_length > 0.0: #Means we have a supply element. If cut_off_length == 0.0 we have a new element
                 any_cutoff_found = True
                 self.supply.loc[supply_index,["Length"]] = self.demand.loc[demand_index]["Length"] #Set the supply length to the demand length
-                row_copy = self.supply.loc[supply_index] #Copy supply element
+                row_copy = self.supply.loc[supply_index].copy() #Copy supply element
                 row_copy["Length"] = cut_off_length #Set length of the copy supply element to the cut-off length
                 self.supply.loc[row_copy.name + "C"] = row_copy
 
         if any_cutoff_found:
             self.demand['Score'] = self.demand.eval(self.score_function_string)
             self.supply['Score'] = self.supply.eval(self.score_function_string)
+            self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
             self.incidence = self.evaluate_incidence()
             self.weights = self.evaluate_weights()
             self.add_graph()
@@ -479,12 +482,7 @@ class Matching():
 
         for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"]) 
-        
-        #Reset the dataframes to the originals without any cutoff
-        original_supply = self.supply.copy()
-        original_demand = self.demand.copy()
-        original_weights = self.weights.copy()
-        original_incidence = self.incidence.copy()
+
 
     # TODO (SIGURD) WORK IN PROGRESS: MAKING A NEW GENETIC ALGORITHM
     @_matching_decorator

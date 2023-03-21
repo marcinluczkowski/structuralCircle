@@ -129,6 +129,8 @@ class Matching():
         demand_array = self.demand[parameter].to_numpy(dtype = float) # array of demand parameters to evaluate. 
         compare_array = ne.evaluate(f"{supply_val} {compare} demand_array")        
         return ne.evaluate("current_bool & compare_array")
+
+    
             
     def evaluate_weights(self):
         """Return matrix of weights for elements in the incidence matrix. The lower the weight the better."""
@@ -418,7 +420,10 @@ class Matching():
     @_matching_decorator
     def match_bipartite_graph_plural(self):
         """Match using Maximum Bipartite Graphs. A maximum matching is a set of edges such that each vertex is
-        incident on at most one matched edge and the weight of such edges in the set is as large as possible."""
+        incident on at most one matched edge and the weight of such edges in the set is as large as possible.
+        
+        TANKEGANG: Kjør bipartite en gang, match elementer, legg avkappene tilbake og kjør en gang til
+        """
         if not self.graph:
             self.add_graph()
         if self.graph.is_connected():

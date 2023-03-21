@@ -434,7 +434,7 @@ class Matching():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])
 
     @_matching_decorator
-    def match_bipartite_graph_plural(self):
+    def match_bipartite_plural(self):
         """Match using Maximum Bipartite Graphs. A maximum matching is a set of edges such that each vertex is
         incident on at most one matched edge and the weight of such edges in the set is as large as possible.
         
@@ -447,9 +447,44 @@ class Matching():
             logging.info("graph contains unconnected subgraphs that could be separated")
         bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
         
+        original_supply = self.supply.copy()
+        original_demand = self.demand.copy()
+        original_weights = self.weights.copy()
+        original_incidence = self.incidence.copy()
+
         for match_edge in bipartite_matching.edges():
-            self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])  
+            any_cutoff_found = False
+            demand_index = match_edge.source_vertex["label"]
+            supply_index = match_edge.target_vertex["label"]
+            cut_off_length = self.supply.loc[supply_index]["Length"] - self.demand.loc[demand_index]["Length"]
+            if cut_off_length > 0.0: #Means we have a supply element. If cut_off_length == 0.0 we have a new element
+                any_cutoff_found = True
+                self.supply.loc[supply_index,["Length"]] = self.demand.loc[demand_index]["Length"] #Set the supply length to the demand length
+                row_copy = self.supply.loc[supply_index] #Copy supply element
+                row_copy["Length"] = cut_off_length #Set length of the copy supply element to the cut-off length
+                self.supply.loc[row_copy.name + "C"] = row_copy
+
+        if any_cutoff_found:
+            self.demand['Score'] = self.demand.eval(self.score_function_string)
+            self.supply['Score'] = self.supply.eval(self.score_function_string)
+            self.incidence = self.evaluate_incidence()
+            self.weights = self.evaluate_weights()
+            self.add_graph()
+            bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
+            #Reset the dataframes to the originals without any cutoff
+            self.supply = original_supply
+            self.demand = original_demand
+            self.weights = original_weights
+            self.incidence = original_incidence
+
+        for match_edge in bipartite_matching.edges():
+            self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"]) 
         
+        #Reset the dataframes to the originals without any cutoff
+        original_supply = self.supply.copy()
+        original_demand = self.demand.copy()
+        original_weights = self.weights.copy()
+        original_incidence = self.incidence.copy()
 
     # TODO (SIGURD) WORK IN PROGRESS: MAKING A NEW GENETIC ALGORITHM
     @_matching_decorator
@@ -934,7 +969,7 @@ class Matching():
         
   
 def run_matching(demand, supply, score_function_string, constraints = None, add_new = True, solution_limit = 120,
-                bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False,brute=True,brutevol2=True,brutevol3=True,brutevol4=True):
+                bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False,brute=True,brutevol2=True,brutevol3=True,brutevol4=True, bipartite_plural = True):
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
@@ -969,6 +1004,10 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
     if brute:
         matching.match_brute()
         matches.append({'Name': 'Brute','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
+    if bipartite_plural:
+        matching.match_bipartite_plural()
+        matches.append({'Name': 'Bipartite plural','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
     # TODO convert list of dfs to single df
     return matches

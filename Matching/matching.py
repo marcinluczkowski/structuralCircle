@@ -70,7 +70,7 @@ class Matching():
             self.supply = pd.concat((self.supply, demand_copy), ignore_index=False).infer_objects()
         else:
             self.supply = self.supply.infer_objects()
-        self.multi = multi
+        self.multi = multi # TODO Delete if not used. 
         self.graph = None
         self.result = None  #saves latest result of the matching
         self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id']) #saves latest array of pairs
@@ -379,7 +379,6 @@ class Matching():
 
         sorted_weights = self.weights.join(self.demand.Score)
 
-
         sorted_weights = sorted_weights.sort_values(by='Score', axis=0, ascending=False)
         sorted_weights = sorted_weights.drop(columns=['Score'])
         #sorted_weights.replace(np.nan, np.inf, inplace=True)  
@@ -389,7 +388,7 @@ class Matching():
         for i in range(sorted_weights.shape[0]):
             row_id = sorted_weights.iloc[[i]].index[0]
             vals = np.array(sorted_weights.iloc[[i]])[0]
-#            if np.any(vals):    # checks if not empty row (no matches)
+            #if np.any(vals):    # checks if not empty row (no matches)
             if sum(~np.isnan(vals)) > 0: # check if there it at least one element not np.nan
                 lowest = np.nanmin(vals)
                 col_id = sorted_weights.columns[np.where(vals == lowest)][0]
@@ -417,7 +416,8 @@ class Matching():
         #demand_sorted.sort_values(by=['Length', 'Area'], axis=0, ascending=False, inplace = True)
         demand_sorted.sort_values(by=['Score'], axis=0, ascending=False, inplace = True)
         #supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True, inplace = True)
-        supply_sorted.sort_values(by=['Is_new', 'Score'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
+        #supply_sorted.sort_values(by=['Is_new', 'Score'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
+        supply_sorted.sort_values(by=['Score'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
         incidence_np = self.incidence.copy(deep=True).values      
 
         columns = self.supply.index.to_list()
@@ -978,6 +978,8 @@ def run_matching(demand, supply, score_function_string_demand, score_function_st
     if greedy_plural:
         matching.match_greedy(plural_assign=True)
         matches.append({'Name': 'Greedy_plural', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matching.match_greedy_DEPRECIATED()
+        matches.append({'Name': 'Greedy_plural_DEP', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if bipartite:
         matching.match_bipartite_graph()
         matches.append({'Name': 'Bipartite', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})

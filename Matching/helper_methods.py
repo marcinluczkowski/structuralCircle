@@ -143,52 +143,77 @@ def barplot_sns(result_df, normalize = True, style = 'ticks', font_scale = 1.1, 
     if normalize:
         result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
 
-def plot_savings(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
+def plot_savings(result_df, type, normalize = True, style = 'ticks', font_scale = 1.1, 
+                 show_fig = True,save_fig = False, **kwargs):
     #plt.figure()
     if normalize: # normalize the dataframe according to best score in each row
         result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
 
     # Setting for the plot    
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-
+    
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
-    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
-    plot.set(xlabel='Elements (Demand : Supply)', ylabel='Normalised score(GWP) savings')
+    plot = sns.lineplot(data=result_df, palette="tab10", dashes = False, markers=True)
+    plot.set(xlabel='Elements (Demand : Supply)', ylabel='(GWP) score savings [%]')
     plt.xticks(rotation=30)
-
+    plt.ylim((90, None))
+    legend = plt.legend()
+    # get label texts inside legend and set font size
+    for text in legend.get_texts():
+        text.set_fontsize(kwargs['xtick.labelsize'])    
+    plt.tight_layout()
     if save_fig:
-        f_name = "score saved"
+        f_name = f"score saved {type}_2"
         plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+    if show_fig:
+        plt.show()
+    plt.close()
+def plot_old(result_df, type, normalize = True, style = 'ticks', font_scale = 1.1, 
+             show_fig = True, save_fig = False, **kwargs):
+    
+    if normalize: # normalize the dataframe according to best score in each row
+        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
 
-    plt.show()
-
-def plot_old(result_df, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
     plt.figure()
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
-    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
-    plot.set(xlabel='Elements (Demand : Supply)', ylabel='Normalise % of substitutions')
+    plot = sns.lineplot(data=result_df, palette="tab10", dashes = False, markers=True)
+    plot.set(xlabel='Elements (Demand : Supply)', ylabel='Substitutions ratio [%]')
     plt.xticks(rotation=30)
 
+    # adjust font on labels
+    legend = plt.legend()
+    for text in legend.get_texts():
+        text.set_fontsize(kwargs['xtick.labelsize'])  
+    plt.tight_layout()
     if save_fig:
-        f_name = 'reused elements'
+        f_name = f'reused elements {type}_2'
         plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
-
-
-    plt.show()
-
-def plot_time(result_df, style = 'ticks', font_scale = 1.1, save_fig = False, **kwargs):
+    if show_fig:
+        plt.show()
+    plt.close()
+def plot_time(result_df, type, style = 'ticks', font_scale = 1.1, 
+              show_fig = True, save_fig = False, **kwargs):
     #plt.figure()
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    plot = sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True)
+    #palette names = 'tab10'
+    
+    plot = sns.lineplot(data=result_df.add(0.001), palette="tab10", dashes = False, markers=True)
     plot.set(yscale="log", xlabel='Elements (Demand : Supply)', ylabel='Time [s]')
     plt.xticks(rotation=30)
+    
+    
+    # adjust font on labels
+    legend = plt.legend()
+    for text in legend.get_texts():
+        text.set_fontsize(kwargs['xtick.labelsize'])  
+    plt.tight_layout()
     if save_fig:
-        f_name = 'time plot'
+        f_name = f'time plot {type}2'
         plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
-
-    plt.show()
-
+    if show_fig:
+        plt.show()
+    plt.close()
 def plot_bubble(demand, supply, **kwargs):
 
     # if close to one another, don't add but increase size:

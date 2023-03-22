@@ -268,8 +268,8 @@ if __name__ == "__main__":
     
     # Generate a set of unique trusses from CSV file:
     PATH = "Data\\CSV files trusses\\truss_all_types_beta_4.csv"
-    save_figs = True
-    save_csv = True
+    save_figs = False
+    save_csv = False
     #PATH =  "Data\\CSV files trusses\\truss_all_types_beta_second_version.csv" Test with another dataset
     trusses = create_trusses_from_JSON(PATH)
     truss_elements = elements_from_trusses(trusses)
@@ -297,7 +297,7 @@ if __name__ == "__main__":
     amounts = [
         # test
         # [15,10],
-        # [25,20],
+        [25,20],
         # [35,30],
         # variable ratios
         # [985,15],
@@ -326,7 +326,7 @@ if __name__ == "__main__":
         # [512,5120],
         # [1024,10240],
         #only without MIP
-        [2048,20480],
+        # [2048,20480],
         # [4096,40960],
         ]
 
@@ -422,7 +422,7 @@ if __name__ == "__main__":
     time_1 = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
     name_1 = "Assignments"
     assignment_path = f'Results/Supply Assignments/{time_1}_{name_1}_score_amount.xlsx'
-    write_assignments = True
+    write_assignments = False
     if write_assignments:
         with pd.ExcelWriter(assignment_path) as writer:
             for i, df_sheet in enumerate(supply_ass_df_list):

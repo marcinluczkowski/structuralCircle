@@ -451,21 +451,29 @@ class Matching():
         original_demand = self.demand.copy()
         original_weights = self.weights.copy()
         original_incidence = self.incidence.copy()
+        #FIXME: New elements must be last in self.supply
+        any_cutoff_found = False
+
+        #Remove new element rows
+        new_supplies = self.supply.iloc[-len(self.demand):].copy() #Only new elements
+        self.supply = self.supply.iloc[:-len(self.demand)].copy() #Only reused elements
+
 
         for match_edge in bipartite_matching.edges():
-            any_cutoff_found = False
             demand_index = match_edge.source_vertex["label"]
             supply_index = match_edge.target_vertex["label"]
+            if "N" in supply_index: #Skip if a New element is found
+                continue
             cut_off_length = float(self.supply.loc[supply_index]["Length"] - self.demand.loc[demand_index]["Length"])
-            if cut_off_length > 0.0: #Means we have a supply element. If cut_off_length == 0.0 we have a new element
+            if cut_off_length > 0.0: 
                 any_cutoff_found = True
                 self.supply.loc[supply_index,["Length"]] = self.demand.loc[demand_index]["Length"] #Set the supply length to the demand length
                 row_copy = self.supply.loc[supply_index].copy() #Copy supply element
                 row_copy["Length"] = cut_off_length #Set length of the copy supply element to the cut-off length
                 self.supply.loc[row_copy.name + "C"] = row_copy
-
+        self.supply = pd.concat([self.supply, new_supplies], ignore_index = False, sort = False)
         if any_cutoff_found:
-            self.demand['Score'] = self.demand.eval(self.score_function_string)
+            self.demand['Score'] = self.demand.eval(self.score_function_string) #NOT NEEDED
             self.supply['Score'] = self.supply.eval(self.score_function_string)
             self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
             self.incidence = self.evaluate_incidence()

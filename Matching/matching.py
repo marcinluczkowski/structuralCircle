@@ -440,8 +440,7 @@ class Matching():
         
         TANKEGANG: Kjør bipartite en gang, match elementer, legg avkappene tilbake og kjør en gang til
         """
-        if not self.graph:
-            self.add_graph()
+        self.add_graph()
         if self.graph.is_connected():
             # TODO separate disjoint graphs for efficiency
             logging.info("graph contains unconnected subgraphs that could be separated")
@@ -481,16 +480,84 @@ class Matching():
             self.add_graph()
             bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
             #Reset the dataframes to the originals without any cutoff
-            self.supply = original_supply
-            self.demand = original_demand
-            self.weights = original_weights
-            self.incidence = original_incidence
+        self.supply = original_supply
+        self.demand = original_demand
+        self.weights = original_weights
+        self.incidence = original_incidence
 
         for match_edge in bipartite_matching.edges():
             demand_index = match_edge.source_vertex["label"]
             supply_index = match_edge.target_vertex["label"]
             if "C" in supply_index:
-                supply_index = supply_index[:-1] #remove the "C" from the cut-off-elements
+                c_indx = supply_index.index("C")
+                supply_index = supply_index[:c_indx] #remove the "C" from the cut-off-elements
+            self.add_pair(demand_index, supply_index)
+
+    @_matching_decorator
+    def match_bipartite_mulitple_plural(self):
+        """Match using Maximum Bipartite Graphs. A maximum matching is a set of edges such that each vertex is
+        incident on at most one matched edge and the weight of such edges in the set is as large as possible.
+        
+        TANKEGANG: Kjør bipartite en gang, match elementer, legg avkappene tilbake og kjør en gang til
+        """
+        self.add_graph()
+        if self.graph.is_connected():
+            # TODO separate disjoint graphs for efficiency
+            logging.info("graph contains unconnected subgraphs that could be separated")
+        bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
+        
+        original_supply = self.supply.copy()
+        original_demand = self.demand.copy()
+        original_weights = self.weights.copy()
+        original_incidence = self.incidence.copy()
+        #FIXME: New elements must be last in self.supply
+        any_cutoff_found = True
+        iterations = 0
+        while any_cutoff_found:
+            any_cutoff_found = False
+            #Remove new element rows
+            new_supplies = self.supply.iloc[-len(self.demand):].copy() #Only new elements
+            self.supply = self.supply.iloc[:-len(self.demand)].copy() #Only reused elements
+            for match_edge in bipartite_matching.edges():
+                demand_index = match_edge.source_vertex["label"]
+                supply_index = match_edge.target_vertex["label"]
+                if "N" in supply_index: #Skip if a New element is found
+                    continue
+                cut_off_length = float(self.supply.loc[supply_index]["Length"] - self.demand.loc[demand_index]["Length"])
+                if cut_off_length > 0.0: 
+                    any_cutoff_found = True
+                    self.supply.loc[supply_index,["Length"]] = self.demand.loc[demand_index]["Length"] #Set the supply length to the demand length
+                    row_copy = self.supply.loc[supply_index].copy() #Copy supply element
+                    row_copy["Length"] = cut_off_length #Set length of the copy supply element to the cut-off length
+                    if "C" not in row_copy.name:
+                        self.supply.loc[row_copy.name + f"C{iterations}"] = row_copy
+                    else:
+                        new_name = row_copy.name[:row_copy.name.index("C")+1] + f"_{iterations}"
+                        self.supply.loc[new_name] = row_copy
+
+            self.supply = pd.concat([self.supply, new_supplies], ignore_index = False, sort = False)
+            if any_cutoff_found:
+                self.demand['Score'] = self.demand.eval(self.score_function_string) #NOT NEEDED
+                self.supply['Score'] = self.supply.eval(self.score_function_string)
+                self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
+                self.incidence = self.evaluate_incidence()
+                self.weights = self.evaluate_weights()
+                self.add_graph()
+                bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
+            
+            iterations += 1
+        #Reset the dataframes to the originals without any cutoff
+        self.supply = original_supply
+        self.demand = original_demand
+        self.weights = original_weights
+        self.incidence = original_incidence
+        print(f"Bipartite plural runs {iterations} iterations")
+        for match_edge in bipartite_matching.edges():
+            demand_index = match_edge.source_vertex["label"]
+            supply_index = match_edge.target_vertex["label"]
+            if "C" in supply_index:
+                c_indx = supply_index.index("C")
+                supply_index = supply_index[:c_indx] #remove the "C" from the cut-off-elements
             self.add_pair(demand_index, supply_index) 
 
 
@@ -1016,6 +1083,10 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
     if bipartite_plural:
         matching.match_bipartite_plural()
         matches.append({'Name': 'Bipartite plural','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
+
+        matching.match_bipartite_mulitple_plural()
+        matches.append({'Name': 'Bipartite plural multi','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
     # TODO convert list of dfs to single df
     return matches

@@ -324,5 +324,8 @@ def add_graph_plural(demand_matrix, supply_matrix, weight_matrix, incidence_matr
 
 #def add_cutt_off
 
+def count_matches(matches, algorithm):
+    return matches.pivot_table(index = [algorithm], aggfunc = 'size')
+
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

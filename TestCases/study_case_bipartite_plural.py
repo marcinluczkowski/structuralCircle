@@ -29,8 +29,8 @@ supply_coords.loc[len(supply_coords)] = storlien
 
 
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-demand = hm.create_random_data_demand(demand_count=10, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],new_lat = new_coordinates["Latitude"], new_lon = new_coordinates["Longitude"])
-supply = hm.create_random_data_supply(supply_count=10,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords)
+demand = hm.create_random_data_demand(demand_count=200, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],new_lat = new_coordinates["Latitude"], new_lon = new_coordinates["Longitude"])
+supply = hm.create_random_data_supply(supply_count=200,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords)
 
 score_function_string_wo_transportation = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, distance = Distance, include_transportation=False)"
 
@@ -42,6 +42,13 @@ print(simple_pairs_wo_transportation)
 print()
 print("Simple results without transportation LCA")
 print(simple_results_wo_transportation)
+
+print("Bipartite plural matches:")
+print("\n",hm.count_matches(simple_pairs_wo_transportation, algorithm = "Bipartite plural"))
+print("Bipartite plural multi matches:")
+print("\n",hm.count_matches(simple_pairs_wo_transportation, algorithm = "Bipartite plural multi"))
+print("Greedy plural matches:")
+print("\n",hm.count_matches(simple_pairs_wo_transportation, algorithm = "Greedy_plural"))
 
 """
 score_function_string_transportation = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor,distance = Distance, include_transportation=True)"

@@ -35,7 +35,7 @@ plot_kwargs = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.lab
                 'xtick.labelsize': 32.0, 'ytick.labelsize': 32.0,
                 'legend.fontsize' : 'large', 'lines.linewidth' : 5, 'legend.fancybox' : False, 'legend.frameon' : False}
 save_figs = True
-show_figs = False
+show_figs = True
 #figsize = (10,10)
 # plot hexbin of all elements
 
@@ -48,10 +48,10 @@ show_figs = False
 
 
 ratio_or_amount = 'amount_2'
-plot_savings(var_score_df, save_fig = save_figs, show_fig= show_figs, type= ratio_or_amount, **plot_kwargs) 
-plot_old(var_sub_df, save_fig = save_figs, show_fig= show_figs, type= ratio_or_amount, **plot_kwargs) 
+# plot_savings(var_score_df, save_fig = save_figs, show_fig= show_figs, type= ratio_or_amount, **plot_kwargs) 
+# plot_old(var_sub_df, save_fig = save_figs, show_fig= show_figs, type= ratio_or_amount, **plot_kwargs) 
 plot_time(var_time_df, save_fig = save_figs, show_fig= show_figs, type= ratio_or_amount, **plot_kwargs)
-
+#plt.annotate('*', xy = res)
 
 #read the csv files into dataframes
 var_score_ratio_df =  pd.read_csv(r'Results\CSV_Matching\2023-02-22_21-53_Result_var_ratio_google_score.csv', index_col=0).astype(float)
@@ -67,7 +67,7 @@ var_time_ratio_df.rename(mapper = name_mapper, axis = 1, inplace = True)
 
 
 amount = 'ratio'
-plot_savings(var_score_ratio_df, save_fig = save_figs, show_fig= show_figs, type= amount, **plot_kwargs) 
+#plot_savings(var_score_ratio_df, save_fig = save_figs, show_fig= show_figs, type= amount, **plot_kwargs) 
 #plot_old(var_sub_ratio_df, save_fig = save_figs,  show_fig= show_figs, type= amount, **plot_kwargs) 
 #plot_time(var_time_ratio_df, save_fig = save_figs,  show_fig= show_figs, type= amount, **plot_kwargs)
 

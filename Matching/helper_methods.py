@@ -197,12 +197,14 @@ def plot_time(result_df, type, style = 'ticks', font_scale = 1.1,
     #plt.figure()
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
     #palette names = 'tab10'
-    
+    result_df.replace(0, np.nan, inplace = True)
     plot = sns.lineplot(data=result_df.add(0.001), palette="tab10", dashes = False, markers=True)
     plot.set(yscale="log", xlabel='Elements (Demand : Supply)', ylabel='Time [s]')
-    plt.xticks(rotation=30)
-    
-    
+    plt.xticks(rotation=65)
+    #plt.axhline(1.0, linestyle = ':', color = 'k')
+    plt.vlines(x='1024:10240', ymin=result_df.loc['1024:10240', 'MIP'] - 1800, ymax=result_df.loc['1024:10240', 'MIP'] + 5000, 
+               linewidth = kwargs['lines.linewidth'], colors='k', ls=':', lw=2, label=None)
+    plt.text('1024:10240', result_df.loc['1024:10240', 'MIP'], '*', fontsize = kwargs['xtick.labelsize'])
     # adjust font on labels
     legend = plt.legend()
     for text in legend.get_texts():

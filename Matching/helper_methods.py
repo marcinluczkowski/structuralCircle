@@ -307,7 +307,10 @@ def create_random_population_genetic(chromosome_length, requested_population_siz
     return initial_population
 
 def add_graph_plural(demand_matrix, supply_matrix, weight_matrix, incidence_matrix):
-    """Add a graph notation based on incidence matrix"""
+    """Add a graph notation based on incidence matrix
+    
+    Not used
+    """
     vertices = [0]*len(demand_matrix.index) + [1]*len(supply_matrix.index)
     num_rows = len(demand_matrix.index)
     edges = np.transpose(np.where(incidence_matrix))
@@ -322,9 +325,17 @@ def add_graph_plural(demand_matrix, supply_matrix, weight_matrix, incidence_matr
     graph.vs["label"] = list(demand_matrix.index)+list(supply_matrix.index) #vertice names
     return graph
 
-#def add_cutt_off
 
 def count_matches(matches, algorithm):
+    """Counts the number of plural matches for each supply element
+
+    Args:
+        matches (Pandas Dataframe): return dataframe of hm.extract_pairs_df()
+        algorithm (str): Name of algorithm in "matches"
+
+    Returns:
+        Pandas Dataframe: A count for each supply element
+    """
     return matches.pivot_table(index = [algorithm], aggfunc = 'size')
 
 

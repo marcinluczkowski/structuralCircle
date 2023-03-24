@@ -1,4 +1,6 @@
-[![DOI](https://zenodo.org/badge/574263139.svg)](https://zenodo.org/badge/latestdoi/574263139)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7766875.svg)](https://doi.org/10.5281/zenodo.7766875)
+
+
 # structuralCircle
 
 The repository contains data, tests and solutions related to the research project at Norwegian University of Science and Technology (NTNU).

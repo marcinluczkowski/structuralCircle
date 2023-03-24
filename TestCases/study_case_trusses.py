@@ -298,6 +298,7 @@ if __name__ == "__main__":
         # test
         # [15,10],
         # [25,20],
+        # [25,20],
         # [35,30],
         # variable ratios
         # [985,15],
@@ -395,7 +396,7 @@ if __name__ == "__main__":
     # Save to CSV:
 
     if save_csv:
-        name = "var_amount_40k_greedy_P"
+        name = "var_amount_40k"
         #name = 'var_ratio'
         time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
         results_score_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)

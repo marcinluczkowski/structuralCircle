@@ -439,8 +439,8 @@ class Matching():
         #For matrix fitness function:
         #############################
 
-        weights_negative = self.weights.copy(deep = True)
-        weights_negative.fillna(-1)
+        weights_negative = weights_new.copy()
+        weights_negative = weights_negative.fillna(-1.0)
         weights_negative_1d = weights_negative.to_numpy().flatten()
         weights_matrix_negative = np.array_split(weights_negative_1d, number_of_demand_elements)
         #############################
@@ -482,22 +482,39 @@ class Matching():
                 fitness = -10e10
             elif reward != 0:
                 fitness += 100/reward
-                  
             return fitness
         
         def fitness_func_matrix(solution, solution_idx):
-            #TODO (SIGURD): Decrease run-time by doing matrix-multiplication to evaluate fitness of solution rather than double for-loop
+            #This fitness function is NOT any faster than the original version! 
+            #What takes so long time with genetic is the fact that the fitness-function is called extremely many times
             fitness = 0
             reward = 0
             penalty = -max_weight
             solutions = np.array_split(solution, number_of_demand_elements)
             product = np.multiply(solutions, weights_matrix_negative) 
-            number_nan_match = np.count_nonzero(x == -1.0) #Number of matches that are not allowed 
+
+            #Checking how many supply elements that are assigned multiple times
+            duplicates = np.sum(solutions, axis = 0)[:-1] #Removing the last item since new elements can be assigned to several demand elements
+            num_supply_match_duplicates = np.count_nonzero(duplicates > 1)
+            if num_supply_match_duplicates > 1:
+                end = time.time()
+                print("Matrix time:", round(end-start, 10))
+                return -10e10
             
+            #Checking how many NaN-matches are in the oslution
+            number_nan_match = np.count_nonzero(product == -1.0) #Number of matches that are not allowed 
+            fitness += number_nan_match * penalty
 
+            #Checking how many supply elements that are matched with each demand element
+            num_supply_matches_demand = np.sum(solutions, axis = 1)
+            num_no_supply_matches_demand = np.count_nonzero(num_supply_matches_demand < 1)
+            num_supply_matches_demand_above_one = np.count_nonzero(num_supply_matches_demand > 1)
+            fitness += num_no_supply_matches_demand * penalty + 10 * num_supply_matches_demand_above_one * penalty
 
-
-
+            #Adding rewards for matching reclaimed elements
+            reward += np.sum(product) + number_nan_match #Must add number_nan_match to get the sum of weights for possible matches
+            if reward != 0:
+                fitness += 100/reward
             return fitness
             
         #Using pygad-module
@@ -507,7 +524,8 @@ class Matching():
             initial_population=initial_population,
             num_generations=int((len(self.demand)+len(self.supply))),
             num_parents_mating=int(np.ceil(solutions_per_population/2)),
-            fitness_func=fitness_func,
+            #fitness_func=fitness_func_matrix,
+            fitness_func = fitness_func,
             # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
             # (also possible with: gene_space=[0, 1])
             #mutation_by_replacement=True,

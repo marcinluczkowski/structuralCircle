@@ -31,10 +31,10 @@ score_function_string_supply_transportation = "@lca.calculate_lca_supply(length=
 
 #result_with_transportation = run_matching(demand, supply, score_function_string_demand,score_function_string_supply_transportation, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True,brute=True)
 score_function_string_supply_wo_transportation = "@lca.calculate_lca_supply(length=Length, area=Area, gwp_factor=Gwp_factor,demand_lat=Demand_lat,demand_lon=Demand_lon,supply_lat=Supply_lat,supply_lon=Supply_lon,include_transportation=False)"
-#hm.export_dataframe_to_csv(demand,r"C:\Users\sigur\OneDrive - NTNU\Masteroppgave\CSV\genetic_demand.csv")
-#hm.export_dataframe_to_csv(supply,r"C:\Users\sigur\OneDrive - NTNU\Masteroppgave\CSV\genetic_supply.csv")
+hm.export_dataframe_to_csv(demand,r"C:\Users\sigur\OneDrive - NTNU\Masteroppgave\CSV\genetic_demand.csv")
+hm.export_dataframe_to_csv(supply,r"C:\Users\sigur\OneDrive - NTNU\Masteroppgave\CSV\genetic_supply.csv")
 
-result_wo_transportation = run_matching(demand, supply, score_function_string_demand,score_function_string_supply_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,brute=True)
+result_wo_transportation = run_matching(demand, supply, score_function_string_demand,score_function_string_supply_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,brute=False)
 
 
 

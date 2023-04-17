@@ -29,8 +29,8 @@ supply_coords.loc[len(supply_coords)] = storlien
 
 
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-demand = hm.create_random_data_demand(demand_count=100, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],new_lat = new_coordinates["Latitude"], new_lon = new_coordinates["Longitude"], length_min = 1, length_max = 2.0, area_min = 0.15, area_max = 0.30)
-supply = hm.create_random_data_supply(supply_count=100,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords, length_min = 30, length_max = 50.0, area_min = 0.15, area_max = 0.30)
+demand = hm.create_random_data_demand(demand_count=10, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],new_lat = new_coordinates["Latitude"], new_lon = new_coordinates["Longitude"], length_min = 1, length_max = 2.0, area_min = 0.15, area_max = 0.30)
+supply = hm.create_random_data_supply(supply_count=10,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords, length_min = 30, length_max = 50.0, area_min = 0.15, area_max = 0.30)
 
 score_function_string_wo_transportation = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, distance = Distance, include_transportation=False)"
 

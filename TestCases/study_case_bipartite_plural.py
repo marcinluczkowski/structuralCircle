@@ -29,12 +29,12 @@ supply_coords.loc[len(supply_coords)] = storlien
 
 
 constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-demand = hm.create_random_data_demand(demand_count=1000, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],new_lat = new_coordinates["Latitude"], new_lon = new_coordinates["Longitude"], length_min = 1, length_max = 2.0, area_min = 0.15, area_max = 0.30)
-supply = hm.create_random_data_supply(supply_count=1000,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords, length_min = 30, length_max = 50.0, area_min = 0.15, area_max = 0.30)
+demand = hm.create_random_data_demand(demand_count=10, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],new_lat = new_coordinates["Latitude"], new_lon = new_coordinates["Longitude"], length_min = 1, length_max = 10.0, area_min = 0.15, area_max = 0.30)
+supply = hm.create_random_data_supply(supply_count=10,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords, length_min = 1, length_max = 30.0, area_min = 0.15, area_max = 0.30)
 
 score_function_string_wo_transportation = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, distance = Distance, include_transportation=False)"
 
-result_wo_transportation = run_matching(demand, supply, score_function_string_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=False, greedy_plural = False, bipartite=False,genetic=False,brute=False, bipartite_plural = True)
+result_wo_transportation = run_matching(demand, supply, score_function_string_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=False, greedy_plural = True, bipartite=False,genetic=False,brute=False, bipartite_plural = True)
 simple_pairs_wo_transportation = hm.extract_pairs_df(result_wo_transportation)
 simple_results_wo_transportation = hm.extract_results_df(result_wo_transportation, column_name = "LCA")
 print("Simple pairs without transportation LCA:")

@@ -41,7 +41,14 @@ def remove_alternatives(x, y):
         return x
 
 def transform_weights(weights):
-    """Transform the weight matrix to only contain one column with new elements in stead of one column for each new element"""
+    """Transform the weight matrix to only contain one column with new elements in stead of one column for each new element
+
+    Args:
+        DataFrame: weight matrix
+
+    Returns:
+        DataFrame: weight matrix
+    """
     weights = weights.copy(deep = True)
     cols=list(weights.columns)[-len(weights):]
     weights["N"]=weights[cols].sum(axis=1)
@@ -95,10 +102,15 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
 
 
 def extract_brute_possibilities(incidence_matrix):
-    """Extracts all demand matching possibilities from incidence matrix.
-    
-    returns a 3D list where each outer list contains possibilities for each row based on incidence matrix.
+    """Extracts all matching possibilities based on the incidence matrix.
+
+    Args:
+        Dataframe: incidence matrix
+
+    Returns:
+        list: three-dimensional list
     """
+
     binary_incidence = incidence_matrix*1 #returnes incidence matrix with 1 and 0 instead od True/False
     
     three_d_list=[]
@@ -168,15 +180,25 @@ def display_graph(matching, graph_type='rows', show_weights=True, show_result=Tr
             edge_curved=0.15
         )
         plt.show()
-
-def extract_genetic_solution(weights, best_solution, number_of_demand_elements):
-    """Converts the best solution a column containing the supply matches for each demand element. 
+"""Converts the best solution a column containing the supply matches for each demand element. 
     This column is added to the weight-matrix in order to visually check if the matching makes sense
     - weights: Pandas Dafarame
     - best_solution: 1d-list with 0's and 1's
     - number_of_demand_elements: integer
 
     Returns a pandas dataframe
+    """
+def extract_genetic_solution(weights, best_solution, number_of_demand_elements):
+    """Converts the best solution into a column containing the supply matches for each demand element. 
+    This column is added to the weight-matrix in order to visually check if the matching makes sense
+
+    Args:
+        weights (DataFrame): weight matrix
+        best_solution (list): list of integers containing the best solution from genetic algorithm
+        number_of_demand_elements (int): number of demand elements
+
+    Returns:
+        DataFrame: The weight matrix with a new column containing the matches for each demand element
     """
     result = weights.copy(deep = True)
     buckets = np.array_split(best_solution, number_of_demand_elements)
@@ -195,14 +217,17 @@ def extract_genetic_solution(weights, best_solution, number_of_demand_elements):
         match_column.append(match)
     result["Matches from genetic"] = match_column
     return result
-           
-def print_genetic_solution(weights, best_solution, number_of_demand_elements):
-    """Print the genetic solution in a readable way to visually evaluate if the solution makes sence. Used for debugging
-    - weights: Pandas Dafarame
-    - best_solution: 1d-list with 0's and 1's
-    - number_of_demand_elements: integer
 
-    Returns a pandas dataframe
+def print_genetic_solution(weights, best_solution, number_of_demand_elements):
+    """Prints the genetic solution in a readable way to visually evaluate if the solution makes sence. Used for debugging
+
+    Args:
+        weights (DataFrame): weight matrix
+        best_solution (list): list of integers containing the best solution from genetic algorithm
+        number_of_demand_elements (int): number of demand elements
+
+    Returns:
+        DataFrame: The weight matrix with a new column containing the matches for each demand element
     """
     result = weights.copy(deep = True)
     buckets = np.array_split(best_solution, number_of_demand_elements)
@@ -221,9 +246,23 @@ def print_genetic_solution(weights, best_solution, number_of_demand_elements):
     return result
 
 def export_dataframe_to_csv(dataframe, file_location):
+    """Exports a dataframe to a csv file
+
+    Args:
+        dataframe (DataFrame): dataframe
+        file_location (string): location of the new file
+    """
     dataframe.to_csv(file_location)
 
 def import_dataframe_from_csv(file_location):
+    """Creates a dataframe from a csv file in a given file location
+
+    Args:
+        file_location (string): location of imported csv-file
+
+    Returns:
+        DataFrame: dataframe
+    """
     dataframe = pd.read_csv(file_location)
     row_names = list(dataframe.index)
     new_row_names = list(dataframe["Unnamed: 0"])

@@ -74,19 +74,12 @@ class Matching():
         self.result = None  #saves latest result of the matching
         self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id']) #saves latest array of pairs
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
-        # self.weights = None
         self.constraints = constraints
-        
-
         self.solution_time = None
         self.solution_limit = solution_limit           
-       
-        
-
-        # create incidence and weight for the method
+        #Create incidence and weight for the method
         self.incidence = self.evaluate_incidence()
         self.weights = self.evaluate_weights()
-
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
 
     def __copy__(self):
@@ -207,86 +200,6 @@ class Matching():
     ### MATCHING ALGORITHMS
 
     @_matching_decorator
-    def match_brute_DEPRECIATED(self, plural_assign=False):
-        """Brute forces all possible solutions"""
-        
-        weights = self.weights
-        n_columns=len(self.weights.columns)
-        arrays=[]
-        bestmatch=[]
-        lowest_lca=10e10
-
-        for combination in combinations(range(n_columns), 1):
-            arr = np.zeros(n_columns)
-            arr[list(combination)] = 1
-            arrays.append(arr.tolist())
-        for subset in itertools.permutations(arrays,len(self.demand)):
-            subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
-            multiplum=weights.multiply(subset_df,fill_value=-1)
-            invalid_solution=multiplum.isin([-1]).any().any()
-            if not invalid_solution:
-                sum=multiplum.values.sum()
-                if sum<lowest_lca:
-                    lowest_lca=sum
-                    bestmatch=subset_df
-        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
-        for pair in coordinates_of_pairs:
-            self.add_pair(pair[0],pair[1])
-        pass
-
-    @_matching_decorator
-    def match_brute_DEPRECIATED_vol2(self, plural_assign=False):
-        """Brute forces all possible solutions"""
-        
-        weights = self.weights
-        count=0
-        bestmatch=[]
-        lowest_lca=10e10
-        possible_solutions=hm.extract_brute_possibilities(self.incidence)
-        for subset in itertools.product(*possible_solutions):
-            count+=1
-            subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
-            sum=subset_df.sum()
-            invalid_solution=(sum>1).any()
-            if not invalid_solution:
-                multiplum=weights.multiply(subset_df,fill_value=0)
-                LCAsum=multiplum.values.sum()
-                if LCAsum<lowest_lca:
-                    lowest_lca=LCAsum
-                    bestmatch=subset_df
-        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
-        for pair in coordinates_of_pairs:
-            self.add_pair(pair[0],pair[1])
-        # TODO implement it
-        pass
-
-
-    @_matching_decorator
-    def match_brute_DEPRECIATED_vol3(self, plural_assign=False):
-        """Brute forces all possible solutions"""
-        
-        weights = self.weights
-        bestmatch=[]
-        lowest_lca=10e10
-        possible_solutions=hm.extract_brute_possibilities(self.incidence)
-
-        for subset in itertools.product(*possible_solutions):
-            column_sum=np.sum(list(subset),axis=0)[:-1]
-            invalid_solution=len([*filter(lambda x:x>1,column_sum)])>0
-            if not invalid_solution:
-                subset_df=pd.DataFrame(data=list(subset),index=weights.index,columns=weights.columns)
-                multiplum=weights.multiply(subset_df,fill_value=0)
-                LCAsum=multiplum.values.sum()
-                if LCAsum<lowest_lca:
-                    lowest_lca=LCAsum
-                    bestmatch=subset_df
-        coordinates_of_pairs = [(f"D{x}", bestmatch.columns[y]) for x, y in zip(*np.where(bestmatch.values == 1))]
-        for pair in coordinates_of_pairs:
-            self.add_pair(pair[0],pair[1])
-        # TODO implement it
-        pass
-
-    @_matching_decorator
     def match_brute(self, plural_assign=False):
         """Brute forces all possible solutions"""
         weights = self.weights
@@ -314,12 +227,9 @@ class Matching():
         """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
 
         sorted_weights = self.weights.join(self.demand.Score)
-
-
         sorted_weights = sorted_weights.sort_values(by='Score', axis=0, ascending=False)
         sorted_weights = sorted_weights.drop(columns=['Score'])
         #sorted_weights.replace(np.nan, np.inf, inplace=True)  
-
         score = self.supply.Score.copy()
 
         for i in range(sorted_weights.shape[0]):
@@ -414,8 +324,6 @@ class Matching():
         for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])  
         
-
-    # TODO (SIGURD) WORK IN PROGRESS: MAKING A NEW GENETIC ALGORITHM
     @_matching_decorator
     def match_genetic_algorithm(self):
         """Genetic algorithm with the initial population with random solutions (not necessary an actual solution)"""
@@ -443,7 +351,15 @@ class Matching():
 
         def fitness_func(solution, solution_idx):
             """Fitness function to calculate fitness value of chromosomes
-            Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA"""
+            Genetic algorithm expects a maximization fitness function => when we are minimizing lca we must divide by 1/LCA
+            
+            Args:
+                solution (list): a list of integers representing the solution of the matching
+                solution_idx (int): the index of the solution
+
+            Returns:
+                float: the fitness of the solution
+            """
             fitness = 0
             reward = 0
             solutions = np.array_split(solution, number_of_demand_elements)
@@ -477,6 +393,15 @@ class Matching():
         def fitness_func_matrix(solution, solution_idx):
             #This fitness function is NOT any faster than the original version! 
             #What takes so long time with genetic is the fact that the fitness-function is called extremely many times
+            """_summary_
+
+            Args:
+                solution (list): a list of integers representing the solution of the matching
+                solution_idx (int): the index of the solution
+
+            Returns:
+                float: the fitness of the solution
+            """
             fitness = 0
             reward = 0
             penalty = -max_weight

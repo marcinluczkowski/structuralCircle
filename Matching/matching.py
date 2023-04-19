@@ -598,13 +598,10 @@ class Matching():
         original_weights = self.weights.copy()
         original_incidence = self.incidence.copy()
 
-        cutoff_weights = []
-        cutoff_incidence = []
-        cutoff_supply = []
-        cutoff_names = []
-        weights_np = self.weights.to_numpy()
-        weights_np_trans = weights_np.transpose()
-        supply_np = self.supply.to_numpy()
+        weights_np = list(self.weights.to_numpy())
+        weights_np_trans = list(np.transpose(weights_np))
+        incidence_np_trans = list(np.transpose(self.incidence.to_numpy()))
+        supply_np = list(self.supply.to_numpy())
         weights_columns = list(self.weights.columns)
         weights_rows = list(self.weights.index)
         score_index = list(self.supply.columns).index("Score")
@@ -627,21 +624,20 @@ class Matching():
                 supply_np[supply_index][score_index] = weights_np[demand_index][supply_index]
                 new_weights = list(map(lambda x: hm.remove_alternatives(x, row_copy[score_index]), weights_np_trans[supply_index]))
                 new_incidence = list(map(lambda x: not(np.isnan(x)), new_weights))
-                cutoff_weights.append(new_weights)
-                cutoff_incidence.append(new_incidence)
-                cutoff_supply.append(row_copy)
-                cutoff_names.append(supply_name + "C")
+                incidence_np_trans.append(np.array(new_incidence))
+                weights_np_trans.append(np.array(new_weights))
+                supply_np.append(np.array(row_copy))
+                weights_columns.append(supply_name + "C")
 
         if any_cutoff_found: #Add cutoffs and run the algorithm one more time. If not, the algorithm is NOT rerunned
             #Creating dataframes
-            weights_cutoff = pd.DataFrame(np.transpose(cutoff_weights), index = weights_rows, columns = cutoff_names)
-            incidence_cutoff = pd.DataFrame(np.transpose(cutoff_incidence), index = weights_rows, columns = cutoff_names)
-            supply_cutoff = pd.DataFrame(cutoff_supply, index = cutoff_names, columns = list(self.supply.columns))
+            weights_np = np.transpose(weights_np_trans)
+            incidence_np = np.transpose(incidence_np_trans)
 
-            #Adding cutoffs to self-dataframes
-            self.weights = pd.concat([self.weights, weights_cutoff], ignore_index = False, sort = False, axis = 1)
-            self.incidence = pd.concat([self.incidence, incidence_cutoff], ignore_index = False, sort = False, axis = 1)
-            self.supply = pd.concat([self.supply, supply_cutoff], ignore_index = False, sort = False)
+            #Editing the self-dataframes
+            self.weights = pd.DataFrame(weights_np, index = weights_rows, columns = weights_columns)
+            self.incidence = pd.DataFrame(incidence_np, index = weights_rows, columns = weights_columns)
+            self.supply = pd.DataFrame(supply_np, index = weights_columns, columns = list(self.supply.columns))
             #Evaluate new possible matches and run Maximum Bipartite Matching once more
 
             self.add_graph()
@@ -1358,13 +1354,16 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
 
         matching.match_bipartite_plural_numpy()
         matches.append({'Name': 'Bipartite plural numpy','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
+        matching.match_bipartite_plural_numpy_lists()
+        matches.append({'Name': 'Bipartite plural numpy NEW','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
         
 
 
-        matching.match_bipartite_multiple_plural()
-        matches.append({'Name': 'Bipartite plural multi','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
-        matching.match_bipartite_plural_multiple_numpy()
-        matches.append({'Name': 'Bipartite plural multi numpy','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        #matching.match_bipartite_multiple_plural()
+        #matches.append({'Name': 'Bipartite plural multi','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        #matching.match_bipartite_plural_multiple_numpy()
+        #matches.append({'Name': 'Bipartite plural multi numpy','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
 
 

@@ -608,6 +608,7 @@ class Matching():
         weights_columns = list(self.weights.columns)
         weights_rows = list(self.weights.index)
         score_index = list(self.supply.columns).index("Score")
+        any_cutoff_found = False
 
         #Iterate through matches
         for match_edge in bipartite_matching.edges():
@@ -620,6 +621,7 @@ class Matching():
 
             new_score = supply_np[supply_index][score_index] - weights_np[demand_index][supply_index]
             if new_score > 0:
+                any_cutoff_found = True
                 row_copy = supply_np[supply_index].copy()
                 row_copy[score_index] = new_score
                 supply_np[supply_index][score_index] = weights_np[demand_index][supply_index]
@@ -630,19 +632,109 @@ class Matching():
                 cutoff_supply.append(row_copy)
                 cutoff_names.append(supply_name + "C")
 
-        #Creating dataframes
-        weights_cutoff = pd.DataFrame(np.transpose(cutoff_weights), index = weights_rows, columns = cutoff_names)
-        incidence_cutoff = pd.DataFrame(np.transpose(cutoff_incidence), index = weights_rows, columns = cutoff_names)
-        supply_cutoff = pd.DataFrame(cutoff_supply, index = cutoff_names, columns = list(self.supply.columns))
+        if any_cutoff_found: #Add cutoffs and run the algorithm one more time. If not, the algorithm is NOT rerunned
+            #Creating dataframes
+            weights_cutoff = pd.DataFrame(np.transpose(cutoff_weights), index = weights_rows, columns = cutoff_names)
+            incidence_cutoff = pd.DataFrame(np.transpose(cutoff_incidence), index = weights_rows, columns = cutoff_names)
+            supply_cutoff = pd.DataFrame(cutoff_supply, index = cutoff_names, columns = list(self.supply.columns))
 
-        #Adding cutoffs to self-dataframes
-        self.weights = pd.concat([self.weights, weights_cutoff], ignore_index = False, sort = False, axis = 1)
-        self.incidence = pd.concat([self.incidence, incidence_cutoff], ignore_index = False, sort = False, axis = 1)
-        self.supply = pd.concat([self.supply, supply_cutoff], ignore_index = False, sort = False)
-        #Evaluate new possible matches and run Maximum Bipartite Matching once more
+            #Adding cutoffs to self-dataframes
+            self.weights = pd.concat([self.weights, weights_cutoff], ignore_index = False, sort = False, axis = 1)
+            self.incidence = pd.concat([self.incidence, incidence_cutoff], ignore_index = False, sort = False, axis = 1)
+            self.supply = pd.concat([self.supply, supply_cutoff], ignore_index = False, sort = False)
+            #Evaluate new possible matches and run Maximum Bipartite Matching once more
 
+            self.add_graph()
+            bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
+
+            #Reset the dataframes to the originals without any cutoff
+            self.supply = original_supply
+            self.demand = original_demand
+            self.weights = original_weights
+            self.incidence = original_incidence
+
+        #Extract the matches
+        for match_edge in bipartite_matching.edges():
+            demand_index = match_edge.source_vertex["label"]
+            supply_index = match_edge.target_vertex["label"]
+            if "C" in supply_index:
+                c_indx = supply_index.index("C")
+                supply_index = supply_index[:c_indx] #remove the "C" from the cut-off-elements
+            self.add_pair(demand_index, supply_index)
+
+    @_matching_decorator
+    def match_bipartite_plural_multiple_numpy(self):
+        """Match using Maximum Bipartite Graphs. A maximum matching is a set of edges such that each vertex is
+        incident on at most one matched edge and the weight of such edges in the set is as large as possible.
+        
+        Runs Maximum Bipartite Matching once, cuts the matches if possible and runs Maximum Biparite Matching once more
+        """
         self.add_graph()
+        if self.graph.is_connected():
+            # TODO separate disjoint graphs for efficiency
+            logging.info("graph contains unconnected subgraphs that could be separated")
         bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
+        
+        #Store the original data
+        original_supply = self.supply.copy()
+        original_demand = self.demand.copy()
+        original_weights = self.weights.copy()
+        original_incidence = self.incidence.copy()
+
+        weights_np = list(self.weights.to_numpy())
+        weights_np_trans = list(np.transpose(weights_np))
+        incidence_np = list(self.incidence.to_numpy())
+        incidence_np_trans = list(np.transpose(incidence_np))
+        supply_np = list(self.supply.to_numpy())
+        weights_columns = list(self.weights.columns)
+        weights_rows = list(self.weights.index)
+        score_index = list(self.supply.columns).index("Score")
+
+        any_cutoff_found = True
+        iteration = 0
+        while any_cutoff_found:
+            #print(iteration)
+            any_cutoff_found = False
+            
+            #Iterate through matches
+            for match_edge in bipartite_matching.edges():
+                demand_name = match_edge.source_vertex["label"]
+                supply_name = match_edge.target_vertex["label"]
+                if "N" in supply_name: #Skip if a New element is found
+                    continue
+                demand_index = weights_rows.index(demand_name)
+                supply_index = weights_columns.index(supply_name)
+
+                new_score = supply_np[supply_index][score_index] - weights_np[demand_index][supply_index]
+                if new_score > 0:
+                    any_cutoff_found = True
+                    row_copy = supply_np[supply_index].copy()
+                    row_copy[score_index] = new_score
+                    supply_np[supply_index][score_index] = weights_np[demand_index][supply_index]
+                    new_weights = list(map(lambda x: hm.remove_alternatives(x, row_copy[score_index]), weights_np_trans[supply_index]))
+                    new_incidence = list(map(lambda x: not(np.isnan(x)), new_weights))
+                    incidence_np_trans.append(np.array(new_incidence))
+                    weights_np_trans.append(np.array(new_weights))
+                    supply_np.append(np.array(row_copy))
+                    if "C" not in supply_name:
+                        weights_columns.append(supply_name + f"C{iteration}")
+                    else:
+                        cutoff_name = supply_name[:supply_name.index("C") + 1] + f"_{iteration}"
+                        weights_columns.append(cutoff_name)
+            if any_cutoff_found:
+                weights_np = np.transpose(weights_np_trans)
+                incidence_np = np.transpose(incidence_np_trans)
+
+                #Editing the self-dataframes
+                self.weights = pd.DataFrame(weights_np, index = weights_rows, columns = weights_columns)
+                self.incidence = pd.DataFrame(incidence_np, index = weights_rows, columns = weights_columns)
+                self.supply = pd.DataFrame(supply_np, index = weights_columns, columns = list(self.supply.columns))
+
+                #Evaluate new possible matches and run Maximum Bipartite Matching once more
+                self.add_graph()
+                bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
+            
+            iteration += 1
 
         #Reset the dataframes to the originals without any cutoff
         self.supply = original_supply
@@ -660,7 +752,7 @@ class Matching():
             self.add_pair(demand_index, supply_index)
 
     @_matching_decorator
-    def match_bipartite_mulitple_plural(self):
+    def match_bipartite_multiple_plural(self):
         """Match using Maximum Bipartite Graphs. A maximum matching is a set of edges such that each vertex is
         incident on at most one matched edge and the weight of such edges in the set is as large as possible.
         
@@ -1258,19 +1350,23 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
         matches.append({'Name': 'Brute','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
     if bipartite_plural:
-        matching.match_bipartite_plural()
-        matches.append({'Name': 'Bipartite plural','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        #matching.match_bipartite_plural()
+        #matches.append({'Name': 'Bipartite plural','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
-        matching.match_bipartite_plural_inplace_dataframe_modification()
-        matches.append({'Name': 'Bipartite plural inplace dataframe','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        #matching.match_bipartite_plural_inplace_dataframe_modification()
+        #matches.append({'Name': 'Bipartite plural inplace dataframe','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
         matching.match_bipartite_plural_numpy()
         matches.append({'Name': 'Bipartite plural numpy','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
         
 
 
-        matching.match_bipartite_mulitple_plural()
+        matching.match_bipartite_multiple_plural()
         matches.append({'Name': 'Bipartite plural multi','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matching.match_bipartite_plural_multiple_numpy()
+        matches.append({'Name': 'Bipartite plural multi numpy','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+
+
 
     # TODO convert list of dfs to single df
     return matches

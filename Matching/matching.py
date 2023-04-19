@@ -1346,24 +1346,19 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
         matches.append({'Name': 'Brute','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
     if bipartite_plural:
-        #matching.match_bipartite_plural()
-        #matches.append({'Name': 'Bipartite plural','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matching.match_bipartite_plural()
+        matches.append({'Name': 'Bipartite plural','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
-        #matching.match_bipartite_plural_inplace_dataframe_modification()
-        #matches.append({'Name': 'Bipartite plural inplace dataframe','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matching.match_bipartite_plural_inplace_dataframe_modification()
+        matches.append({'Name': 'Bipartite plural inplace dataframe','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
         matching.match_bipartite_plural_numpy()
         matches.append({'Name': 'Bipartite plural numpy','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
-        matching.match_bipartite_plural_numpy_lists()
-        matches.append({'Name': 'Bipartite plural numpy NEW','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
-        
-
-
-        #matching.match_bipartite_multiple_plural()
-        #matches.append({'Name': 'Bipartite plural multi','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
-        #matching.match_bipartite_plural_multiple_numpy()
-        #matches.append({'Name': 'Bipartite plural multi numpy','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matching.match_bipartite_multiple_plural()
+        matches.append({'Name': 'Bipartite plural multi','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matching.match_bipartite_plural_multiple_numpy()
+        matches.append({'Name': 'Bipartite plural multi numpy','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
 
 

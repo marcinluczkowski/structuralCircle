@@ -850,7 +850,6 @@ def run_matching(demand, supply, score_function_string_demand,score_function_str
     if greedy_single:
         matching.match_greedy(plural_assign=False)
         matches.append({'Name': 'Greedy_single','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
-        result = hm.extract_pairs_df(matches)
     if greedy_plural:
         matching.match_greedy(plural_assign=True)
         matches.append({'Name': 'Greedy_plural', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})

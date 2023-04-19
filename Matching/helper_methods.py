@@ -195,7 +195,7 @@ def extract_genetic_solution(weights, best_solution, number_of_demand_elements):
         match_column.append(match)
     result["Matches from genetic"] = match_column
     return result
-            
+           
 def print_genetic_solution(weights, best_solution, number_of_demand_elements):
     """Print the genetic solution in a readable way to visually evaluate if the solution makes sence. Used for debugging
     - weights: Pandas Dafarame
@@ -220,84 +220,17 @@ def print_genetic_solution(weights, best_solution, number_of_demand_elements):
     result["Matches from genetic"] = match_column
     return result
 
+def export_dataframe_to_csv(dataframe, file_location):
+    dataframe.to_csv(file_location)
 
-def create_initial_population_genetic(binary_incidence, size_of_population, include_invalid_combinations):
-    """Creating initial population based valid solutions from the incidence matrix
-    Good, but itertools.product has very long runtime!!!
-    - binary incidence: Pandas dataframe
-    - size_of_population: Integer
-    - include_invalid_combinations: Boolean
-    
-    Returns an initial population as a nested list containing 0's and 1's
-    """
+def import_dataframe_from_csv(file_location):
+    dataframe = pd.read_csv(file_location)
+    row_names = list(dataframe.index)
+    new_row_names = list(dataframe["Unnamed: 0"])
+    row_dict = {row_names[i]: new_row_names[i] for i in range(len(row_names))}
+    dataframe.drop(columns=["Unnamed: 0"], inplace = True)
+    dataframe.rename(index=row_dict, inplace = True)
+    return dataframe
 
-    three_d_list=[]
-    incidence_list=binary_incidence.values.tolist()
-    valid_solutions = []
-    #Creates a 3d-list containing all possible locations of matches based on the incidence matrix
-    for row in incidence_list:
-        rowlist=[]
-        for i in range(len(row)):
-            if row[i]==1:
-                newlist=[0]*len(row)
-                newlist[i]=1
-                rowlist.append(newlist)
-        three_d_list.append(rowlist)
-
-    all_possible_solutions = list(itertools.product(*three_d_list)) #EXTREMELY LONG RUNTIME
-
-    if include_invalid_combinations: #Include invalid solutions, such as one demand element is matched with multiple supply elements
-        if len(all_possible_solutions) < size_of_population:
-            samples = all_possible_solutions
-        else:
-            samples = random.sample(all_possible_solutions, size_of_population) #Takes n random elements from the list containing all possible solutions
-        #initial_population = map(lambda x,y: x.append(y.flatten()), initial_population, samples)
-        initial_population = [sum(list(x), []) for x in samples]
-
-    else: #Only valid solutions are included in the initial population
-        number_of_possible_solutions = len(all_possible_solutions)
-        sample_size = min(int(np.sqrt(number_of_possible_solutions*np.log10(number_of_possible_solutions))), size_of_population*100)
-        if len(all_possible_solutions) <= sample_size: #If number of possible solutions is smaller than the sample size
-            solutions = all_possible_solutions
-        else:
-            solutions = random.sample(all_possible_solutions, sample_size) #Takes n random elements from the list containing all possible solutions
-        
-        #Evaluate if the samples are a valid solution or not
-        for subset in solutions:
-            column_sum = np.sum(list(subset), axis = 0)[:-1] #All sums of columns except the "New"-column
-            invalid_solution = len([*filter(lambda x: x > 1, column_sum)]) > 0
-            if not invalid_solution:
-                valid_solutions.append(sum(list(subset), [])) #Appen valid solutions
-            
-        if len(valid_solutions) < size_of_population:
-            initial_population = valid_solutions
-        else:
-            initial_population = random.sample(valid_solutions, size_of_population)#Takes n random elements from the list containing all possible solutions
-    return initial_population
-
-    
-
-def create_random_population_genetic(chromosome_length, requested_population_size, probability_of_0, probability_of_1):
-    """ Creates a random population with a given probability of having 0 or 1 for each gene
-    - chromosome_length: integer
-    - requested_population_size: integer
-    - probability_of_0: float
-    - probability_of_1: float
-
-    NOTE: The probabilities must sum to 1!
-    
-    Returns an initial population as a nested list containing 0's and 1's
-    """
-
-    initial_population = []
-    count = 0
-    for i in range(requested_population_size*100):
-        solution = [np.random.choice([0,1], p = [probability_of_0, probability_of_1]) for x in range(chromosome_length)]
-        if solution not in initial_population:
-            initial_population.append(solution)
-            count += 1
-        if count == requested_population_size:
-            break
-    return initial_population
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

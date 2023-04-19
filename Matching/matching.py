@@ -422,12 +422,6 @@ class Matching():
         #ASSUMING THAT WE WANT TO OPTIMIZE ON MINIMIZING LCA
         number_of_demand_elements = len(self.demand)
         
-        """NOTE NEEDED IF NEW ELEMENTS ARE NOT CONCIDERED
-        supply_names = self.supply.index.tolist()
-        index_first_new = self.supply.index.tolist().index("N0")
-        supply_names_only_reuse = supply_names[:index_first_new]
-        solutions_per_population = len(supply_names_only_reuse) * 100
-        """
         weights_new = hm.transform_weights(self.weights) #Create a new weight matrix with only one column representing all new elements
         weights_1d_array = weights_new.to_numpy().flatten()
         weights = np.array_split(weights_1d_array, number_of_demand_elements)
@@ -439,16 +433,14 @@ class Matching():
         #For matrix fitness function:
         #############################
 
-        weights_negative = weights_new.copy()
-        weights_negative = weights_negative.fillna(-1.0)
-        weights_negative_1d = weights_negative.to_numpy().flatten()
-        weights_matrix_negative = np.array_split(weights_negative_1d, number_of_demand_elements)
+        #weights_negative = weights_new.copy()
+        #weights_negative = weights_negative.fillna(-1.0)
+        #weights_negative_1d = weights_negative.to_numpy().flatten()
+        #weights_matrix_negative = np.array_split(weights_negative_1d, number_of_demand_elements)
         #############################
         
-        """Old way of making random population! Works quite nice, dont want to delete it yet"""
-        #initial_population = np.array(([[random.randint(0,1) for x in range(chromosome_length)] for y in range(requested_number_of_chromosomes)]))
         #Initializing a random population
-        initial_population = hm.create_random_population_genetic(chromosome_length, requested_number_of_chromosomes, probability_of_0=0.9, probability_of_1=0.1)
+        initial_population = np.array(([[random.randint(0,1) for x in range(chromosome_length)] for y in range(requested_number_of_chromosomes)]))
         solutions_per_population = len(initial_population)
 
         def fitness_func(solution, solution_idx):
@@ -518,7 +510,6 @@ class Matching():
             return fitness
             
         #Using pygad-module
-        #TODO: Try parallization-module in pygad!
         """Parameters are set by use of trial and error. These parameters have given a satisfactory solution"""
         ga_instance = pygad.GA(
             initial_population=initial_population,
@@ -536,11 +527,11 @@ class Matching():
             crossover_type="single_point",
             mutation_type = "random",
             #mutation_num_genes=int(solutions_per_population/5), Not needed if mutation_probability is set
-            mutation_probability = 0.4,
+            mutation_probability = 0.1,
             mutation_by_replacement=True,
             random_mutation_min_val=0,
             random_mutation_max_val=1,   # upper bound exclusive, so only 0 and 1
-            #save_best_solutions=True, #Needs a lot of memory
+            save_best_solutions=True, #Needs a lot of memory
             )
 
         ga_instance.run()
@@ -548,10 +539,9 @@ class Matching():
         logging.debug(ga_instance.population)
         solution, solution_fitness, solution_idx = ga_instance.best_solution()
         extracted_results = hm.extract_genetic_solution(weights_new, solution, number_of_demand_elements)
-        printed_results = hm.print_genetic_solution(self.weights, solution, number_of_demand_elements)
         for index, row in extracted_results.iterrows():
             self.add_pair(index, row["Matches from genetic"])
-
+    
     @_matching_decorator
     def match_genetic_algorithm_ALL_POSSIBILITIES(self):
         """Genetic algorithm than only uses a subset of possible solutions as the initial population"""

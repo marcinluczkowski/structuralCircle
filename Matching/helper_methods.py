@@ -195,7 +195,7 @@ def extract_genetic_solution(weights, best_solution, number_of_demand_elements):
         match_column.append(match)
     result["Matches from genetic"] = match_column
     return result
-            
+           
 def print_genetic_solution(weights, best_solution, number_of_demand_elements):
     """Print the genetic solution in a readable way to visually evaluate if the solution makes sence. Used for debugging
     - weights: Pandas Dafarame

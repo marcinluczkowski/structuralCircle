@@ -6,6 +6,13 @@ import logging
 import LCA as lca
 import itertools
 import random
+from fpdf import FPDF
+from datetime import date
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 
@@ -338,5 +345,86 @@ def count_matches(matches, algorithm):
     """
     return matches.pivot_table(index = [algorithm], aggfunc = 'size')
 
+
+def create_report(metric, Rows):
+    # Create a new PDF object
+    # Create a new PDF object
+    pdf = FPDF()
+    
+    # Add a page to the PDF
+    pdf.add_page()
+    
+    # Set the background color
+    pdf.set_fill_color(240, 240, 240)
+    pdf.rect(0, 0, 210, 297, "F")
+    
+    # Add the image to the PDF
+    pdf.image("C:/Users/sigur/Downloads/NTNU-logo.png", x=10, y=10, w=30)
+    
+    # Set the font and size for the title
+    pdf.set_font("Arial", size=36)
+    #pdf.set_text_color(0, 64, 128)
+    pdf.set_text_color(0, 80, 158)
+    
+    # Add the title to the PDF
+    pdf.cell(0, 50, "Results from Element Matching", 0, 1, "C")
+    pdf.ln(20)
+    
+    # Set the font and size for the tables
+    pdf.set_font("Arial", size=12)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_left_margin(28)
+    
+     # Calculate the X and Y positions for the tables
+    table_x = (pdf.w - 180) / 2
+    table_y1 = 120
+    table_y2 = 185
+    
+    # Set cell alignment to center for table 1
+    pdf.set_xy(table_x, table_y1)
+    pdf.multi_cell(160, 7, txt="Table 1")
+    pdf.ln(10)
+    pdf.set_fill_color(247, 247, 247)
+    pdf.set_draw_color(239, 239, 239)
+    for i in range(1, 4):
+        for j in range(1, 4):
+            pdf.cell(50, 10, f"({i},{j})", 1, 0, "C", True)
+        pdf.ln()
+    pdf.ln(20)
+    
+    # Set cell alignment to center for table 2
+    pdf.set_xy(table_x, table_y2)
+    pdf.multi_cell(160, 7, txt="Table 2")
+    pdf.ln(10)
+    pdf.set_fill_color(96, 150, 208)
+    pdf.set_draw_color(204, 204, 204)
+    pdf.cell(50, 10, "Elements", 1, 0, "C", True)
+    pdf.cell(50, 10, "Filename", 1, 0, "C", True)
+    pdf.cell(50, 10, "Number of elements", 1, 1, "C", True)
+    for i in range(Rows):
+        pdf.set_fill_color(247, 247, 247)
+        for j in range(3):
+            pdf.cell(50, 10, f"Row {i+1}, Column {j+1}", 1, 0, "C", True)
+        pdf.ln()
+    pdf.ln(20)
+    
+    # Add the paragraph to the PDF
+    pdf.set_font("Arial", size=12, style="I")
+    pdf.cell(0, 10, f"Metric used: {metric}", 0, 1)
+    
+    # Add the date to the upper right corner of the PDF
+    pdf.set_xy(170, 10)
+    pdf.set_font("Arial", size=10)
+    pdf.cell(0, 10, str(date.today().strftime("%B %d, %Y")), 0, 1, "R")
+    
+    
+    
+
+    
+    # Save the PDF to a file
+    pdf.output("C:/Users/sigur/Downloads/report2.pdf")
+
+
+    
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

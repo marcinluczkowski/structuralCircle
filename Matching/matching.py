@@ -1363,7 +1363,7 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
 
 
     # TODO convert list of dfs to single df
-    return matches
+    return matches, matching
 
 
 if __name__ == "__main__":

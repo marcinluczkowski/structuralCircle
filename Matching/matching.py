@@ -1177,7 +1177,7 @@ class Matching():
         
   
 def run_matching(demand, supply, score_function_string, constraints = None, add_new = True, solution_limit = 120,
-                bipartite = True, greedy_single = True, greedy_plural = True, genetic = False, milp = False, sci_milp = False,brute=True,brutevol2=True,brutevol3=True,brutevol4=True, bipartite_plural = True):
+                bipartite = False, greedy_single = False, greedy_plural = False, genetic = False, milp = False, sci_milp = False, brute=False, brutevol2 = False,brutevol3=False,brutevol4=False, bipartite_plural = False):
 
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
@@ -1226,7 +1226,7 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
 
 
     # TODO convert list of dfs to single df
-    return matches, matching
+    return matches
 
 
 if __name__ == "__main__":

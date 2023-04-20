@@ -12,7 +12,7 @@ NEW_ELEMENT_PRICE_TIMBER=435 #Per m^2 https://www.landkredittbank.no/blogg/2021/
 REUSED_ELEMENT_PRICE_TIMBER=100 #Per m^2
 GWP_PRICE=0.6 #In kr:Per kg CO2, based on OECD
 
-def calculate_lca(length, area, include_transportation, distance, gwp_factor, density=TIMBER_DENSITY):
+def calculate_lca(length, area, include_transportation, distance, gwp_factor, transport_gwp, density=TIMBER_DENSITY):
     """ Calculate Life Cycle Assessment """
     # TODO add processing
     # TODO add other impact categories than GWP
@@ -25,7 +25,7 @@ def calculate_lca(length, area, include_transportation, distance, gwp_factor, de
     return lca
 
 
-def calculate_score(length, area, include_transportation, distance, gwp_factor, price_per_m2,priceGWP, density=TIMBER_DENSITY):
+def calculate_score(length, area, include_transportation, distance, gwp_factor, transportation_gwp, price_per_m2,priceGWP, density=TIMBER_DENSITY):
     """ Calculates a score, based on GWP and price for new elements. The score is total price for kg CO2 eq and price for elements. """
     # TODO add processing
     # TODO add other impact categories than GWP and price?
@@ -50,6 +50,10 @@ def calculate_score(length, area, include_transportation, distance, gwp_factor, 
     
     return score
 
+def calculate_price():
+    price = 0
+    #TODO: Make function for evaluating ONLY price
+    return price
 
 def calculate_driving_distance(A_lat, A_lon, B_lat, B_lon):
     """Calculates the driving distance between two coordinates and returns the result in meters

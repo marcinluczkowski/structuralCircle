@@ -74,15 +74,21 @@ def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new
     # intertia moment
     demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
     # height - assuming square cross sections
-    demand['Height'] = np.power(demand['Area'], 0.5)
+    #demand['Height'] = np.power(demand['Area'], 0.5)
     # gwp_factor
+
+    #TODO: Must be moved to matching script:
     demand['Gwp_factor'] = demand_gwp
+    #################################
     demand["Demand_lat"]=demand_lat
     demand["Demand_lon"]=demand_lon
     demand["Supply_lat"]=new_lat
     demand["Supply_lon"]=new_lon
+
+    #TODO: Must be integrated in the matching script
     demand["Price_per_m2"]=new_price_per_m2
     demand["Gwp_price"]=gwp_price
+    ##############################
 
     # Change index names
     demand.index = map(lambda text: 'D' + str(text), demand.index)
@@ -397,6 +403,21 @@ def create_report(metric, Rows):
     pdf.output("C:/Users/sigur/Downloads/report2.pdf")
 
 
+
+def generate_score_function_string(metric, transportation):
+    if metric == "GWP":
+        score_function_string = f"@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, distance = Distance, transport_gwp = TransportGWP, density = Density, include_transportation={transportation})"
+    elif metric == "Price":
+        score_function_string = f"@lca.calculate_score(length=Length, area=Area, gwp_factor=Gwp_factor, distance = Distance, , density = Density, include_transportation={transportation})
+        score_function_string = f"@lca.calculate_score(length, area, include_transportation, distance, gwp_factor, price_per_m2,priceGWP, density=TIMBER_DENSITY)
+    elif metric == "GWP+Price"
+    score_function_string = ""
+    return score_function_string
+
+def add_necessary_columns():
+    dataframe = None
+    #Need density, 
+    return dataframe
     
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

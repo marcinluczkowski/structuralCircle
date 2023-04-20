@@ -6,33 +6,40 @@ import helper_methods as hm
 from matching import run_matching
 import LCA as lca
 
-#Where is the actual site where our elements must be transportet too
-demand_coordinates = {"Latitude": "10.3969", "Longitude": "63.4269"}
 
-#Defines the coordinates from where the NEW elementes are transported from, 
-#Moelv:
-#new_coordinates={"Latitude":"10.7005","Longitude":"60.9277"}
-new_coordinates = {"Latitude": "10.3969", "Longitude": "63.4269"}
+#==========USER FILLS IN============#
+project_name = "Bod materialteknisk"
+metric = "GWP"
+algorithms = ["Maximum Bipartite", "Greedy Plural"]
+include_transportation = False
+demand_file_location = r"./CSV/pdf_demand.csv"
+supply_file_location = r"./CSV/pdf_supply.csv"
 
+#Constants
+TIMBER_GWP = 28.9       # based on NEPD-3442-2053-EN
+TIMBER_REUSE_GWP = 2.25        # 0.0778*28.9 = 2.25 based on Eberhardt
+TRANSPORT_GWP = 96.0    # TODO kg/m3/t based on ????
+TIMBER_DENSITY = 491.0  # kg, based on NEPD-3442-2053-EN
+STEEL_GWP = None
+STEEL_REUSE_GWP = None
+TRANSPORTATION_GWP = None
+VALUATION_GWP = None
+TIMBER_PRICE = None
+TIMBER_REUSE_PRICE = None
+STEEL_PRICE = None
+STEEL_REUSE_PRICE = None
+PRICE_TRANSPORTATION = None
+TIMBER_DENSITY = None
+STEEL_DENSITY = None
 
-#Defines different coordinates from where REUSED elements can be transported from
-supply_coords = pd.DataFrame(columns = ["Place", "Lat", "Lon"])
-tiller = ["Tiller", "10.4008", "63.3604"]
-gjovik = ["Gjovik", "10.5001", "60.8941"]
-orkanger = ["Orkanger", "9.8468", "63.3000"]
-storlien = ["Storlien", "12.1018", "63.3160"]
+#========================#
+constants = [TIMBER_GWP, TIMBER_REUSE_GWP, TRANSPORT_GWP, TIMBER_DENSITY, STEEL_GWP, STEEL_REUSE_GWP, TRANSPORTATION_GWP, VALUATION_GWP, TIMBER_PRICE, TIMBER_REUSE_PRICE, STEEL_PRICE, STEEL_REUSE_PRICE,
+PRICE_TRANSPORTATION,
+TIMBER_DENSITY,
+STEEL_DENSITY,
 
-supply_coords.loc[len(supply_coords)] = tiller
-supply_coords.loc[len(supply_coords)] = gjovik
-supply_coords.loc[len(supply_coords)] = orkanger
-supply_coords.loc[len(supply_coords)] = storlien
+score_function_string = hm.generate_score_function_string(metric, include_transportation)
 
-
-constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-demand = hm.create_random_data_demand(demand_count=10, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],new_lat = new_coordinates["Latitude"], new_lon = new_coordinates["Longitude"], length_min = 1, length_max = 10.0, area_min = 0.15, area_max = 0.30)
-supply = hm.create_random_data_supply(supply_count=10,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords, length_min = 1, length_max = 30.0, area_min = 0.15, area_max = 0.30)
-
-score_function_string_wo_transportation = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, distance = Distance, include_transportation=False)"
 
 result_wo_transportation = run_matching(demand, supply, score_function_string_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=False, greedy_plural = True, bipartite=False,genetic=False,brute=False, bipartite_plural = True)
 simple_pairs_wo_transportation = hm.extract_pairs_df(result_wo_transportation)

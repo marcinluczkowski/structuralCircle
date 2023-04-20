@@ -32,6 +32,9 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # di
 demand = hm.create_random_data_demand(demand_count=20, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],new_lat = new_coordinates["Latitude"], new_lon = new_coordinates["Longitude"], length_min = 1, length_max = 10.0, area_min = 0.15, area_max = 0.30)
 supply = hm.create_random_data_supply(supply_count=20,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords, length_min = 1, length_max = 30.0, area_min = 0.15, area_max = 0.30)
 
+hm.export_dataframe_to_csv(demand,r"./CSV/pdf_demand.csv")
+hm.export_dataframe_to_csv(supply,r"./CSV/pdf_supply.csv")
+
 score_function_string_wo_transportation = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, distance = Distance, include_transportation=False)"
 
 result_wo_transportation = run_matching(demand, supply, score_function_string_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=False, greedy_plural = True, bipartite=False,genetic=False,brute=False, bipartite_plural = True)

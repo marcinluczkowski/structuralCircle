@@ -63,7 +63,7 @@ def calculate_driving_distance(A_lat, A_lon, B_lat, B_lon):
         driving_distance_meter = req.json()["routes"][0]["distance"]
         distance = driving_distance_meter / 1000 #driving distance in km
     except:  # TODO need to define exception, not ALL.
-        logging.error("Was not able to get the driving distance from OSRM-API")
+        #logging.error(f"Was not able to get the driving distance from OSRM-API, URL:{url}") 
         distance = 0
     return  distance
 

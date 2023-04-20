@@ -6,6 +6,13 @@ import logging
 import LCA as lca
 import itertools
 import random
+from fpdf import FPDF
+from datetime import date
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 
@@ -23,7 +30,7 @@ def extract_pairs_df(dict_list):
     df.columns = cols
     return df
 
-def extract_results_df(dict_list):
+def extract_results_df(dict_list, column_name):
     """Creates a dataframe with the scores from each method"""
     sub_df = []
     cols = []
@@ -31,7 +38,7 @@ def extract_results_df(dict_list):
         sub_df.append(run['Match object'].result)
         cols.append(run['Name'])
     df = pd.DataFrame(sub_df, index= cols)    
-    df=df.rename(columns={0:"LCA"})
+    df=df.rename(columns={0: column_name})
     return df.round(3)
 
 def remove_alternatives(x, y):
@@ -55,7 +62,7 @@ def transform_weights(weights):
     weights = weights.drop(columns=cols)
     return weights
 
-def create_random_data_demand(demand_count, demand_lat, demand_lon, demand_gwp=lca.TIMBER_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
+def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new_lon, demand_gwp=lca.TIMBER_GWP,gwp_price=lca.GWP_PRICE,new_price_per_m2=lca.NEW_ELEMENT_PRICE_TIMBER, length_min = 1, length_max = 15.0, area_min = 0.15, area_max = 0.15):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()
@@ -72,12 +79,16 @@ def create_random_data_demand(demand_count, demand_lat, demand_lon, demand_gwp=l
     demand['Gwp_factor'] = demand_gwp
     demand["Demand_lat"]=demand_lat
     demand["Demand_lon"]=demand_lon
+    demand["Supply_lat"]=new_lat
+    demand["Supply_lon"]=new_lon
+    demand["Price_per_m2"]=new_price_per_m2
+    demand["Gwp_price"]=gwp_price
 
     # Change index names
     demand.index = map(lambda text: 'D' + str(text), demand.index)
     return demand.round(4)
 
-def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,supply_gwp=lca.TIMBER_REUSE_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
+def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,supply_gwp=lca.TIMBER_REUSE_GWP,gwp_price=lca.GWP_PRICE,reused_prise_per_m2=lca.REUSED_ELEMENT_PRICE_TIMBER, length_min = 1, length_max = 15.0, area_min = 0.15, area_max = 0.15):
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     supply = pd.DataFrame()
     supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
@@ -90,6 +101,8 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
     supply["Location"]=0
     supply["Supply_lat"]=0
     supply["Supply_lon"]=0
+    supply["Price_per_m2"]=reused_prise_per_m2
+    supply["Gwp_price"]=gwp_price
     
     for row in range(len(supply)):
         lokasjon=random.randint(0, len(supply_coords)-1)
@@ -271,5 +284,119 @@ def import_dataframe_from_csv(file_location):
     dataframe.rename(index=row_dict, inplace = True)
     return dataframe
 
+
+def add_graph_plural(demand_matrix, supply_matrix, weight_matrix, incidence_matrix):
+    """Add a graph notation based on incidence matrix
+    
+    Not used
+    """
+    vertices = [0]*len(demand_matrix.index) + [1]*len(supply_matrix.index)
+    num_rows = len(demand_matrix.index)
+    edges = np.transpose(np.where(incidence_matrix))
+    edges = [[edge[0], edge[1]+num_rows] for edge in edges]
+    edge_weights = weight_matrix.to_numpy().reshape(-1,)
+    edge_weights = edge_weights[~np.isnan(edge_weights)]
+    # We need to reverse the weights, so that the higher the better. Because of this edge weights are initial score minus the replacement score:
+    edge_weights = (np.array([demand_matrix.Score[edge[0]] for edge in edges ])+0.0000001) - edge_weights 
+    # assemble graph
+    graph = ig.Graph.Bipartite(vertices, edges)
+    graph.es["label"] = edge_weights
+    graph.vs["label"] = list(demand_matrix.index)+list(supply_matrix.index) #vertice names
+    return graph
+
+
+def count_matches(matches, algorithm):
+    """Counts the number of plural matches for each supply element
+
+    Args:
+        matches (Pandas Dataframe): return dataframe of hm.extract_pairs_df()
+        algorithm (str): Name of algorithm in "matches"
+
+    Returns:
+        Pandas Dataframe: A count for each supply element
+    """
+    return matches.pivot_table(index = [algorithm], aggfunc = 'size')
+
+
+def create_report(metric, Rows):
+    # Create a new PDF object
+    # Create a new PDF object
+    pdf = FPDF()
+    
+    # Add a page to the PDF
+    pdf.add_page()
+    
+    # Set the background color
+    pdf.set_fill_color(240, 240, 240)
+    pdf.rect(0, 0, 210, 297, "F")
+    
+    # Add the image to the PDF
+    pdf.image("C:/Users/sigur/Downloads/NTNU-logo.png", x=10, y=10, w=30)
+    
+    # Set the font and size for the title
+    pdf.set_font("Arial", size=36)
+    #pdf.set_text_color(0, 64, 128)
+    pdf.set_text_color(0, 80, 158)
+    
+    # Add the title to the PDF
+    pdf.cell(0, 50, "Results from Element Matching", 0, 1, "C")
+    pdf.ln(20)
+    
+    # Set the font and size for the tables
+    pdf.set_font("Arial", size=12)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_left_margin(28)
+    
+     # Calculate the X and Y positions for the tables
+    table_x = (pdf.w - 180) / 2
+    table_y1 = 120
+    table_y2 = 185
+    
+    # Set cell alignment to center for table 1
+    pdf.set_xy(table_x, table_y1)
+    pdf.multi_cell(160, 7, txt="Table 1")
+    pdf.ln(10)
+    pdf.set_fill_color(247, 247, 247)
+    pdf.set_draw_color(239, 239, 239)
+    for i in range(1, 4):
+        for j in range(1, 4):
+            pdf.cell(50, 10, f"({i},{j})", 1, 0, "C", True)
+        pdf.ln()
+    pdf.ln(20)
+    
+    # Set cell alignment to center for table 2
+    pdf.set_xy(table_x, table_y2)
+    pdf.multi_cell(160, 7, txt="Table 2")
+    pdf.ln(10)
+    pdf.set_fill_color(96, 150, 208)
+    pdf.set_draw_color(204, 204, 204)
+    pdf.cell(50, 10, "Elements", 1, 0, "C", True)
+    pdf.cell(50, 10, "Filename", 1, 0, "C", True)
+    pdf.cell(50, 10, "Number of elements", 1, 1, "C", True)
+    for i in range(Rows):
+        pdf.set_fill_color(247, 247, 247)
+        for j in range(3):
+            pdf.cell(50, 10, f"Row {i+1}, Column {j+1}", 1, 0, "C", True)
+        pdf.ln()
+    pdf.ln(20)
+    
+    # Add the paragraph to the PDF
+    pdf.set_font("Arial", size=12, style="I")
+    pdf.cell(0, 10, f"Metric used: {metric}", 0, 1)
+    
+    # Add the date to the upper right corner of the PDF
+    pdf.set_xy(170, 10)
+    pdf.set_font("Arial", size=10)
+    pdf.cell(0, 10, str(date.today().strftime("%B %d, %Y")), 0, 1, "R")
+    
+    
+    
+
+    
+    # Save the PDF to a file
+    pdf.output("C:/Users/sigur/Downloads/report2.pdf")
+
+
+    
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

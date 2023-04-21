@@ -11,21 +11,22 @@ TIMBER_DENSITY = 491.0  # kg, based on NEPD-3442-2053-EN
 NEW_ELEMENT_PRICE_TIMBER=435 #Per m^2 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
 REUSED_ELEMENT_PRICE_TIMBER=100 #Per m^2
 GWP_PRICE=0.6 #In kr:Per kg CO2, based on OECD
+PRICE_TRANSPORT = 3.78 #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
 
-def calculate_lca(length, area, include_transportation, distance, gwp_factor, transport_gwp, density=TIMBER_DENSITY):
+def calculate_lca(length, area, include_transportation, distance, gwp_factor, transport_gwp, density):
     """ Calculate Life Cycle Assessment """
     # TODO add processing
     # TODO add other impact categories than GWP
     volume = length * area
     lca = volume * gwp_factor
     if include_transportation:
-        transportation_LCA = calculate_transportation_LCA(volume, density, distance)
+        transportation_LCA = calculate_transportation_LCA(volume, density, distance, transport_gwp)
         logging.debug(f"Transportation LCA:", transportation_LCA)
         lca += transportation_LCA
     return lca
 
 
-def calculate_score(length, area, include_transportation, distance, gwp_factor, transportation_gwp, price_per_m2,priceGWP, density=TIMBER_DENSITY):
+def calculate_score(length, area, include_transportation, distance, gwp_factor, transportation_gwp, price_per_m2, priceGWP, density, price_transport):
     """ Calculates a score, based on GWP and price for new elements. The score is total price for kg CO2 eq and price for elements. """
     # TODO add processing
     # TODO add other impact categories than GWP and price?
@@ -38,8 +39,8 @@ def calculate_score(length, area, include_transportation, distance, gwp_factor, 
         score=score*priceGWP
 
     if include_transportation:
-        transportation_LCA = calculate_transportation_LCA(volume, density, distance)
-        transportation_cost= calcultate_price_transport(volume,density,distance)
+        transportation_LCA = calculate_transportation_LCA(volume, density, distance, transportation_gwp)
+        transportation_cost= calcultate_price_transport(volume,density,distance, price_transport)
         logging.debug(f"Transportation LCA:", transportation_LCA)
         score += transportation_LCA
         score=score*priceGWP
@@ -71,7 +72,7 @@ def calculate_driving_distance(A_lat, A_lon, B_lat, B_lon):
         distance = 0
     return  distance
 
-def calculate_transportation_LCA(volume, density, distance, factor = TRANSPORT_GWP):
+def calculate_transportation_LCA(volume, density, distance, factor):
     """Calculates the CO2 equivalents of driving one element a specific distance
     - volume in float
     - density in float
@@ -82,13 +83,13 @@ def calculate_transportation_LCA(volume, density, distance, factor = TRANSPORT_G
     factor = factor / 1000 #convert gram to kg
     return volume * density * distance * factor #C02 equivalents in kg
 
-def calcultate_price_transport(volume,density,distance):
+def calcultate_price_transport(volume, density, distance, price):
     """
     distance in km
     """
     density = density / 1000 #convert kg/m^3 to tonne/m^3
     tonn=density*volume
-    price=3.78 #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
+    #price=3.78 #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
     return price*tonn*distance
 
 

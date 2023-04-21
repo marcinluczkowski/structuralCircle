@@ -119,6 +119,58 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
 
     return supply.round(4)
 
+def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, area_min, area_max, materials, supply_coords):
+    np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
+    supply = pd.DataFrame()
+    supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
+    supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
+    #TODO: Only works for squared sections! Not applicable for steel sections
+    supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    supply['Material'] = ""
+    supply["Location"]=0
+    supply["Latitude"]=0
+    supply["Longitude"]=0
+    
+    for row in range(len(supply)):
+        material = materials[random.randint(0, len(materials)-1)]
+        supply.loc[row, "Material"] = material
+        lokasjon=random.randint(0, len(supply_coords)-1)
+        supply.loc[row,"Latitude"]=supply_coords.loc[lokasjon,"Latitude"]
+        supply.loc[row,"Longitude"]=supply_coords.loc[lokasjon,"Longitude"]
+        supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Location"]
+    supply.index = map(lambda text: 'D' + str(text), supply.index)
+
+    return supply.round(4)
+
+def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, area_min, area_max, materials, demand_coords):
+    np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
+    demand = pd.DataFrame()
+    demand['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = demand_count) + length_min
+    demand['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = demand_count) + area_min
+    #TODO: Only works for squared sections! Not applicable for steel sections
+    demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    demand['Material'] = ""
+    demand["Manufacturer"]=0
+    demand["Latitude"]=0
+    demand["Longitude"]=0
+    
+    for row in range(len(demand)):
+        material = materials[random.randint(0, len(materials)-1)]
+        demand.loc[row, "Material"] = material
+        if material == "Timber":
+            lat = demand_coords["Moelven"]["Latitude"]
+            lon = demand_coords["Moelven"]["Longitude"]
+            manu = "Moelven"
+        elif material == "Steel":
+            lat = demand_coords["Norsk stål"]["Latitude"]
+            lon = demand_coords["Norsk stål"]["Longitude"]
+            manu = "Norsk stål"
+        demand.loc[row,"Latitude"]=lat
+        demand.loc[row,"Longitude"]=lon
+        demand.loc[row,"Manufacturer"]=manu
+    demand.index = map(lambda text: 'D' + str(text), demand.index)
+
+    return demand.round(4)
 
 def extract_brute_possibilities(incidence_matrix):
     """Extracts all matching possibilities based on the incidence matrix.
@@ -404,18 +456,21 @@ def create_report(metric, Rows):
 
 
 
-def generate_score_function_string(metric, transportation):
+def generate_score_function_string(metric, transportation, constants):
     if metric == "GWP":
-        score_function_string = f"@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, distance = Distance, transport_gwp = TransportGWP, density = Density, include_transportation={transportation})"
+        score_function_string = f"@lca.calculate_lca(length=Length, area=Area, include_transportation={transportation}, distance = Distance, gwp_factor=Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, density = Density)"
     elif metric == "Price":
-        score_function_string = f"@lca.calculate_score(length=Length, area=Area, gwp_factor=Gwp_factor, distance = Distance, , density = Density, include_transportation={transportation})
-        score_function_string = f"@lca.calculate_score(length, area, include_transportation, distance, gwp_factor, price_per_m2,priceGWP, density=TIMBER_DENSITY)
-    elif metric == "GWP+Price"
-    score_function_string = ""
+        score_function_string = f"@lca.calculate_score(length=Length, area=Area, include_transportation = {transportation}, gwp_factor = Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, price_per_m2 = {constants['PRICE_M2']}, priceGWP = {constants['VALUATION_GWP']}, density = Density, price_transport = {constants['PRICE_TRANSPORTATION']})"
+    elif metric == "GWP+Price":
+        #TODO: ADD STRING
+        score_function_string = ""
     return score_function_string
 
-def add_necessary_columns():
-    dataframe = None
+def add_necessary_columns_pdf(dataframe, metric, constants):
+    material_column = dataframe["Material"]
+
+    if metric == "GWP":
+        metric = None
     #Need density, 
     return dataframe
     

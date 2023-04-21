@@ -10,7 +10,7 @@ import LCA as lca
 #==========USER FILLS IN============#
 project_name = "Bod materialteknisk"
 metric = "GWP"
-algorithms = ["Maximum Bipartite", "Greedy Plural"]
+algorithms = ["bipartite_plural", "greedy_plural"]
 include_transportation = False
 coordinates_site = {"Latitude": "10.3969", "Longitude": "63.4269"}
 demand_file_location = r"./CSV/pdf_demand.csv"
@@ -23,8 +23,8 @@ constants = {
     "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25 based on Eberhardt
     "TRANSPORT_GWP": 96.0,    # TODO kg/m3/t based on ????
     "TIMBER_DENSITY": 491.0,  # kg, based on NEPD-3442-2053-EN
-    "STEEL_GWP": None,
-    "STEEL_REUSE_GWP": None,
+    "STEEL_GWP": 800, #Random value
+    "STEEL_REUSE_GWP": 4, #Random value
     "TRANSPORTATION_GWP": None,
     "VALUATION_GWP": None,
     "TIMBER_PRICE": None,
@@ -32,7 +32,7 @@ constants = {
     "STEEL_PRICE": None,
     "STEEL_REUSE_PRICE": None,
     "PRICE_TRANSPORTATION": None,
-    "STEEL_DENSITY": None,
+    "STEEL_DENSITY": 7850,
     "PRICE_M2": None
 }
 
@@ -70,9 +70,15 @@ score_function_string = hm.generate_score_function_string(metric, include_transp
 supply = hm.import_dataframe_from_csv(supply_file_location)
 demand = hm.import_dataframe_from_csv(demand_file_location)
 
+#Add necessary columns to run the algorithm
+supply = hm.add_necessary_columns_pdf(supply, metric, constants, coordinates_site)
+demand = hm.add_necessary_columns_pdf(demand, metric, constants, coordinates_site)
 
-supply = hm.add_necessary_columns(constants, coordinates_site)
-demand = hm.add_necessary_columns(constants, coordinates_site)
+run_string = hm.generate_run_string(algorithms)
+
+
+result = eval(f"{run_string}")
+print(result)
 """
 result_wo_transportation = run_matching(demand, supply, score_function_string_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=False, greedy_plural = True, bipartite=False,genetic=False,brute=False, bipartite_plural = True)
 simple_pairs_wo_transportation = hm.extract_pairs_df(result_wo_transportation)

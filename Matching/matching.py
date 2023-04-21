@@ -97,7 +97,7 @@ class Matching():
             #Evaluating driving distance of demand elements
             
             #NOTE: Keep this line. Needed if demand elements comes from different locations - especially if we have different materials
-            self.demand["Distance"] = self.demand.apply(lambda row: lca.calculate_driving_distance(row.Supply_lat,row.Supply_lon,row.Demand_lat,row.Demand_lon),axis=1)
+            self.demand["Distance"] = self.demand.apply(lambda row: lca.calculate_driving_distance(row.Latitude,row.Longitude,row.Cite_lat,row.Cite_lon),axis=1)
 
             #Assumes that all demand elements comes from the same location!!!
             #first_demand = self.demand.iloc[:1]

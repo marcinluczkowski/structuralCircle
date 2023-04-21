@@ -138,7 +138,7 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
         supply.loc[row,"Latitude"]=supply_coords.loc[lokasjon,"Latitude"]
         supply.loc[row,"Longitude"]=supply_coords.loc[lokasjon,"Longitude"]
         supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Location"]
-    supply.index = map(lambda text: 'D' + str(text), supply.index)
+    supply.index = map(lambda text: 'S' + str(text), supply.index)
 
     return supply.round(4)
 
@@ -459,20 +459,49 @@ def create_report(metric, Rows):
 def generate_score_function_string(metric, transportation, constants):
     if metric == "GWP":
         score_function_string = f"@lca.calculate_lca(length=Length, area=Area, include_transportation={transportation}, distance = Distance, gwp_factor=Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, density = Density)"
-    elif metric == "Price":
+    elif metric == "Combined":
         score_function_string = f"@lca.calculate_score(length=Length, area=Area, include_transportation = {transportation}, gwp_factor = Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, price_per_m2 = {constants['PRICE_M2']}, priceGWP = {constants['VALUATION_GWP']}, density = Density, price_transport = {constants['PRICE_TRANSPORTATION']})"
-    elif metric == "GWP+Price":
+    elif metric == "Price":
         #TODO: ADD STRING
         score_function_string = ""
     return score_function_string
 
-def add_necessary_columns_pdf(dataframe, metric, constants):
-    material_column = dataframe["Material"]
-
+def add_necessary_columns_pdf(dataframe, metric, constants, coordinates_site):
+    dataframe = dataframe.copy()
+    element_type = list(dataframe.index)[0][:1]
+    dataframe["Density"] = 0
+    dataframe["Cite_lat"] = coordinates_site["Latitude"]
+    dataframe["Cite_lon"] = coordinates_site["Longitude"]
+    necessary_factors = []
     if metric == "GWP":
-        metric = None
-    #Need density, 
+        dataframe["Gwp_factor"] = 0 
+    elif metric == "Combined":
+        dataframe["Gwp_factor"] = 0 
+        dataframe["Price_per_m2"] = 0
+    elif metric == "Price":
+        dataframe["Price_per_m2"] = 0
+
+    for row in range(len(dataframe)):
+        material = dataframe.iloc[row][dataframe.columns.get_loc("Material")]
+        dataframe.iloc[row, dataframe.columns.get_loc("Density")] = constants[f"{material.upper()}_DENSITY"]
+
+        if element_type == "S":
+            constant_name = f"{material.upper()}_REUSE"
+        else:
+            constant_name = f"{material.upper()}"
+
+        if metric == "GWP" or metric == "Combined":
+                dataframe.iloc[row, dataframe.columns.get_loc("Gwp_factor")] = constants[constant_name + "_GWP"]
+        if metric == "Price" or metric == "Combined":
+                dataframe.iloc[row, dataframe.columns.get_loc("Price_per_m2")] = constants[constant_name + "_PRICE"]
     return dataframe
-    
+
+def generate_run_string(algorithms):
+    run_string = "run_matching(demand, supply, score_function_string, constraints = constraint_dict, add_new = True"
+    if len(algorithms) != 0:
+        for algorithm in algorithms:
+            run_string += f", {algorithm} = True"
+    run_string += ")"
+    return run_string
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

@@ -34,12 +34,45 @@ def extract_results_df(dict_list, column_name):
     """Creates a dataframe with the scores from each method"""
     sub_df = []
     cols = []
+    
     for run in dict_list:
         sub_df.append(run['Match object'].result)
         cols.append(run['Name'])
     df = pd.DataFrame(sub_df, index= cols)    
     df=df.rename(columns={0: column_name})
     return df.round(3)
+
+def extract_results_df_pdf(dict_list, metric, include_transportation):
+    """Creates a dataframe with the scores from each method"""
+    sub_df = {"Score": [], "Time": []}
+    cols = []
+    match_object = dict_list[0]["Match object"]
+    all_new_score = match_object.demand["Score"].sum()
+    for run in dict_list:
+        sub_df["Score"].append(round(run['Match object'].result, 2))
+        sub_df["Time"].append(run["Time"])
+        cols.append(run['Name'])
+    algorithms_df = pd.DataFrame(sub_df, index= cols)   
+    algorithms_df = algorithms_df.sort_values(by=["Score", 'Time'], ascending=[True, True])
+    results_dict = algorithms_df.iloc[0].to_dict()
+    results_dict["Algorithm"] = algorithms_df.iloc[0].name
+    results_dict["New score"] = round(all_new_score, 2)
+    results_dict["Metric"] = metric
+    if metric in ["GWP", "Combined"]:
+        results_dict["Unit"] = "kg CO2 equivalents"
+    if metric == "Price":
+        results_dict["Unit"] = "kr"
+    results_dict["Savings"] =  round(results_dict["New score"] - results_dict["Score"], 2)
+    results_dict["Number_reused"] = len(match_object.supply) - len(match_object.demand)
+    results_dict["Number_demand"] = len(match_object.demand)
+    results_dict["Number of substitutions"] = len(match_object.pairs[match_object.pairs["Supply_id"].str.startswith("S")])
+    if include_transportation:
+        results_dict["Transportation included"] = "Yes"
+    else:
+        results_dict["Transportation included"] = "No"
+
+    return results_dict
+
 
 def remove_alternatives(x, y):
     if x > y:
@@ -503,5 +536,10 @@ def generate_run_string(algorithms):
             run_string += f", {algorithm} = True"
     run_string += ")"
     return run_string
+
+def extract_best_solution(result, metric):
+    results = extract_results_df(result, column_name = f"{metric}")
+
+
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

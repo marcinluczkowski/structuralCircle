@@ -28,9 +28,9 @@ constants = {
     "STEEL_DENSITY": 7850,
     ########################
     "Project name": "Bod nidarosdomen",
-    "Metric": "Price",
+    "Metric": "GWP",
     "Algorithms": ["bipartite", "greedy_plural", "greedy_single", "bipartite_plural"],
-    "Include transportation": True,
+    "Include transportation": False,
     "Coordinates site": {"Latitude": "63.4269", "Longitude": "10.3969"},
     "Demand file location": r"./CSV/pdf_demand.csv",
     "Supply file location": r"./CSV/pdf_supply.csv"

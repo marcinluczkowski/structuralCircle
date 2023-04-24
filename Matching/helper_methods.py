@@ -46,6 +46,7 @@ def extract_results_df_pdf(dict_list, constants):
     """Creates a dataframe with the scores from each method"""
     sub_df = {"Score": [], "Time": []}
     cols = []
+    used_constants = {"Density timber": (constants["TIMBER_DENSITY"], "kg/m^3"), "Density steel": (constants["STEEL_DENSITY"], "kg/m^3")}
     metric = constants["Metric"]
     include_transportation = constants["Include transportation"]
     match_object = dict_list[0]["Match object"]
@@ -62,9 +63,15 @@ def extract_results_df_pdf(dict_list, constants):
     results_dict["All new score"] = round(all_new_score, 2)
     results_dict.update(constants)
     if metric == "GWP":
-        results_dict["Unit"] = "kg CO2 equivalents"
-    if metric in ["Price", "Combined"]:
+        results_dict["Unit"] = "kg CO2"
+        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kg C02 equivalents"), "GWP reused timber": (constants["TIMBER_REUSE_GWP"], "kg C02 equivalents"), "GWP new steel": (constants["STEEL_GWP"], "kg C02 equivalents"), "GWP reused steel": (constants["STEEL_REUSE_GWP"], "kg C02 equivalents")})
+    elif metric == "Price":
         results_dict["Unit"] = "kr"
+        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "kr/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "kr/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "kr/m^3"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "kr/m^3")})
+    elif metric == "Combined":
+        results_dict["Unit"] = "kr"
+        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kg C02 equivalents"), "GWP reused timber": (constants["TIMBER_REUSE_GWP"], "kg C02 equivalents"), "GWP new steel": (constants["STEEL_GWP"], "kg C02 equivalents"), "GWP reused steel": (constants["STEEL_REUSE_GWP"], "kg C02 equivalents"), "Valuation of GWP": (constants["VALUATION_GWP"], "kr/kg C02 equivalents")})
+        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "kr/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "kr/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "kr/m^3"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "kr/m^3")})
     results_dict["Savings"] =  round(results_dict["All new score"] - results_dict["Score"], 2)
     results_dict["Number_reused"] = len(match_object.supply) - len(match_object.demand)
     results_dict["Number_demand"] = len(match_object.demand)
@@ -74,6 +81,12 @@ def extract_results_df_pdf(dict_list, constants):
         results_dict["Transportation score"] = round(match_object.result_transport, 2)
         results_dict["Transportation percentage"] = round(match_object.result_transport/results_dict["Score"]*100, 2)
         results_dict["Transportation all new"] = round(all_new_transport, 2)
+        if metric == "GWP":
+            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne")})
+        elif metric == "Combined":
+            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne"), "Price of transporation": (constants["PRICE_TRANSPORATION"], "kr/km/tonne")})
+        elif metric == "Price":
+            used_constants.update({"Price of transporation": (constants["PRICE_TRANSPORATION"], "kr/km/tonne")})                 
     else:
         results_dict["Transportation included"] = "No"
         results_dict["Transportation percentage"] = 0
@@ -82,6 +95,9 @@ def extract_results_df_pdf(dict_list, constants):
         results_dict["Transportation all new"] = 0
 
     results_dict["Pairs"] = extract_pairs_df(dict_list)[results_dict["Algorithm"]]
+    results_dict["Constants used"] = used_constants
+
+    #TODO: More information about supply and demand elements
     return results_dict
 
 
@@ -429,6 +445,7 @@ def generate_pdf_report(results, filepath):
 
     pdf = FPDF()
     
+    ##################PAGE 1##################
     # Add a page to the PDF
     pdf.add_page()
     
@@ -438,32 +455,132 @@ def generate_pdf_report(results, filepath):
     
     # Add the image to the PDF
     pdf.image("C:/Users/sigur/Downloads/NTNU-logo.png", x=10, y=10, w=30)
-    
+
+    # Add the date to the upper right corner of the PDF
+    pdf.set_xy(200, 10)
+    pdf.set_font("Times", size=10)
+    pdf.cell(0, 10, str(date.today().strftime("%B %d, %Y")), 0, 1, "R")
+
     # Set the font and size for the title
-    pdf.set_font("Arial", size=36)
+    pdf.set_font("Times", size=36)
     #pdf.set_text_color(0, 64, 128)
     pdf.set_text_color(0, 80, 158)
-    
+    pdf.set_y(10)
     # Add the title to the PDF
     pdf.cell(0, 50, "Results from Element Matching", 0, 1, "C")
-    pdf.ln(20)
+    pdf.set_left_margin(15)
 
-    # Add the paragraph to the PDF
-    pdf.set_font("Arial", size=12, style="I")
-    pdf.cell(0, 10, f"Project name: {results['Project name']}", 0, 1)
-    pdf.cell(0, 10, f"Construction site located at: {results['Coordinates site']['Lo']}, {results['Coordinates site']['Longitude']}", 0, 1)
-
-    
-    # Set the font and size for the tables
-    pdf.set_font("Arial", size=12)
+    # Information about the project:
+    ################################
+    pdf.set_y(50)
     pdf.set_text_color(0, 0, 0)
-    pdf.set_left_margin(28)
-    
-     # Calculate the X and Y positions for the tables
+
+    pdf.set_font("Times", size=12, style = "B")
+    pdf.cell(30, 10, f"Project name: ", 0, 0)
+    pdf.set_font("Times", size=12, style = "")
+    pdf.cell(0, 10, f"{results['Project name']}", 0, 1)
+
+    pdf.set_font("Times", size=12, style = "B")
+    pdf.cell(55, 10, f"Construction site located at: ", 0, 0)
+    pdf.set_font("Times", size=12, style = "")
+    pdf.cell(0, 10, f"{results['Coordinates site']['Latitude']}, {results['Coordinates site']['Longitude']}", 0, 1)
+
+
+    # Set the font and size for the tables
+    pdf.set_font("Times", size=12)
+    pdf.set_left_margin(15)
     table_x = (pdf.w - 180) / 2
-    table_y1 = 120
-    table_y2 = 185
+    table_y1 = 75
+    table_y2 = 160
+
+    #Summary
+    ######################
+    pdf.set_y(table_y1)
+    pdf.set_font("Times", size=12, style ="U")
+    pdf.multi_cell(160, 7, txt="Summary of results")
+    pdf.set_font("Times", size=10)
+    pdf.set_left_margin(28)
+    pdf.ln(5)
+    pdf.set_fill_color(96, 150, 208)
+    pdf.set_draw_color(204, 204, 204)
+    pdf.cell(50, 10, f"Total score", 1, 0, "C", True)
+    pdf.cell(50, 10, "Substitutions", 1, 0, "C", True)
+    pdf.cell(50, 10, "Savings", 1, 1, "C", True)
+    pdf.set_fill_color(247, 247, 247)
+    substitutions = round(results['Number of substitutions']/results['Number_demand']*100, 2)
+    savings = round(results['Savings']/results['All new score']*100, 2)
+    pdf.cell(50, 10, f"{results['Score']} {results['Unit']}", 1, 0, "C", True)
+    pdf.cell(50, 10, f"{substitutions}%", 1, 0, "C", True) 
+    pdf.cell(50, 10, f"{savings}%", 1, 1, "C", True)
+    pdf.ln()
+
+    #Short text summary
+    pdf.set_left_margin(15)
+    pdf.set_y(110)
+    pdf.set_font("Times", size=12, style ="")
+    pdf.multi_cell(pdf.w-2*15,8, f"The best results are obtained with the {results['Algorithm']} algorithm. By using the matching tool, {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%) are substituted. The metric used for optimization is {results['Metric']}, and gives a total score of {results['Score']} {results['Unit']} equivalents. To compare, only using new elements would have given a score of {results['All new score']} {results['Unit']} equivalents. This results a total saving of {savings}%. To see the substitutions, open the CSV file with file path '{filepath}substitutions.csv'", 1, "L", True)
+
+
+    #Information about datasets:
+    ###########################
+    pdf.set_font("Times", size=12, style ="U")
+    pdf.set_xy(table_x, table_y2)
+    pdf.multi_cell(160, 7, txt="Information about datasets")
+    pdf.set_font("Times", size=10)
+    pdf.ln(5)
+    pdf.set_left_margin(28)
+    pdf.set_fill_color(96, 150, 208)
+    pdf.set_draw_color(204, 204, 204)
+    pdf.cell(50, 10, "Elements", 1, 0, "C", True)
+    pdf.cell(50, 10, "Filename", 1, 0, "C", True)
+    pdf.cell(50, 10, "Number of elements", 1, 1, "C", True)
+    pdf.set_fill_color(247, 247, 247)
+    pdf.cell(50, 10, f"Reused", 1, 0, "C", True)
+    pdf.cell(50, 10, f"{results['Supply file location'].split('/')[-1]}", 1, 0, "C", True)
+    pdf.cell(50, 10, f"{results['Number_reused']}", 1, 0, "C", True)
+    pdf.ln()
+    pdf.cell(50, 10, f"Demand", 1, 0, "C", True)
+    pdf.cell(50, 10, f"{results['Demand file location'].split('/')[-1]}", 1, 0, "C", True)
+    pdf.cell(50, 10, f"{results['Number_demand']}", 1, 0, "C", True)
     
+    
+    ##################PAGE 2##################
+    pdf.add_page()
+
+
+    
+    # Set the background color
+    pdf.set_fill_color(240, 240, 240)
+    pdf.rect(0, 0, 210, 297, "F")
+    
+    # Add the image to the PDF
+    pdf.image("C:/Users/sigur/Downloads/NTNU-logo.png", x=10, y=10, w=30)
+
+    # Add the date to the upper right corner of the PDF
+    pdf.set_xy(200, 10)
+    pdf.set_font("Times", size=10)
+    pdf.cell(0, 10, str(date.today().strftime("%B %d, %Y")), 0, 1, "R")
+    #Constants used in calculations:
+    ###############
+    pdf.set_font("Times", size=12, style ="U")
+    pdf.set_xy(table_x, table_y2)
+    pdf.multi_cell(160, 7, txt="Constants used in calculations")
+    pdf.set_font("Times", size=10)
+    pdf.ln(10)
+    pdf.set_fill_color(96, 150, 208)
+    pdf.set_draw_color(204, 204, 204)
+    pdf.cell(50, 10, "Constant", 1, 0, "C", True)
+    pdf.cell(50, 10, "Value", 1, 0, "C", True)
+    pdf.cell(50, 10, "Unit", 1, 1, "C", True)
+    pdf.set_fill_color(247, 247, 247)
+
+    for key, values in results["Constants used"].items():
+        pdf.cell(50, 10, f"{key}", 1, 0, "C", True)
+        pdf.cell(50, 10, f"{values[0]}", 1, 0, "C", True)
+        pdf.cell(50, 10, f"{values[1]}", 1, 0, "C", True)
+        pdf.ln()
+
+    """
     # Set cell alignment to center for table 1
     pdf.set_xy(table_x, table_y1)
     pdf.multi_cell(160, 7, txt="Table 1")
@@ -475,7 +592,8 @@ def generate_pdf_report(results, filepath):
             pdf.cell(50, 10, f"({i},{j})", 1, 0, "C", True)
         pdf.ln()
     pdf.ln(20)
-    
+    """
+    """
     # Set cell alignment to center for table 2
     pdf.set_xy(table_x, table_y2)
     pdf.multi_cell(160, 7, txt="Table 2")
@@ -491,15 +609,13 @@ def generate_pdf_report(results, filepath):
             pdf.cell(50, 10, f"Row {i+1}, Column {j+1}", 1, 0, "C", True)
         pdf.ln()
     pdf.ln(20)
+    """
     
     # Add the paragraph to the PDF
-    pdf.set_font("Arial", size=12, style="I")
+    pdf.set_font("Times", size=12, style="I")
     pdf.cell(0, 10, f"Metric used: {results['Metric']}", 0, 1)
     
-    # Add the date to the upper right corner of the PDF
-    pdf.set_xy(170, 10)
-    pdf.set_font("Arial", size=10)
-    pdf.cell(0, 10, str(date.today().strftime("%B %d, %Y")), 0, 1, "R")
+    
     
     
     

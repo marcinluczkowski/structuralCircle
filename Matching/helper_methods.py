@@ -48,6 +48,7 @@ def extract_results_df_pdf(dict_list, metric, include_transportation):
     cols = []
     match_object = dict_list[0]["Match object"]
     all_new_score = match_object.demand["Score"].sum()
+    all_new_transport = match_object.demand["Transportation"].sum()
     for run in dict_list:
         sub_df["Score"].append(round(run['Match object'].result, 2))
         sub_df["Time"].append(run["Time"])
@@ -56,20 +57,28 @@ def extract_results_df_pdf(dict_list, metric, include_transportation):
     algorithms_df = algorithms_df.sort_values(by=["Score", 'Time'], ascending=[True, True])
     results_dict = algorithms_df.iloc[0].to_dict()
     results_dict["Algorithm"] = algorithms_df.iloc[0].name
-    results_dict["New score"] = round(all_new_score, 2)
+    results_dict["All new score"] = round(all_new_score, 2)
     results_dict["Metric"] = metric
-    if metric in ["GWP", "Combined"]:
+    if metric == "GWP":
         results_dict["Unit"] = "kg CO2 equivalents"
-    if metric == "Price":
+    if metric in ["Price", "Combined"]:
         results_dict["Unit"] = "kr"
-    results_dict["Savings"] =  round(results_dict["New score"] - results_dict["Score"], 2)
+    results_dict["Savings"] =  round(results_dict["All new score"] - results_dict["Score"], 2)
     results_dict["Number_reused"] = len(match_object.supply) - len(match_object.demand)
     results_dict["Number_demand"] = len(match_object.demand)
     results_dict["Number of substitutions"] = len(match_object.pairs[match_object.pairs["Supply_id"].str.startswith("S")])
     if include_transportation:
         results_dict["Transportation included"] = "Yes"
+        results_dict["Transportation score"] = round(match_object.result_transport, 2)
+        results_dict["Transportation percentage"] = round(match_object.result_transport/results_dict["Score"]*100, 2)
+        results_dict["Transportation all new"] = round(all_new_transport, 2)
     else:
         results_dict["Transportation included"] = "No"
+        results_dict["Transportation percentage"] = 0
+        results_dict["Transportation score"] = 0
+        results_dict["Transportation percentage"] = 0
+        results_dict["Transportation all new"] = 0
+
 
     return results_dict
 
@@ -95,7 +104,7 @@ def transform_weights(weights):
     weights = weights.drop(columns=cols)
     return weights
 
-def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new_lon, demand_gwp=lca.TIMBER_GWP,gwp_price=lca.GWP_PRICE,new_price_per_m2=lca.NEW_ELEMENT_PRICE_TIMBER, length_min = 1, length_max = 15.0, area_min = 0.15, area_max = 0.15):
+def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new_lon, demand_gwp=lca.TIMBER_GWP,gwp_price=lca.GWP_PRICE,new_price=lca.NEW_ELEMENT_PRICE_TIMBER, length_min = 1, length_max = 15.0, area_min = 0.15, area_max = 0.15):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()
@@ -119,7 +128,7 @@ def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new
     demand["Supply_lon"]=new_lon
 
     #TODO: Must be integrated in the matching script
-    demand["Price_per_m2"]=new_price_per_m2
+    demand["Price"]=new_price
     demand["Gwp_price"]=gwp_price
     ##############################
 
@@ -127,7 +136,7 @@ def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new
     demand.index = map(lambda text: 'D' + str(text), demand.index)
     return demand.round(4)
 
-def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,supply_gwp=lca.TIMBER_REUSE_GWP,gwp_price=lca.GWP_PRICE,reused_prise_per_m2=lca.REUSED_ELEMENT_PRICE_TIMBER, length_min = 1, length_max = 15.0, area_min = 0.15, area_max = 0.15):
+def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,supply_gwp=lca.TIMBER_REUSE_GWP,gwp_price=lca.GWP_PRICE,reused_price=lca.REUSED_ELEMENT_PRICE_TIMBER, length_min = 1, length_max = 15.0, area_min = 0.15, area_max = 0.15):
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     supply = pd.DataFrame()
     supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
@@ -140,7 +149,7 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
     supply["Location"]=0
     supply["Supply_lat"]=0
     supply["Supply_lon"]=0
-    supply["Price_per_m2"]=reused_prise_per_m2
+    supply["Price"]=reused_price
     supply["Gwp_price"]=gwp_price
     
     for row in range(len(supply)):
@@ -489,30 +498,31 @@ def create_report(metric, Rows):
 
 
 
-def generate_score_function_string(metric, transportation, constants):
+def generate_score_function_string(constants):
+    metric = constants["Metric"]
+    transportation = constants["Include transportation"]
     if metric == "GWP":
         score_function_string = f"@lca.calculate_lca(length=Length, area=Area, include_transportation={transportation}, distance = Distance, gwp_factor=Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, density = Density)"
     elif metric == "Combined":
-        score_function_string = f"@lca.calculate_score(length=Length, area=Area, include_transportation = {transportation}, gwp_factor = Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, price_per_m2 = {constants['PRICE_M2']}, priceGWP = {constants['VALUATION_GWP']}, density = Density, price_transport = {constants['PRICE_TRANSPORTATION']})"
+        score_function_string = f"@lca.calculate_score(length=Length, area=Area, include_transportation = {transportation}, distance = Distance, gwp_factor = Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, price = Price, priceGWP = {constants['VALUATION_GWP']}, density = Density, price_transport = {constants['PRICE_TRANSPORTATION']})"
     elif metric == "Price":
-        #TODO: ADD STRING
-        score_function_string = ""
+        score_function_string = f"@lca.calculate_price(length=Length, area =Area, include_transportation = {transportation}, distance = Distance, price = Price, density = Density, price_transport= {constants['PRICE_TRANSPORTATION']})"
     return score_function_string
 
-def add_necessary_columns_pdf(dataframe, metric, constants, coordinates_site):
+def add_necessary_columns_pdf(dataframe, constants):
     dataframe = dataframe.copy()
+    metric = constants["Metric"]
     element_type = list(dataframe.index)[0][:1]
     dataframe["Density"] = 0
-    dataframe["Cite_lat"] = coordinates_site["Latitude"]
-    dataframe["Cite_lon"] = coordinates_site["Longitude"]
-    necessary_factors = []
+    dataframe["Cite_lat"] = constants["Coordinates site"]["Latitude"]
+    dataframe["Cite_lon"] = constants["Coordinates site"]["Longitude"]
     if metric == "GWP":
         dataframe["Gwp_factor"] = 0 
     elif metric == "Combined":
         dataframe["Gwp_factor"] = 0 
-        dataframe["Price_per_m2"] = 0
+        dataframe["Price"] = 0
     elif metric == "Price":
-        dataframe["Price_per_m2"] = 0
+        dataframe["Price"] = 0
 
     for row in range(len(dataframe)):
         material = dataframe.iloc[row][dataframe.columns.get_loc("Material")]
@@ -526,10 +536,11 @@ def add_necessary_columns_pdf(dataframe, metric, constants, coordinates_site):
         if metric == "GWP" or metric == "Combined":
                 dataframe.iloc[row, dataframe.columns.get_loc("Gwp_factor")] = constants[constant_name + "_GWP"]
         if metric == "Price" or metric == "Combined":
-                dataframe.iloc[row, dataframe.columns.get_loc("Price_per_m2")] = constants[constant_name + "_PRICE"]
+                dataframe.iloc[row, dataframe.columns.get_loc("Price")] = constants[constant_name + "_PRICE"]
     return dataframe
 
-def generate_run_string(algorithms):
+def generate_run_string(constants):
+    algorithms = constants["Algorithms"]
     run_string = "run_matching(demand, supply, score_function_string, constraints = constraint_dict, add_new = True"
     if len(algorithms) != 0:
         for algorithm in algorithms:

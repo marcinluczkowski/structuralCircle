@@ -51,13 +51,13 @@ class Matching():
         """
         self.demand = demand.infer_objects()
         self.supply = supply.infer_objects()
-        self.score_function_string = score_function_string
+        self.score_function_string = score_function_string.replace(" ", "")
         self.evaluate_transportation()
         
         pd.set_option('display.max_columns', 10)
 
-        self.demand['Score'] = self.demand.eval(score_function_string)
-        self.supply['Score'] = self.supply.eval(score_function_string)
+        self.demand['Score'], self.demand["Transportation"] = self.demand.eval(self.score_function_string)
+        self.supply['Score'], self.supply["Transportation"] = self.supply.eval(self.score_function_string)
 
 
         if add_new: # just copy designed to supply set, so that they act as new products
@@ -73,6 +73,7 @@ class Matching():
         self.multi = multi
         self.graph = None
         self.result = None  #saves latest result of the matching
+        self.result_transport = None
         self.pairs = pd.DataFrame(None, index=self.demand.index.values.tolist(), columns=['Supply_id']) #saves latest array of pairs
         self.incidence = pd.DataFrame(np.nan, index=self.demand.index.values.tolist(), columns=self.supply.index.values.tolist())
         self.constraints = constraints
@@ -80,7 +81,7 @@ class Matching():
         self.solution_limit = solution_limit           
         #Create incidence and weight for the method
         self.incidence = self.evaluate_incidence()
-        self.weights = self.evaluate_weights()
+        self.weights, self.weights_transport = self.evaluate_weights()
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
 
     def __copy__(self):
@@ -150,16 +151,20 @@ class Matching():
         """Return matrix of weights for elements in the incidence matrix. The lower the weight the better."""
         start = time.time()
         weights = np.full(self.incidence.shape, np.nan)
+        weights_transport = np.full(self.incidence.shape, np.nan)
         el_locs0 = np.where(self.incidence) # tuple of rows and columns positions, as a list
         el_locs = np.transpose(el_locs0) # array of row-column pairs where incidence matrix is true. 
         # create a new dataframe with values from supply, except for the Length, which is from demand set (cut supply)
         eval_df = self.supply.iloc[el_locs0[1]].reset_index(drop=True)
         eval_df['Length'] = self.demand.iloc[el_locs0[0]]['Length'].reset_index(drop=True)
-        eval_score = eval_df.eval(self.score_function_string)
-        weights[el_locs0[0], el_locs0[1]] = eval_score.to_numpy()     
+        eval_scores = eval_df.eval(self.score_function_string)
+        eval_score = eval_scores[0]
+        eval_score_transport = eval_scores[1]
+        weights[el_locs0[0], el_locs0[1]] = eval_score
+        weights_transport[el_locs0[0], el_locs0[1]] = eval_score_transport
         end = time.time()  
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
-        return pd.DataFrame(weights, index = self.incidence.index, columns = self.incidence.columns)
+        return pd.DataFrame(weights, index = self.incidence.index, columns = self.incidence.columns), pd.DataFrame(weights_transport, index = self.incidence.index, columns = self.incidence.columns)
 
     def add_pair(self, demand_id, supply_id):
         """Execute matrix matching"""
@@ -216,10 +221,13 @@ class Matching():
         row_inds = list( map(lambda name: self.weights.index.get_loc(name), local_pairs.index) )
         #row_inds = np.arange(0, local_pairs.shape[0], 1) # the row inds are the same here and in the weights
         self.result = (self.weights.to_numpy()[row_inds, col_inds]).sum()
+        self.result_transport = (self.weights_transport.to_numpy()[row_inds, col_inds]).sum()
         # add the score of original elements that are not substituted
         mask = self.pairs.Supply_id.isna().to_numpy()
         original_score = self.demand.Score[mask].sum()
+        original_transport = self.demand.Transportation[mask].sum()
         self.result += original_score
+        self.result_transport += original_transport
 
     ### MATCHING ALGORITHMS
 

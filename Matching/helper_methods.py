@@ -42,10 +42,12 @@ def extract_results_df(dict_list, column_name):
     df=df.rename(columns={0: column_name})
     return df.round(3)
 
-def extract_results_df_pdf(dict_list, metric, include_transportation):
+def extract_results_df_pdf(dict_list, constants):
     """Creates a dataframe with the scores from each method"""
     sub_df = {"Score": [], "Time": []}
     cols = []
+    metric = constants["Metric"]
+    include_transportation = constants["Include transportation"]
     match_object = dict_list[0]["Match object"]
     all_new_score = match_object.demand["Score"].sum()
     all_new_transport = match_object.demand["Transportation"].sum()
@@ -58,7 +60,7 @@ def extract_results_df_pdf(dict_list, metric, include_transportation):
     results_dict = algorithms_df.iloc[0].to_dict()
     results_dict["Algorithm"] = algorithms_df.iloc[0].name
     results_dict["All new score"] = round(all_new_score, 2)
-    results_dict["Metric"] = metric
+    results_dict.update(constants)
     if metric == "GWP":
         results_dict["Unit"] = "kg CO2 equivalents"
     if metric in ["Price", "Combined"]:
@@ -79,7 +81,7 @@ def extract_results_df_pdf(dict_list, metric, include_transportation):
         results_dict["Transportation percentage"] = 0
         results_dict["Transportation all new"] = 0
 
-
+    results_dict["Pairs"] = extract_pairs_df(dict_list)[results_dict["Algorithm"]]
     return results_dict
 
 
@@ -418,9 +420,13 @@ def count_matches(matches, algorithm):
     return matches.pivot_table(index = [algorithm], aggfunc = 'size')
 
 
-def create_report(metric, Rows):
+def generate_pdf_report(results, filepath):
     # Create a new PDF object
     # Create a new PDF object
+
+    #Add CSV containing results to "Results"-folder
+    export_dataframe_to_csv(results["Pairs"], filepath + "substitutions.csv")
+
     pdf = FPDF()
     
     # Add a page to the PDF
@@ -441,6 +447,12 @@ def create_report(metric, Rows):
     # Add the title to the PDF
     pdf.cell(0, 50, "Results from Element Matching", 0, 1, "C")
     pdf.ln(20)
+
+    # Add the paragraph to the PDF
+    pdf.set_font("Arial", size=12, style="I")
+    pdf.cell(0, 10, f"Project name: {results['Project name']}", 0, 1)
+    pdf.cell(0, 10, f"Construction site located at: {results['Coordinates site']['Lo']}, {results['Coordinates site']['Longitude']}", 0, 1)
+
     
     # Set the font and size for the tables
     pdf.set_font("Arial", size=12)
@@ -473,7 +485,7 @@ def create_report(metric, Rows):
     pdf.cell(50, 10, "Elements", 1, 0, "C", True)
     pdf.cell(50, 10, "Filename", 1, 0, "C", True)
     pdf.cell(50, 10, "Number of elements", 1, 1, "C", True)
-    for i in range(Rows):
+    for i in range(3):
         pdf.set_fill_color(247, 247, 247)
         for j in range(3):
             pdf.cell(50, 10, f"Row {i+1}, Column {j+1}", 1, 0, "C", True)
@@ -482,7 +494,7 @@ def create_report(metric, Rows):
     
     # Add the paragraph to the PDF
     pdf.set_font("Arial", size=12, style="I")
-    pdf.cell(0, 10, f"Metric used: {metric}", 0, 1)
+    pdf.cell(0, 10, f"Metric used: {results['Metric']}", 0, 1)
     
     # Add the date to the upper right corner of the PDF
     pdf.set_xy(170, 10)
@@ -494,7 +506,7 @@ def create_report(metric, Rows):
 
     
     # Save the PDF to a file
-    pdf.output("C:/Users/sigur/Downloads/report2.pdf")
+    pdf.output(filepath + "generated_report.pdf")
 
 
 

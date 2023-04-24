@@ -72,10 +72,9 @@ def calculate_driving_distance(A_lat, A_lon, B_lat, B_lon):
     """Calculates the driving distance between two coordinates and returns the result in meters
     - Coordinates as a String
     """
-
     # TODO (Sigurd) Check if A or B should be first
     try:
-        url = f"http://router.project-osrm.org/route/v1/car/{A_lat},{A_lon};{B_lat},{B_lon}?overview=false"
+        url = f"http://router.project-osrm.org/route/v1/car/{A_lon},{A_lat};{B_lon},{B_lat}?overview=false"
         req = requests.get(url)
         driving_distance_meter = req.json()["routes"][0]["distance"]
         distance = driving_distance_meter / 1000 #driving distance in km

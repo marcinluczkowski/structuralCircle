@@ -7,20 +7,21 @@ from matching import run_matching
 import LCA as lca
 
 #Where is the actual site where our elements must be transportet too
-demand_coordinates = {"Latitude": "10.3969", "Longitude": "63.4269"}
+demand_coordinates = {"Latitude": "63.4269", "Longitude": "10.3969"}
 
 #Defines the coordinates from where the NEW elementes are transported from, 
 #Moelv:
 #new_coordinates={"Latitude":"10.7005","Longitude":"60.9277"}
-new_coordinates = {"Latitude": "10.3969", "Longitude": "63.4269"}
+new_coordinates = {"Latitude": "63.4269", "Longitude": "10.3969"}
 
 
 #Defines different coordinates from where REUSED elements can be transported from
-supply_coords = pd.DataFrame(columns = ["Place", "Lat", "Lon"])
-tiller = ["Tiller", "10.4008", "63.3604"]
-gjovik = ["Gjovik", "10.5001", "60.8941"]
-orkanger = ["Orkanger", "9.8468", "63.3000"]
-storlien = ["Storlien", "12.1018", "63.3160"]
+supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
+
+tiller = ["Tiller", "63.3604", "10.4008"]
+gjovik = ["Gjovik", "60.8941", "10.5001"]
+orkanger = ["Orkanger", "63.3000", "9.8468"]
+storlien = ["Storlien", "63.3160", "12.1018"]
 
 supply_coords.loc[len(supply_coords)] = tiller
 supply_coords.loc[len(supply_coords)] = gjovik

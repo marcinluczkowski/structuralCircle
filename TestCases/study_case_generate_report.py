@@ -27,11 +27,11 @@ constants = {
     "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
     "STEEL_DENSITY": 7850,
     ########################
-    "Project name": "Bod materialteknisk",
+    "Project name": "Bod nidarosdomen",
     "Metric": "Price",
     "Algorithms": ["bipartite", "greedy_plural", "greedy_single", "bipartite_plural"],
     "Include transportation": True,
-    "Coordinates site": {"Latitude": "10.3969", "Longitude": "63.4269"},
+    "Coordinates site": {"Latitude": "63.4269", "Longitude": "10.3969"},
     "Demand file location": r"./CSV/pdf_demand.csv",
     "Supply file location": r"./CSV/pdf_supply.csv"
 }
@@ -40,10 +40,11 @@ constants = {
 #Generating dataset
 #===================
 supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
-tiller = ["Tiller", "10.4008", "63.3604"]
-gjovik = ["Gjovik", "10.5001", "60.8941"]
-orkanger = ["Orkanger", "9.8468", "63.3000"]
-storlien = ["Storlien", "12.1018", "63.3160"]
+
+tiller = ["Tiller", "63.3604", "10.4008"]
+gjovik = ["Gjovik", "60.8941", "10.5001"]
+orkanger = ["Orkanger", "63.3000", "9.8468"]
+storlien = ["Storlien", "63.3160", "12.1018"]
 
 supply_coords.loc[len(supply_coords)] = tiller
 supply_coords.loc[len(supply_coords)] = gjovik
@@ -51,8 +52,8 @@ supply_coords.loc[len(supply_coords)] = orkanger
 supply_coords.loc[len(supply_coords)] = storlien
 
 demand_coords = {
-    "Moelven": {"Latitude": "10.6956", "Longitude": "60.9298"},
-    "Norsk stål": {"Latitude": "10.475", "Longitude": "59.8513"}
+    "Moelven": {"Latitude": "60.9298", "Longitude": "10.6956"},
+    "Norsk stål": {"Latitude": "59.8513", "Longitude": "10.475"}
 }
 
 
@@ -78,10 +79,13 @@ run_string = hm.generate_run_string(constants)
 #Running the matching
 result = eval(run_string)
 simple_pairs = hm.extract_pairs_df(result)
-pdf_results = hm.extract_results_df_pdf(result, constants["Metric"], constants["Include transportation"])
+pdf_results = hm.extract_results_df_pdf(result, constants)
 print("Simple pairs:")
 print(simple_pairs)
 
 #TODO: Add the information to the report!
+
+pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
+
 
 

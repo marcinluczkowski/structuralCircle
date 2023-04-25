@@ -44,26 +44,36 @@ def extract_results_df(dict_list, column_name):
 
 def extract_results_df_pdf(dict_list, constants):
     """Creates a dataframe with the scores from each method"""
-    sub_df = {"Score": [], "Time": []}
+    sub_df = {"Names": [], "Score": [], "Time": [], "Substitutions": [], "Sub_percent": []}
     cols = []
     used_constants = {"Density timber": (constants["TIMBER_DENSITY"], "kg/m^3"), "Density steel": (constants["STEEL_DENSITY"], "kg/m^3")}
     metric = constants["Metric"]
     include_transportation = constants["Include transportation"]
-    match_object = dict_list[0]["Match object"]
-    all_new_score = match_object.demand["Score"].sum()
-    all_new_transport = match_object.demand["Transportation"].sum()
+    #Get performance of all algorithms runned:
     for run in dict_list:
         sub_df["Score"].append(round(run['Match object'].result, 2))
         sub_df["Time"].append(run["Time"])
+        num_subs = len(run['Match object'].pairs[run['Match object'].pairs["Supply_id"].str.startswith("S")])
+        sub_df["Substitutions"].append(num_subs)
+        sub_df["Sub_percent"].append(round(num_subs/len(run["Match object"].supply)*100, 2))
+        sub_df["Names"].append(run["Name"])
         cols.append(run['Name'])
     algorithms_df = pd.DataFrame(sub_df, index= cols)   
     algorithms_df = algorithms_df.sort_values(by=["Score", 'Time'], ascending=[True, True])
     results_dict = algorithms_df.iloc[0].to_dict()
     results_dict["Algorithm"] = algorithms_df.iloc[0].name
+    results_dict["Performance"] = algorithms_df
+    #Get the pair of the best matching
+    index_algorithm = next(filter(lambda i: dict_list[i]['Name'] == algorithms_df.iloc[0].name, range(len(dict_list))))
+    match_object = dict_list[index_algorithm]["Match object"]
+    all_new_score = match_object.demand["Score"].sum()
+    all_new_transport = match_object.demand["Transportation"].sum()
     results_dict["All new score"] = round(all_new_score, 2)
+
+
     results_dict.update(constants)
     if metric == "GWP":
-        results_dict["Unit"] = "kg CO2"
+        results_dict["Unit"] = "kg CO2 equivalents"
         used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kg C02 equivalents"), "GWP reused timber": (constants["TIMBER_REUSE_GWP"], "kg C02 equivalents"), "GWP new steel": (constants["STEEL_GWP"], "kg C02 equivalents"), "GWP reused steel": (constants["STEEL_REUSE_GWP"], "kg C02 equivalents")})
     elif metric == "Price":
         results_dict["Unit"] = "kr"
@@ -76,6 +86,7 @@ def extract_results_df_pdf(dict_list, constants):
     results_dict["Number_reused"] = len(match_object.supply) - len(match_object.demand)
     results_dict["Number_demand"] = len(match_object.demand)
     results_dict["Number of substitutions"] = len(match_object.pairs[match_object.pairs["Supply_id"].str.startswith("S")])
+    results_dict["Number of substitutions"] = sub_df["Substitutions"][sub_df["Names"].index(results_dict["Algorithm"])]
     if include_transportation:
         results_dict["Transportation included"] = "Yes"
         results_dict["Transportation score"] = round(match_object.result_transport, 2)
@@ -84,17 +95,18 @@ def extract_results_df_pdf(dict_list, constants):
         if metric == "GWP":
             used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne")})
         elif metric == "Combined":
-            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne"), "Price of transporation": (constants["PRICE_TRANSPORATION"], "kr/km/tonne")})
+            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne"), "Price of transportation": (constants["PRICE_transportation"], "kr/km/tonne")})
         elif metric == "Price":
-            used_constants.update({"Price of transporation": (constants["PRICE_TRANSPORATION"], "kr/km/tonne")})                 
+            used_constants.update({"Price of transportation": (constants["PRICE_transportation"], "kr/km/tonne")})                 
     else:
         results_dict["Transportation included"] = "No"
         results_dict["Transportation percentage"] = 0
         results_dict["Transportation score"] = 0
-        results_dict["Transportation percentage"] = 0
         results_dict["Transportation all new"] = 0
 
-    results_dict["Pairs"] = extract_pairs_df(dict_list)[results_dict["Algorithm"]]
+    pairs = extract_pairs_df(dict_list)[results_dict["Algorithm"]]
+    pairs.name = "Substitutions"
+    results_dict["Pairs"] = pairs
     results_dict["Constants used"] = used_constants
 
     #TODO: More information about supply and demand elements
@@ -437,29 +449,34 @@ def count_matches(matches, algorithm):
 
 
 def generate_pdf_report(results, filepath):
+    def new_page():
+        # Add a page to the PDF
+        pdf.add_page()
+        
+        # Set the background color
+        pdf.set_fill_color(240, 240, 240)
+        pdf.rect(0, 0, 210, 297, "F")
+        
+        # Add the image to the PDF
+        pdf.image("C:/Users/sigur/Downloads/NTNU-logo.png", x=10, y=10, w=30)
+
+        # Add the date to the upper right corner of the PDF
+        pdf.set_xy(200, 10)
+        pdf.set_font("Times", size=10)
+        pdf.cell(0, 10, str(date.today().strftime("%B %d, %Y")), 0, 1, "R")
     # Create a new PDF object
     # Create a new PDF object
 
     #Add CSV containing results to "Results"-folder
     export_dataframe_to_csv(results["Pairs"], filepath + "substitutions.csv")
-
+    if results["Transportation included"] == "No":
+        transportation_included = False
+    elif results["Transportation included"] == "Yes":
+        transportation_included = True
     pdf = FPDF()
-    
+    new_page()
     ##################PAGE 1##################
-    # Add a page to the PDF
-    pdf.add_page()
     
-    # Set the background color
-    pdf.set_fill_color(240, 240, 240)
-    pdf.rect(0, 0, 210, 297, "F")
-    
-    # Add the image to the PDF
-    pdf.image("C:/Users/sigur/Downloads/NTNU-logo.png", x=10, y=10, w=30)
-
-    # Add the date to the upper right corner of the PDF
-    pdf.set_xy(200, 10)
-    pdf.set_font("Times", size=10)
-    pdf.cell(0, 10, str(date.today().strftime("%B %d, %Y")), 0, 1, "R")
 
     # Set the font and size for the title
     pdf.set_font("Times", size=36)
@@ -483,7 +500,7 @@ def generate_pdf_report(results, filepath):
     pdf.set_font("Times", size=12, style = "B")
     pdf.cell(55, 10, f"Construction site located at: ", 0, 0)
     pdf.set_font("Times", size=12, style = "")
-    pdf.cell(0, 10, f"{results['Coordinates site']['Latitude']}, {results['Coordinates site']['Longitude']}", 0, 1)
+    pdf.cell(0, 10, f"{results['Cite latitude']}, {results['Cite longitude']}", 0, 1)
 
 
     # Set the font and size for the tables
@@ -496,7 +513,7 @@ def generate_pdf_report(results, filepath):
     #Summary
     ######################
     pdf.set_y(table_y1)
-    pdf.set_font("Times", size=12, style ="U")
+    pdf.set_font("Times", size=24, style ="")
     pdf.multi_cell(160, 7, txt="Summary of results")
     pdf.set_font("Times", size=10)
     pdf.set_left_margin(28)
@@ -518,13 +535,44 @@ def generate_pdf_report(results, filepath):
     pdf.set_left_margin(15)
     pdf.set_y(110)
     pdf.set_font("Times", size=12, style ="")
-    pdf.multi_cell(pdf.w-2*15,8, f"The best results are obtained with the {results['Algorithm']} algorithm. By using the matching tool, {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%) are substituted. The metric used for optimization is {results['Metric']}, and gives a total score of {results['Score']} {results['Unit']} equivalents. To compare, only using new elements would have given a score of {results['All new score']} {results['Unit']} equivalents. This results a total saving of {savings}%. To see the substitutions, open the CSV file with file path '{filepath}substitutions.csv'", 1, "L", True)
+    summary = f"The '{results['Algorithm']}' algorithm yields the best results, substituting {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using {results['Metric']} as the optimization metric, a total score of {results['Score']} {results['Unit']} is achieved. For comparison, a score of {results['All new score']} {results['Unit']} would have been obtained by employing exclusively new materials. This results in a total saving of {savings}%."
+    if transportation_included:
+        summary += f" Note that transportation is accounted for and contributes {results['Transportation percentage']}% to the total score. "
+    else:
+        summary += f" Note that transportation is not accounted for. "
+    summary += f"Open the CSV file with the file path '{filepath}substitutions.csv' to examine the substitutions."
+    pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
 
 
+    #Constants used in calculations:
+    ###############
+    pdf.set_font("Times", size=16, style ="")
+    pdf.set_xy(table_x, table_y2)
+    pdf.multi_cell(160, 7, txt="Constants used in calculations")
+    pdf.set_font("Times", size=10)
+    pdf.ln(5)
+    pdf.set_fill_color(96, 150, 208)
+    pdf.set_draw_color(204, 204, 204)
+    pdf.set_left_margin(28)
+    pdf.cell(50, 10, "Constant", 1, 0, "C", True)
+    pdf.cell(50, 10, "Value", 1, 0, "C", True)
+    pdf.cell(50, 10, "Unit", 1, 1, "C", True)
+    pdf.set_fill_color(247, 247, 247)
+
+    for key, values in results["Constants used"].items():
+        pdf.cell(50, 10, f"{key}", 1, 0, "C", True)
+        pdf.cell(50, 10, f"{values[0]}", 1, 0, "C", True)
+        pdf.cell(50, 10, f"{values[1]}", 1, 0, "C", True)
+        pdf.ln()
+
+        
+    
+    ##################PAGE 2##################
+    new_page()
     #Information about datasets:
     ###########################
-    pdf.set_font("Times", size=12, style ="U")
-    pdf.set_xy(table_x, table_y2)
+    pdf.set_font("Times", size=16, style ="")
+    pdf.set_xy(table_x, 30)
     pdf.multi_cell(160, 7, txt="Information about datasets")
     pdf.set_font("Times", size=10)
     pdf.ln(5)
@@ -543,84 +591,75 @@ def generate_pdf_report(results, filepath):
     pdf.cell(50, 10, f"{results['Demand file location'].split('/')[-1]}", 1, 0, "C", True)
     pdf.cell(50, 10, f"{results['Number_demand']}", 1, 0, "C", True)
     
-    
-    ##################PAGE 2##################
-    pdf.add_page()
+    #TODO: Add more information about the datasets. Some histograms and graphs!
 
-
-    
-    # Set the background color
-    pdf.set_fill_color(240, 240, 240)
-    pdf.rect(0, 0, 210, 297, "F")
-    
-    # Add the image to the PDF
-    pdf.image("C:/Users/sigur/Downloads/NTNU-logo.png", x=10, y=10, w=30)
-
-    # Add the date to the upper right corner of the PDF
-    pdf.set_xy(200, 10)
-    pdf.set_font("Times", size=10)
-    pdf.cell(0, 10, str(date.today().strftime("%B %d, %Y")), 0, 1, "R")
-    #Constants used in calculations:
-    ###############
-    pdf.set_font("Times", size=12, style ="U")
-    pdf.set_xy(table_x, table_y2)
-    pdf.multi_cell(160, 7, txt="Constants used in calculations")
-    pdf.set_font("Times", size=10)
-    pdf.ln(10)
-    pdf.set_fill_color(96, 150, 208)
-    pdf.set_draw_color(204, 204, 204)
-    pdf.cell(50, 10, "Constant", 1, 0, "C", True)
-    pdf.cell(50, 10, "Value", 1, 0, "C", True)
-    pdf.cell(50, 10, "Unit", 1, 1, "C", True)
-    pdf.set_fill_color(247, 247, 247)
-
-    for key, values in results["Constants used"].items():
-        pdf.cell(50, 10, f"{key}", 1, 0, "C", True)
-        pdf.cell(50, 10, f"{values[0]}", 1, 0, "C", True)
-        pdf.cell(50, 10, f"{values[1]}", 1, 0, "C", True)
-        pdf.ln()
-
-    """
-    # Set cell alignment to center for table 1
-    pdf.set_xy(table_x, table_y1)
-    pdf.multi_cell(160, 7, txt="Table 1")
-    pdf.ln(10)
-    pdf.set_fill_color(247, 247, 247)
-    pdf.set_draw_color(239, 239, 239)
-    for i in range(1, 4):
-        for j in range(1, 4):
-            pdf.cell(50, 10, f"({i},{j})", 1, 0, "C", True)
-        pdf.ln()
-    pdf.ln(20)
-    """
-    """
-    # Set cell alignment to center for table 2
-    pdf.set_xy(table_x, table_y2)
-    pdf.multi_cell(160, 7, txt="Table 2")
-    pdf.ln(10)
-    pdf.set_fill_color(96, 150, 208)
-    pdf.set_draw_color(204, 204, 204)
-    pdf.cell(50, 10, "Elements", 1, 0, "C", True)
-    pdf.cell(50, 10, "Filename", 1, 0, "C", True)
-    pdf.cell(50, 10, "Number of elements", 1, 1, "C", True)
-    for i in range(3):
+    ##################PAGE 2.5 (Transportation)##################
+    new_page()
+    y_information = 30
+    if transportation_included: #Add a page with information about only transportation
+        pdf.set_left_margin(15)
+        pdf.set_y(30)
+        pdf.set_font("Times", size=16, style ="")
+        pdf.multi_cell(160, 7, txt="Impact of transportation")
+        pdf.set_font("Times", size=10)
+        pdf.set_left_margin(28)
+        pdf.ln(5)
+        pdf.set_fill_color(96, 150, 208)
+        pdf.set_draw_color(204, 204, 204)
+        pdf.cell(50, 10, f"Transportation score", 1, 0, "C", True)
+        pdf.cell(50, 10, "Percentage of total score", 1, 0, "C", True)
+        pdf.cell(50, 10, "Transportation all new", 1, 1, "C", True)
         pdf.set_fill_color(247, 247, 247)
-        for j in range(3):
-            pdf.cell(50, 10, f"Row {i+1}, Column {j+1}", 1, 0, "C", True)
+        pdf.cell(50, 10, f"{results['Transportation score']} {results['Unit']}", 1, 0, "C", True)
+        pdf.cell(50, 10, f"{results['Transportation percentage']}%", 1, 0, "C", True)
+        pdf.cell(50, 10, f"{results['Transportation all new']} {results['Unit']}", 1, 1, "C", True)
         pdf.ln()
-    pdf.ln(20)
-    """
-    
-    # Add the paragraph to the PDF
-    pdf.set_font("Times", size=12, style="I")
-    pdf.cell(0, 10, f"Metric used: {results['Metric']}", 0, 1)
-    
-    
-    
-    
-    
 
-    
+        #Short text summary
+        pdf.set_left_margin(15)
+        pdf.set_y(65)
+        pdf.set_font("Times", size=12, style ="")
+        summary = f"All calculations in this report accounts for transportation. Transportation accounts for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation score for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
+        pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
+        y_information = 100
+
+    pdf.set_left_margin(15)
+    pdf.set_y(y_information)
+    pdf.set_font("Times", size=16, style ="")
+    pdf.multi_cell(160, 7, txt="Performance of algorithms")
+    pdf.set_font("Times", size=10)
+    pdf.set_left_margin(28)
+    pdf.ln(5)
+    pdf.set_fill_color(96, 150, 208)
+    pdf.set_draw_color(204, 204, 204)
+    pdf.cell(75, 10, "Name", 1, 0, "C", True)
+    pdf.cell(25, 10, "Score", 1, 0, "C", True)
+    pdf.cell(25, 10, "Substitutions", 1, 0, "C", True)
+    pdf.cell(25, 10, "Time", 1, 1, "C", True)
+
+    pdf.set_fill_color(247, 247, 247)
+    performance = results['Performance'] #Dataframe
+    print_names = ""
+    for i in range(len(performance)):
+        y_information += 10
+        pdf.cell(75, 10, f"{performance.iloc[i]['Names']}", 1, 0, "C", True)
+        pdf.cell(25, 10, f"{performance.iloc[i]['Score']}", 1, 0, "C", True)
+        pdf.cell(25, 10, f"{performance.iloc[i]['Sub_percent']}%", 1, 0, "C", True)
+        pdf.cell(25, 10, f"{performance.iloc[i]['Time']}", 1, 0, "C", True)
+        if i != len(performance) - 1:
+            print_names += performance.iloc[i]['Names']
+            print_names += ", "   
+        else:
+            print_names += "and " + performance.iloc[i]['Names']
+        pdf.ln()
+
+
+    pdf.set_font("Times", size=12, style ="")
+    pdf.set_left_margin(15)
+    pdf.set_y(y_information+25)
+    summary = f"The design tool is runned with {len(performance)} algorithms, namely: {print_names}. The {results['Algorithm']} yields the lowest score, as shown in the table. The substitutions by this algorithm are completed in {results['Time']} seconds."
+    pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
+ 
     # Save the PDF to a file
     pdf.output(filepath + "generated_report.pdf")
 
@@ -642,8 +681,8 @@ def add_necessary_columns_pdf(dataframe, constants):
     metric = constants["Metric"]
     element_type = list(dataframe.index)[0][:1]
     dataframe["Density"] = 0
-    dataframe["Cite_lat"] = constants["Coordinates site"]["Latitude"]
-    dataframe["Cite_lon"] = constants["Coordinates site"]["Longitude"]
+    dataframe["Cite_lat"] = constants["Cite latitude"]
+    dataframe["Cite_lon"] = constants["Cite longitude"]
     if metric == "GWP":
         dataframe["Gwp_factor"] = 0 
     elif metric == "Combined":

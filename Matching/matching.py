@@ -990,33 +990,33 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
     headers = []
     if greedy_single:
         matching.match_greedy(plural_assign=False)
-        matches.append({'Name': 'Greedy_single','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'Greedy Algorithm','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if greedy_plural:
         matching.match_greedy(plural_assign=True)
-        matches.append({'Name': 'Greedy_plural', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'Greedy Algorithm Plural', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if bipartite:
         matching.match_bipartite_graph()
-        matches.append({'Name': 'Bipartite', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'Maximum Bipartite Matching', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if milp:
         matching.match_mixed_integer_programming()
         matches.append({'Name': 'MILP','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if sci_milp:
         matching.match_scipy_milp()
-        matches.append({'Name': 'Scipy_MILP','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'Scipy MILP','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if genetic:
         matching.match_genetic_algorithm()
-        matches.append({'Name': 'Genetic','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'Genetic Algorithm','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if brute:
         matching.match_brute()
-        matches.append({'Name': 'Brute','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'Brute Force','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
     if bipartite_plural:
         matching.match_bipartite_plural()
-        matches.append({'Name': 'Bipartite plural','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'Maximum Bipartite Matching Plural','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
     if bipartite_plural_multiple:
         matching.match_bipartite_plural_multiple()
-        matches.append({'Name': 'Bipartite plural multiple','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'Maximum Bipartite Matching Plural Multiple','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     # TODO convert list of dfs to single df
     return matches
 

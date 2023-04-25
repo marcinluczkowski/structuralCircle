@@ -30,8 +30,9 @@ constants = {
     "Project name": "Bod nidarosdomen",
     "Metric": "GWP",
     "Algorithms": ["bipartite", "greedy_plural", "greedy_single", "bipartite_plural"],
-    "Include transportation": False,
-    "Coordinates site": {"Latitude": "63.4269", "Longitude": "10.3969"},
+    "Include transportation": True,
+    "Cite latitude": "63.4269",
+    "Cite longitude": "10.3969",
     "Demand file location": r"./CSV/pdf_demand.csv",
     "Supply file location": r"./CSV/pdf_supply.csv"
 }
@@ -82,6 +83,8 @@ simple_pairs = hm.extract_pairs_df(result)
 pdf_results = hm.extract_results_df_pdf(result, constants)
 print("Simple pairs:")
 print(simple_pairs)
+simple_results = hm.extract_results_df(result, "Test")
+print(simple_results)
 
 #TODO: Add the information to the report!
 

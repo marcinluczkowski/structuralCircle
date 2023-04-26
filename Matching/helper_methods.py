@@ -350,14 +350,7 @@ def plot_bubble(demand, supply, **kwargs):
     plt.show()
 
 
-    Returns:
-        DataFrame: weight matrix
-    """
-    weights = weights.copy(deep = True)
-    cols=list(weights.columns)[-len(weights):]
-    weights["N"]=weights[cols].sum(axis=1)
-    weights = weights.drop(columns=cols)
-    return weights
+  
 
 def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new_lon, demand_gwp=lca.TIMBER_GWP,gwp_price=lca.GWP_PRICE,new_price=lca.NEW_ELEMENT_PRICE_TIMBER, length_min = 1, length_max = 15.0, area_min = 0.15, area_max = 0.15):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""

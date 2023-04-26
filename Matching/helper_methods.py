@@ -55,7 +55,7 @@ def extract_results_df_pdf(dict_list, constants):
         sub_df["Time"].append(run["Time"])
         num_subs = len(run['Match object'].pairs[run['Match object'].pairs["Supply_id"].str.startswith("S")])
         sub_df["Substitutions"].append(num_subs)
-        sub_df["Sub_percent"].append(round(num_subs/len(run["Match object"].supply)*100, 2))
+        sub_df["Sub_percent"].append(round(num_subs/len(run["Match object"].demand)*100, 2))
         sub_df["Names"].append(run["Name"])
         cols.append(run['Name'])
     algorithms_df = pd.DataFrame(sub_df, index= cols)   
@@ -144,7 +144,7 @@ def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new
     # create element areas independent of the length. Can change this back to Artur's method later, but I want to see the effect of even more randomness. 
     demand['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = demand_count) + area_min
     # intertia moment
-    demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    demand['Moment of Inertia'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
     # height - assuming square cross sections
     #demand['Height'] = np.power(demand['Area'], 0.5)
     # gwp_factor
@@ -171,7 +171,7 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
     supply = pd.DataFrame()
     supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
     supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
-    supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    supply['Moment of Inertia'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
     supply['Height'] = np.power(supply['Area'], 0.5)
     supply['Gwp_factor'] = supply_gwp
     supply["Demand_lat"]=demand_lat
@@ -197,7 +197,7 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
     supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
     supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
     #TODO: Only works for squared sections! Not applicable for steel sections
-    supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    supply['Moment of Inertia'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
     supply['Material'] = ""
     supply["Location"]=0
     supply["Latitude"]=0
@@ -210,7 +210,7 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
         supply.loc[row,"Latitude"]=supply_coords.loc[lokasjon,"Latitude"]
         supply.loc[row,"Longitude"]=supply_coords.loc[lokasjon,"Longitude"]
         supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Location"]
-    supply.index = map(lambda text: 'S' + str(text), supply.index)
+    #supply.index = map(lambda text: 'S' + str(text), supply.index) 
 
     return supply.round(4)
 
@@ -220,7 +220,7 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
     demand['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = demand_count) + length_min
     demand['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = demand_count) + area_min
     #TODO: Only works for squared sections! Not applicable for steel sections
-    demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    demand['Moment of Inertia'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
     demand['Material'] = ""
     demand["Manufacturer"]=0
     demand["Latitude"]=0
@@ -233,7 +233,7 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
         demand.loc[row,"Manufacturer"]= provider[0]
         demand.loc[row,"Latitude"]=provider[1]
         demand.loc[row,"Longitude"]=provider[2]
-    demand.index = map(lambda text: 'D' + str(text), demand.index)
+    #demand.index = map(lambda text: 'D' + str(text), demand.index)
 
     return demand.round(4)
 
@@ -390,22 +390,18 @@ def export_dataframe_to_csv(dataframe, file_location):
     """
     dataframe.to_csv(file_location)
 
-def import_dataframe_from_csv(file_location):
-    """Creates a dataframe from a csv file in a given file location
-
-    Args:
-        file_location (string): location of imported csv-file
-
-    Returns:
-        DataFrame: dataframe
-    """
-    dataframe = pd.read_csv(file_location)
-    row_names = list(dataframe.index)
-    new_row_names = list(dataframe["Unnamed: 0"])
-    row_dict = {row_names[i]: new_row_names[i] for i in range(len(row_names))}
-    dataframe.drop(columns=["Unnamed: 0"], inplace = True)
-    dataframe.rename(index=row_dict, inplace = True)
+def import_dataframe_from_file(file_location, index_replacer):
+    if "xlsx" in file_location:
+        dataframe = pd.read_excel(file_location)
+    else: #CSV file
+        dataframe = pd.read_csv(file_location)
+    dataframe.drop(columns=["Column1"], inplace = True)
+    dataframe.index = map(lambda text: index_replacer + str(text), dataframe.index)
+    new_columns = {col: col.split('[')[0].strip() for col in dataframe.columns}
+    dataframe = dataframe.rename(columns = new_columns)
+    dataframe = dataframe.fillna(0.0)
     return dataframe
+
 
 
 def add_graph_plural(demand_matrix, supply_matrix, weight_matrix, incidence_matrix):
@@ -451,7 +447,7 @@ def generate_pdf_report(results, filepath):
         pdf.rect(0, 0, 210, 297, "F")
         
         # Add the image to the PDF
-        pdf.image("C:/Users/sigur/Downloads/NTNU-logo.png", x=10, y=10, w=30)
+        pdf.image(r"./Results/NTNU-logo.png", x=10, y=10, w=30)
 
         # Add the date to the upper right corner of the PDF
         pdf.set_xy(200, 10)
@@ -528,9 +524,9 @@ def generate_pdf_report(results, filepath):
     pdf.set_left_margin(15)
     pdf.set_y(110)
     pdf.set_font("Times", size=12, style ="")
-    summary = f"The '{results['Algorithm']}' algorithm yields the best results, substituting {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using {results['Metric']} as the optimization metric, a total score of {results['Score']} {results['Unit']} is achieved. For comparison, a score of {results['All new score']} {results['Unit']} would have been obtained by employing exclusively new materials. This results in a total saving of {savings}%."
+    summary = f"The '{results['Algorithm']}' algorithm yields the best results, substituting {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {results['Score']} {results['Unit']} is achieved. For comparison, a score of {results['All new score']} {results['Unit']} would have been obtained by employing exclusively new materials. This results in a total saving of {savings}%."
     if transportation_included:
-        summary += f" Note that transportation is accounted for and contributes {results['Transportation percentage']}% to the total score. "
+        summary += f" Note that transportation is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
     else:
         summary += f" Note that transportation is not accounted for. "
     summary += f"Open the CSV file with the file path '{filepath}substitutions.csv' to examine the substitutions."
@@ -572,17 +568,17 @@ def generate_pdf_report(results, filepath):
     pdf.set_left_margin(28)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
-    pdf.cell(50, 10, "Elements", 1, 0, "C", True)
-    pdf.cell(50, 10, "Filename", 1, 0, "C", True)
-    pdf.cell(50, 10, "Number of elements", 1, 1, "C", True)
+    pdf.cell(30, 10, "Elements", 1, 0, "C", True)
+    pdf.cell(80, 10, "Filename", 1, 0, "C", True)
+    pdf.cell(40, 10, "Number of elements", 1, 1, "C", True)
     pdf.set_fill_color(247, 247, 247)
-    pdf.cell(50, 10, f"Reused", 1, 0, "C", True)
-    pdf.cell(50, 10, f"{results['Supply file location'].split('/')[-1]}", 1, 0, "C", True)
-    pdf.cell(50, 10, f"{results['Number_reused']}", 1, 0, "C", True)
+    pdf.cell(30, 10, f"Reused", 1, 0, "C", True)
+    pdf.cell(80, 10, f"{results['Supply file location'].split('/')[-1]}", 1, 0, "C", True)
+    pdf.cell(40, 10, f"{results['Number_reused']}", 1, 0, "C", True)
     pdf.ln()
-    pdf.cell(50, 10, f"Demand", 1, 0, "C", True)
-    pdf.cell(50, 10, f"{results['Demand file location'].split('/')[-1]}", 1, 0, "C", True)
-    pdf.cell(50, 10, f"{results['Number_demand']}", 1, 0, "C", True)
+    pdf.cell(30, 10, f"Demand", 1, 0, "C", True)
+    pdf.cell(80, 10, f"{results['Demand file location'].split('/')[-1]}", 1, 0, "C", True)
+    pdf.cell(40, 10, f"{results['Number_demand']}", 1, 0, "C", True)
     
     #TODO: Add more information about the datasets. Some histograms and graphs!
 
@@ -641,9 +637,11 @@ def generate_pdf_report(results, filepath):
         pdf.cell(25, 10, f"{performance.iloc[i]['Score']}", 1, 0, "C", True)
         pdf.cell(25, 10, f"{performance.iloc[i]['Sub_percent']}%", 1, 0, "C", True)
         pdf.cell(25, 10, f"{performance.iloc[i]['Time']}", 1, 0, "C", True)
-        if i != len(performance) - 1:
+        if len(performance) == 1:
             print_names += performance.iloc[i]['Names']
-            print_names += ", "   
+        elif i != len(performance) - 1:
+            print_names += performance.iloc[i]['Names']
+            print_names += ", " 
         else:
             print_names += "and " + performance.iloc[i]['Names']
         pdf.ln()
@@ -687,7 +685,7 @@ def add_necessary_columns_pdf(dataframe, constants):
         dataframe["Price"] = 0
 
     for row in range(len(dataframe)):
-        material = dataframe.iloc[row][dataframe.columns.get_loc("Material")]
+        material = dataframe.iloc[row][dataframe.columns.get_loc("Material")].split()[0] #NOTE: Assumes that material-column has the material name as the first word, e.g. "Timber C14" or "Steel ASTM A992"
         dataframe.iloc[row, dataframe.columns.get_loc("Density")] = constants[f"{material.upper()}_DENSITY"]
 
         if element_type == "S":
@@ -713,19 +711,52 @@ def generate_run_string(constants):
 def extract_best_solution(result, metric):
     results = extract_results_df(result, column_name = f"{metric}")
 
-def run_design_tool(constants):
-    score_function_string = generate_score_function_string(constants)
-    supply = import_dataframe_from_csv(r"" + constants["Supply file location"])
-    demand = import_dataframe_from_csv(r"" + constants["Demand file location"])
-    #Add necessary columns to run the algorithm
-    supply = add_necessary_columns_pdf(supply, constants)
-    demand = add_necessary_columns_pdf(demand, constants)
-    run_string = generate_run_string(constants)
-    result = eval(run_string)
-    simple_pairs = extract_pairs_df(result)
-    pdf_results = extract_results_df_pdf(result, constants)
-    pdf = generate_pdf_report(pdf_results, filepath = r"./Results/")
+def create_graph(supply, demand, target_column, number_of_intervals, save_filename):
+    supply_lengths = supply[target_column].to_numpy()
+    demand_lengths = demand[target_column].to_numpy()
+    max_length = np.ceil(np.max([np.max(supply_lengths), np.max(demand_lengths)]))
+    min_length = np.floor(np.min([np.min(supply_lengths), np.min(demand_lengths)]))
+    interval_size = (max_length - min_length) / number_of_intervals
+    supply_counts = {}
+    demand_counts = {}
+    start = min_length
+    for i in range(number_of_intervals):
+        end = start + interval_size
+        #intervals.append("{:.1f}-{:.1f}".format(start, end))
+        supply_counts["{:.1f}-{:.1f}".format(start, end)] = 0
+        demand_counts["{:.1f}-{:.1f}".format(start, end)] = 0
+        start = end
 
+    for length in supply_lengths:
+        for interval in supply_counts:
+            start, end = map(float, interval.split("-"))
+            if start <= length < end:
+                supply_counts[interval] += 1
+                break
+    for length in supply_lengths:
+        for interval in demand_counts:
+            start, end = map(float, interval.split("-"))
+            if start <= length < end:
+                demand_counts[interval] += 1
+                break
 
+    
+    boxplot,ax=plt.subplots(figsize = (7, 5))
+    label = list(supply_counts.keys())
+    supply_values = supply_counts.values()
+    demand_values = demand_counts.values()
+    x=np.arange(len(label))
+    width=0.25
+    plt.rcParams["font.family"] = "Sans Serif"
+    plt.grid(visible = True, color = "lightgrey", axis = "y")
+    plt.xlabel("Lengths [m]", fontsize = 14)
+    plt.ylabel("Number of elements", fontsize = 14)
+    bar1=ax.bar(x-width,supply_values,width,label="Reuse")
+    bar2=ax.bar(x,demand_values,width,label="Demand")
+    ax.set_facecolor("white")
+    ax.set_xticks(x,label, fontsize = 12)
+    ax.legend()
+    plt.plot()
+    plt.savefig(save_filename, dpi = 300)
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

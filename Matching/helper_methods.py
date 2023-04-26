@@ -713,6 +713,19 @@ def generate_run_string(constants):
 def extract_best_solution(result, metric):
     results = extract_results_df(result, column_name = f"{metric}")
 
+def run_design_tool(constants):
+    score_function_string = generate_score_function_string(constants)
+    supply = import_dataframe_from_csv(r"" + constants["Supply file location"])
+    demand = import_dataframe_from_csv(r"" + constants["Demand file location"])
+    #Add necessary columns to run the algorithm
+    supply = add_necessary_columns_pdf(supply, constants)
+    demand = add_necessary_columns_pdf(demand, constants)
+    run_string = generate_run_string(constants)
+    result = eval(run_string)
+    simple_pairs = extract_pairs_df(result)
+    pdf_results = extract_results_df_pdf(result, constants)
+    pdf = generate_pdf_report(pdf_results, filepath = r"./Results/")
+
 
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

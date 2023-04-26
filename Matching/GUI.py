@@ -97,10 +97,10 @@ def calculate():
         messagebox.showerror("Invalid input", "Please select at least one algorithm")
     
     else:
+        result_label.config(text="Running program...", foreground="green")
         updateconstants()
         score_function_string = hm.generate_score_function_string(constants)
 
-        #TODO FIX this
         supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
         demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
         constraint_dict = constants["constraint_dict"]
@@ -108,7 +108,6 @@ def calculate():
         supply = hm.add_necessary_columns_pdf(supply, constants)
         demand = hm.add_necessary_columns_pdf(demand, constants)
         run_string = hm.generate_run_string(constants)
-        result_label.config(text="Running program...", foreground="green")
         
         result = eval(run_string)
         simple_pairs = hm.extract_pairs_df(result)
@@ -163,12 +162,13 @@ def get_list_algos():
 
 def browse_supply_file():
     global supply_filepath
-    supply_filepath = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx"),("CSV Files", "*.csv")],
+    supply_filepath = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx"),("CSV Files", "*.csv"), ("all", "*")],
         title="Select a .xlsx or .csv file"
     )
     if supply_filepath:
         supply_filename = supply_filepath.split("/")[-1]
         supply_file_label.config(text=supply_filename,foreground="green")
+        #TODO: Support both excel and csv file
         supply_df=pd.read_excel(supply_filepath)
         num_supply=int(len(supply_df.index))
         num_supply_elements.set(num_supply)

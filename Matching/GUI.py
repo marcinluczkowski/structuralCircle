@@ -34,7 +34,7 @@ constants = {
     "Cite longitude": "10.3969",
     "Demand file location": r"./CSV/pdf_demand.csv",
     "Supply file location": r"./CSV/pdf_supply.csv",
-    "constraint_dict": {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>=', 'Material': '=='}
+    "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 
 }
 
@@ -101,8 +101,8 @@ def calculate():
         score_function_string = hm.generate_score_function_string(constants)
 
         #TODO FIX this
-        supply = hm.import_dataframe_from_csv(r"" + constants["Supply file location"])
-        demand = hm.import_dataframe_from_csv(r"" + constants["Demand file location"])
+        supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
+        demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
         constraint_dict = constants["constraint_dict"]
         #Add necessary columns to run the algorithm
         supply = hm.add_necessary_columns_pdf(supply, constants)
@@ -112,6 +112,7 @@ def calculate():
         simple_pairs = hm.extract_pairs_df(result)
         pdf_results = hm.extract_results_df_pdf(result, constants)
         pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
+        print("IM DONE BITCH")
 
     
 def updateconstants():
@@ -139,19 +140,19 @@ def get_list_algos():
     Algorithms=[]
     if greedy_var.get()==1:
         Algorithms.append("greedy_single")
-    elif greedy_plural_var.get()==1:
+    if greedy_plural_var.get()==1:
         Algorithms.append("greedy_plural")
-    elif bipartite_var.get()==1:
+    if bipartite_var.get()==1:
         Algorithms.append("bipartite")
-    elif MILP_var.get()==1:
+    if MILP_var.get()==1:
         Algorithms.append("milp")
-    elif genetic_var.get()==1:
+    if genetic_var.get()==1:
         Algorithms.append("genetic")
-    elif brute_var.get()==1:
+    if brute_var.get()==1:
         Algorithms.append("brute")
-    elif bipartite_plural_var.get()==1:
+    if bipartite_plural_var.get()==1:
         Algorithms.append("bipartite_plural")
-    elif bipartite_multi_plural.get()==1:
+    if bipartite_multi_plural.get()==1:
         Algorithms.append("bipartite_plural_multiple")
     return Algorithms
 
@@ -568,7 +569,7 @@ def warning_longruntime_genetic():
     if genetic_var.get() and num_supply_elements.get()>50 and num_demand_elements.get()>50:
         result_label.configure(text="Warning! Genetic algorithm requires a very long runtime to completedue to the datasets size. ("+str(num_demand_elements.get())+" * "+str(num_supply_elements.get())+")", foreground="red")
         result_label.after(6000,clear_error_message)
-    elif not genetic_var() and num_supply_elements.get()>50 and num_demand_elements.get()>50:
+    elif not genetic_var.get() and num_supply_elements.get()>50 and num_demand_elements.get()>50:
         result_label.configure(text="")
         result_label.after(0,clear_error_message)
 

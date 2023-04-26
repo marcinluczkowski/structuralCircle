@@ -108,11 +108,15 @@ def calculate():
         supply = hm.add_necessary_columns_pdf(supply, constants)
         demand = hm.add_necessary_columns_pdf(demand, constants)
         run_string = hm.generate_run_string(constants)
+        result_label.config(text="Running program...", foreground="green")
+        
         result = eval(run_string)
         simple_pairs = hm.extract_pairs_df(result)
         pdf_results = hm.extract_results_df_pdf(result, constants)
+        result_label.config(text="Report generated", foreground="green")
+        
         pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
-        print("IM DONE BITCH")
+        print("LOOOOLL")
 
     
 def updateconstants():
@@ -159,8 +163,8 @@ def get_list_algos():
 
 def browse_supply_file():
     global supply_filepath
-    supply_filepath = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx")],
-        title="Select an Excel file"
+    supply_filepath = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx"),("CSV Files", "*.csv")],
+        title="Select a .xlsx or .csv file"
     )
     if supply_filepath:
         supply_filename = supply_filepath.split("/")[-1]
@@ -176,8 +180,8 @@ def browse_supply_file():
 
 def browse_demand_file():
     global demand_filepath
-    demand_filepath = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx")],
-        title="Select a CSV file"
+    demand_filepath = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx"),("CSV Files", "*.csv")],
+        title="Select a .xlsx or .csv file"
     )
 
     if demand_filepath:
@@ -605,7 +609,7 @@ root.title("Element Matching Machine")
 root.title_label = ttk.Label(root, text="Element Matching Program", font=("Montserrat", 34, "bold"), foreground="#00509e", background="#1F1F1F")
 root.title_label.place(relx=0.5,y=50,anchor="center")
 #Create describtion
-root.description_label = tk.Label(root, text="Choose demand and supply files (.XLSX) and fill in the below variables, then click \"Calculate\" to generate a report with the results from the desired matching algorithms.",font=("Montserrat", 12, "bold"), foreground="#00509e")
+root.description_label = tk.Label(root, text="Choose demand and supply files (.xlsx or .csv) and fill in the below variables, then click \"Calculate\" to generate a report with the results from the desired matching algorithms.",font=("Montserrat", 12, "bold"), foreground="#00509e")
 root.description_label.place(relx=0.5,rely=0.105,anchor="center")
 
 

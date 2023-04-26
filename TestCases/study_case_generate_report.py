@@ -28,8 +28,8 @@ constants = {
     ########################
     "Project name": "Sognsveien 17",
     "Metric": "GWP",
-    "Algorithms": ["bipartite", "greedy_plural", "greedy_single", "bipartite_plural"],
-    "Include transportation": False,
+    "Algorithms": ["bipartite", "greedy_plural"],
+    "Include transportation": True,
     "Cite latitude": "59.94161606",
     "Cite longitude": "10.72994518",
     "Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",

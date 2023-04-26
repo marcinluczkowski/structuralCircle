@@ -9,6 +9,7 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 import webbrowser
+import time
 
 
 constants = {
@@ -85,10 +86,10 @@ def calculate():
         OpenUrl()
     
     elif not demand_filepath_bool.get() or not supply_filepath_bool.get():
-            messagebox.showerror("Invalid input", "Please select input files")
+        messagebox.showerror("Invalid input", "Please select input files")
 
     elif matching_metric_var.get() not in ["Price","GWP","Combined"]:
-         messagebox.showerror("Invalid input", "Please select a valid metric. \"Combined\", \"GWP\" or \"Price\". ")
+        messagebox.showerror("Invalid input", "Please select a valid metric. \"Combined\", \"GWP\" or \"Price\". ")
 
     elif one_or_more_missing:
         messagebox.showerror("Invalid input", "One or more input field is empty")
@@ -96,8 +97,12 @@ def calculate():
     elif not one_or_more_choosen:
         messagebox.showerror("Invalid input", "Please select at least one algorithm")
     
-    else:
+    else:        
         result_label.config(text="Running program...", foreground="green")
+        root.update()
+        #messagebox.showinfo("Status", "Running program...")
+        #messagebox.showerror("Invalid input", "Running program....")
+        print("STARTED")
         updateconstants()
         score_function_string = hm.generate_score_function_string(constants)
 
@@ -113,11 +118,11 @@ def calculate():
         simple_pairs = hm.extract_pairs_df(result)
         pdf_results = hm.extract_results_df_pdf(result, constants)
         result_label.config(text="Report generated", foreground="green")
+        result_label.after(5000, clear_error_message)
         
         pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
         print("LOOOOLL")
 
-    
 def updateconstants():
     constants["TIMBER_GWP"]=float(Timber_new_gwp_entry.get())
     constants["TIMBER_REUSE_GWP"]=float(Timber_reused_gwp_entry.get())
@@ -133,11 +138,17 @@ def updateconstants():
     constants["Project name"]=Projectname_entry.get()
     constants["Metric"]=matching_metric_var_constant.get()
     constants["Algorithms"]=get_list_algos()
-    constants["Include transportation"]=include_transportation_var.get()
+    constants["Include transportation"]=getIncludeTranportYesNo()
     constants["Cite latitude"]=ProjectLatitude_entry.get()
     constants["Cite longitude"]=ProjectLongitude_entry.get()
     constants["Demand file location"]=r""+demand_filepath_string.get()
     constants["Supply file location"]=r""+supply_filepath_string.get()
+
+def getIncludeTranportYesNo():
+    if include_transportation_var.get() == 1:
+        return True
+    else:
+        return False
 
 def get_list_algos():
     Algorithms=[]
@@ -606,10 +617,10 @@ root = tk.Tk()
 root.attributes('-fullscreen', True)
 #Create title
 root.title("Element Matching Machine")
-root.title_label = ttk.Label(root, text="Element Matching Program", font=("Montserrat", 34, "bold"), foreground="#00509e", background="#1F1F1F")
-root.title_label.place(relx=0.5,y=50,anchor="center")
+root.title_label = ttk.Label(root, text="Element Matching Program", font=("Montserrat", 34, "bold"), foreground="#00509e")
+root.title_label.place(relx=0.5,rely=0.05,anchor="center")
 #Create describtion
-root.description_label = tk.Label(root, text="Choose demand and supply files (.xlsx or .csv) and fill in the below variables, then click \"Calculate\" to generate a report with the results from the desired matching algorithms.",font=("Montserrat", 12, "bold"), foreground="#00509e")
+root.description_label = tk.Label(root, text="Choose demand and supply files and fill in the below variables, then click \"Calculate\" to generate a report with the results from the desired matching algorithms.",font=("Montserrat", 12, "bold"), foreground="#00509e")
 root.description_label.place(relx=0.5,rely=0.105,anchor="center")
 
 

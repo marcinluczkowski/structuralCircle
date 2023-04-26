@@ -1,0 +1,79 @@
+import sys
+import random as rd
+import pandas as pd
+sys.path.append('./Matching')
+import helper_methods as hm
+from matching import run_matching
+import LCA as lca
+
+#Where is the actual site where our elements must be transportet too
+demand_coordinates = {"Latitude": "63.4269", "Longitude": "10.3969"}
+
+#Defines the coordinates from where the NEW elementes are transported from, 
+#Moelv:
+#new_coordinates={"Latitude":"10.7005","Longitude":"60.9277"}
+new_coordinates = {"Latitude": "63.4269", "Longitude": "10.3969"}
+
+
+#Defines different coordinates from where REUSED elements can be transported from
+supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
+
+tiller = ["Tiller", "63.3604", "10.4008"]
+gjovik = ["Gjovik", "60.8941", "10.5001"]
+orkanger = ["Orkanger", "63.3000", "9.8468"]
+storlien = ["Storlien", "63.3160", "12.1018"]
+
+supply_coords.loc[len(supply_coords)] = tiller
+supply_coords.loc[len(supply_coords)] = gjovik
+supply_coords.loc[len(supply_coords)] = orkanger
+supply_coords.loc[len(supply_coords)] = storlien
+
+
+constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
+
+demand = hm.create_random_data_demand(demand_count =10, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"])
+supply = hm.create_random_data_supply(supply_count=10,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords)
+
+supply.head()
+score_function_string_demand = "@lca.calculate_lca_demand(length=Length, area=Area, gwp_factor=Gwp_factor)"
+score_function_string_supply_transportation = "@lca.calculate_lca_supply(length=Length, area=Area, gwp_factor=Gwp_factor,demand_lat=Demand_lat,demand_lon=Demand_lon,supply_lat=Supply_lat,supply_lon=Supply_lon,include_transportation=True)"
+
+#result_with_transportation = run_matching(demand, supply, score_function_string_demand,score_function_string_supply_transportation, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True,brute=True)
+score_function_string_supply_wo_transportation = "@lca.calculate_lca_supply(length=Length, area=Area, gwp_factor=Gwp_factor,demand_lat=Demand_lat,demand_lon=Demand_lon,supply_lat=Supply_lat,supply_lon=Supply_lon,include_transportation=False)"
+hm.export_dataframe_to_csv(demand,r"C:\Users\sigur\OneDrive - NTNU\Masteroppgave\CSV\genetic_demand.csv")
+hm.export_dataframe_to_csv(supply,r"C:\Users\sigur\OneDrive - NTNU\Masteroppgave\CSV\genetic_supply.csv")
+result_wo_transportation = run_matching(demand, supply, score_function_string_demand,score_function_string_supply_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,genetic=True,brute=True)
+
+
+simple_pairs_wo_transportation = hm.extract_pairs_df(result_wo_transportation)
+simple_results_wo_transportation = hm.extract_results_df(result_wo_transportation, column_name = "LCA")
+print("Simple pairs without transportation LCA:")
+print(simple_pairs_wo_transportation)
+print()
+print("Simple results without transportation LCA")
+print(simple_results_wo_transportation)
+
+score_function_string_transportation = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor,distance = Distance, include_transportation=True)"
+result_transportation = run_matching(demand, supply, score_function_string_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,genetic=False,brute=False)
+simple_pairs_transportation = hm.extract_pairs_df(result_transportation)
+simple_results_transportation = hm.extract_results_df(result_transportation, column_name = "LCA")
+print("Simple pairs WITH transportation LCA:")
+print(simple_pairs_transportation)
+print()
+print("Simple results WITH transportation LCA")
+print(simple_results_transportation)
+
+
+
+score_function_string_score = "@lca.calculate_score(length=Length, area=Area, gwp_factor=Gwp_factor, distance = Distance, price_per_m2=Price_per_m2, priceGWP=Gwp_price, include_transportation=True)"
+
+result_score = run_matching(demand, supply, score_function_string_score, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,genetic=False,brute=False)
+simple_pairs_score = hm.extract_pairs_df(result_score)
+simple_results_score = hm.extract_results_df(result_score, column_name = "Total cost (transport, emissions, material price)")
+print("Simple pairs with price:")
+print(simple_pairs_score)
+print()
+print("Simple results with price")
+print(simple_results_score)
+
+

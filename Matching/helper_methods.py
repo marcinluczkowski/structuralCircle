@@ -9,6 +9,7 @@ import itertools
 import random
 from fpdf import FPDF
 from datetime import date
+import seaborn as sns
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
@@ -187,10 +188,9 @@ def plot_hexbin(df, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwar
 
     plt.show()
 
-def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.0, save_fig = False, 
-                        show_fig = False,  **kwargs):
+def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwargs):
     """Plot the Cross Section and length histogram using remapped values"""
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs) # set styling configuration
+    sns.set_theme(style = style, font_scale = font_scale, height = 20, rc = kwargs) # set styling configuration
     
     # get all unique areas
     cross_secs = ['(36x36)', '(36x48)', '(36x148)', '(36x198)', '(48x148)', '(48x198)', '(61x198)', '(73x198)', '(73x223)']
@@ -198,92 +198,95 @@ def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.0, save
     map_dict = {a:cs for a, cs in zip(sorted(unique_values), cross_secs)}
     map_dict2 = {a:(i+1) for i, a in enumerate(sorted(unique_values))}
     df['Cross Sections [mm]'] = df.Area.map(map_dict2).astype(int)
-    g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391", bins = 2*len(cross_secs))
-    #g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hist", color="#4CB391")
+    g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391")
     g.ax_joint.set_yticks(list(map_dict2.values()))
     g.ax_joint.set_yticklabels(cross_secs)
 
-    x_ticks = np.arange(df.Length.min()+1, df.Length.max()+2, 2)
-    g.ax_joint.set_xticks(x_ticks)
-    g.ax_joint.set_xticklabels(map(int, x_ticks))
-
     if save_fig:
         f_name = 'hexbin_mapped'
-        plt.tight_layout()
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
-    if show_fig:
-        plt.show()
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
+    plt.show()
 
 def barplot_sns(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
                 show_fig = False, **kwargs):
     """Add docstring""" 
     if normalize:
         result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
+
+def plot_savings(result_df, type, normalize = True, style = 'ticks', font_scale = 1.1, 
+                 show_fig = True,save_fig = False, **kwargs):
+    #plt.figure()
+    if normalize: # normalize the dataframe according to best score in each row
+        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
+
+    # Setting for the plot    
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
     
-    # Setting for the plot    
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-
-    fig, ax = plt.suplots(1,1)
-
-
-def plot_savings(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
-                show_fig = False, ratio_amount = 'ratio', xlabel = 'Elements (Demand:Supply)', **kwargs):
-    """Add docstring"""
-    #plt.figure()
-    if normalize: # normalize the dataframe according to best score in each row
-        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
-
-    # Setting for the plot    
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    fig, ax = plt.subplots(1,1)
     # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
-    sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True, ax = ax)
-    ax.set(xlabel= xlabel, ylabel='Score saved')
+    plot = sns.lineplot(data=result_df, palette="tab10", dashes = False, markers=True)
+    plot.set(xlabel='Elements (Demand : Supply)', ylabel='(GWP) score savings [%]')
     plt.xticks(rotation=30)
-
+    plt.ylim((90, None))
+    legend = plt.legend()
+    # get label texts inside legend and set font size
+    for text in legend.get_texts():
+        text.set_fontsize(kwargs['xtick.labelsize'])    
+    plt.tight_layout()
     if save_fig:
-        f_name = f"score saved {ratio_amount}"
-        plt.tight_layout()
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
+        f_name = f"score saved {type}_2"
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
     if show_fig:
         plt.show()
-
-def plot_old(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
-                show_fig = False, ratio_amount = 'ratio', xlabel = 'Elements (Demand:Supply)', **kwargs):
-    "Add docstring"
-    fig, ax = plt.subplots(1,1)
+    plt.close()
+def plot_old(result_df, type, normalize = True, style = 'ticks', font_scale = 1.1, 
+             show_fig = True, save_fig = False, **kwargs):
+    
     if normalize: # normalize the dataframe according to best score in each row
         result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
 
+    plt.figure()
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True, ax = ax)
-    ax.set(xlabel= xlabel, ylabel='% of elements substituted by reuse')
+    # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
+    plot = sns.lineplot(data=result_df, palette="tab10", dashes = False, markers=True)
+    plot.set(xlabel='Elements (Demand : Supply)', ylabel='Substitutions ratio [%]')
     plt.xticks(rotation=30)
 
+    # adjust font on labels
+    legend = plt.legend()
+    for text in legend.get_texts():
+        text.set_fontsize(kwargs['xtick.labelsize'])  
+    plt.tight_layout()
     if save_fig:
-        f_name = f'reused elements {ratio_amount}'
-        plt.tight_layout()
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
-
+        f_name = f'reused elements {type}_2'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
     if show_fig:
         plt.show()
-
-def plot_time(result_df, style = 'ticks', font_scale = 1.1, save_fig = False,
-            show_fig = False, ratio_amount = 'ratio', xlabel = 'Elements (Demand:Supply)', **kwargs):
-    """Add docstring"""
+    plt.close()
+def plot_time(result_df, type, style = 'ticks', font_scale = 1.1, 
+              show_fig = True, save_fig = False, **kwargs):
     #plt.figure()
-    fig, ax = plt.subplots(1,1)
     sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True, ax = ax)
-    ax.set(yscale="log", xlabel = xlabel, ylabel='Time [s]')
-    plt.xticks(rotation=30)
+    #palette names = 'tab10'
+    result_df.replace(0, np.nan, inplace = True)
+    plot = sns.lineplot(data=result_df.add(0.001), palette="tab10", dashes = False, markers=True)
+    plot.set(yscale="log", xlabel='Elements (Demand : Supply)', ylabel='Time [s]')
+    plt.xticks(rotation=65)
+    #plt.axhline(1.0, linestyle = ':', color = 'k')
+    plt.vlines(x='1024:10240', ymin=result_df.loc['1024:10240', 'MIP'] - 1800, ymax=result_df.loc['1024:10240', 'MIP'] + 5000, 
+               linewidth = kwargs['lines.linewidth'], colors='k', ls=':', lw=2, label=None)
+    plt.text('1024:10240', result_df.loc['1024:10240', 'MIP'], '*', fontsize = kwargs['xtick.labelsize'])
+    # adjust font on labels
+    legend = plt.legend()
+    for text in legend.get_texts():
+        text.set_fontsize(kwargs['xtick.labelsize'])  
+    plt.tight_layout()
     if save_fig:
-        f_name = f'time plot {ratio_amount}'
-        plt.tight_layout()
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
+        f_name = f'time plot {type}2'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
     if show_fig:
         plt.show()
-
+    plt.close()
 def plot_bubble(demand, supply, **kwargs):
 
     # if close to one another, don't add but increase size:

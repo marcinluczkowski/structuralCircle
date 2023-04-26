@@ -269,8 +269,8 @@ if __name__ == "__main__":
     
     # Generate a set of unique trusses from CSV file:
     PATH = "Data\\CSV files trusses\\truss_all_types_beta_4.csv"
-    save_figs = True
-    save_csv = True
+    save_figs = False
+    save_csv = False
     #PATH =  "Data\\CSV files trusses\\truss_all_types_beta_second_version.csv" Test with another dataset
     trusses = create_trusses_from_JSON(PATH)
     truss_elements = elements_from_trusses(trusses)
@@ -287,7 +287,8 @@ if __name__ == "__main__":
     #hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1, save_fig = save_figs, **plot_kwargs)
 
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
-    score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
+    score_function_string_demand = "@lca.calculate_lca_demand(length=Length, area=Area, gwp_factor=Gwp_factor)"
+    score_function_string_supply = "@lca.calculate_lca_demand(length=Length, area=Area, gwp_factor=Gwp_factor)"
 
     result_table = []
 
@@ -298,7 +299,8 @@ if __name__ == "__main__":
         # test
         # [15,10],
         # [25,20],
-        # [35,30]
+        # [25,20],
+        # [35,30],
         # variable ratios
         # [985,15],
         # [970,30],
@@ -353,8 +355,9 @@ if __name__ == "__main__":
         # hm.plot_hexbin(demand, supply)
         
         # Run the matching
-        result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = False,
-                            milp=True, sci_milp=False, greedy_single=True, greedy_plural=True, bipartite=True, solution_limit= 2000) 
+        result = run_matching(demand, supply, score_function_string_demand=score_function_string_demand, score_function_string_supply = score_function_string_supply,
+                            constraints = constraint_dict, add_new = False,
+                            milp=False, sci_milp=False, greedy_single=False, greedy_plural=True, bipartite=False, solution_limit= 20000) 
 
         pairs = hm.extract_pairs_df(result) # get matching pairs
         supply_assignments_df = hm.get_assignment_df(pairs, supply_ids= supply.index)
@@ -385,12 +388,6 @@ if __name__ == "__main__":
     normalised_old_df = results_old_df.apply(lambda row: row / max(row), axis = 1).multiply(100).round(2)
 
     
-    #hm.plot_savings(results_score_df, **plot_kwargs)
-    hm.plot_savings(normalised_score_df, save_fig = save_figs, **plot_kwargs) # Added by Sverre
-    #hm.plot_old(results_old_df, **plot_kwargs)
-    hm.plot_old(normalised_old_df, save_fig = save_figs, **plot_kwargs) # Added by Sverre to see effect of normalising numbers
-    hm.plot_time(results_time_df, save_fig = save_figs, **plot_kwargs)
-
     
     print(results_score_df)
     print(results_old_df)
@@ -408,20 +405,14 @@ if __name__ == "__main__":
         results_time_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_time.csv', index=True)
 
 
-    # hm.plot_savings(result_table)
     # print(result_df.transpose())
 
-
-    #hm.plot_histograms(all_elem_df)
-    # hm.plot_scatter(all_elem_df)
-    # hm.plot_bubble(demand, supply)
-    # hm.plot_hexbin(demand, supply)
 
     # --- write supply assignment dfs to Excel
     time_1 = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
     name_1 = "Assignments"
     assignment_path = f'Results/Supply Assignments var amount/{time_1}_{name_1}_score.xlsx'
-    write_assignments = True
+    write_assignments = False
     if write_assignments:
         with pd.ExcelWriter(assignment_path) as writer:
             for i, df_sheet in enumerate(supply_ass_df_list):

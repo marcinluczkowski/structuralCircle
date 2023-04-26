@@ -122,9 +122,17 @@ def remove_alternatives(x, y):
 
 def transform_weights(weights):
     """Transform the weight matrix to only contain one column with new elements in stead of one column for each new element
-
     Args:
         DataFrame: weight matrix
+
+    Returns:
+        DataFrame: weight matrix
+    """
+    weights = weights.copy(deep = True)
+    cols=list(weights.columns)[-len(weights):]
+    weights["N"]=weights[cols].sum(axis=1)
+    weights = weights.drop(columns=cols)
+    return weights
 
 
 ### ADD PLOTS

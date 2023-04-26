@@ -1017,7 +1017,6 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
     if bipartite_plural_multiple:
         matching.match_bipartite_plural_multiple()
         matches.append({'Name': 'Maximum Bipartite Matching Plural Multiple','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
-    # TODO convert list of dfs to single df
     return matches
 
 

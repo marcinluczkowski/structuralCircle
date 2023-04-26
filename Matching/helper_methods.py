@@ -229,17 +229,10 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
     for row in range(len(demand)):
         material = materials[random.randint(0, len(materials)-1)]
         demand.loc[row, "Material"] = material
-        if material == "Timber":
-            lat = demand_coords["Moelven"]["Latitude"]
-            lon = demand_coords["Moelven"]["Longitude"]
-            manu = "Moelven"
-        elif material == "Steel":
-            lat = demand_coords["Norsk stål"]["Latitude"]
-            lon = demand_coords["Norsk stål"]["Longitude"]
-            manu = "Norsk stål"
-        demand.loc[row,"Latitude"]=lat
-        demand.loc[row,"Longitude"]=lon
-        demand.loc[row,"Manufacturer"]=manu
+        provider = demand_coords[material]
+        demand.loc[row,"Manufacturer"]= provider[0]
+        demand.loc[row,"Latitude"]=provider[1]
+        demand.loc[row,"Longitude"]=provider[2]
     demand.index = map(lambda text: 'D' + str(text), demand.index)
 
     return demand.round(4)
@@ -620,6 +613,8 @@ def generate_pdf_report(results, filepath):
         pdf.set_y(65)
         pdf.set_font("Times", size=12, style ="")
         summary = f"All calculations in this report accounts for transportation. Transportation accounts for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation score for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
+        summary = f"All calculations in this report take transportation into consideration. Transportation is responsible for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation score for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
+        
         pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
         y_information = 100
 

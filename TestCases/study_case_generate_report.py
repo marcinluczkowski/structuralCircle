@@ -52,20 +52,18 @@ supply_coords.loc[len(supply_coords)] = gjovik
 supply_coords.loc[len(supply_coords)] = orkanger
 supply_coords.loc[len(supply_coords)] = storlien
 
-demand_coords = {
-    "Moelven": {"Latitude": "60.9298", "Longitude": "10.6956"},
-    "Norsk stål": {"Latitude": "59.8513", "Longitude": "10.475"}
-}
+
+demand_coords = {"Steel": ("Norsk Stål Trondheim", "63.4384474", "10.40994"), "Timber": ("XL-BYGG Lade","63.4423683","10.4438836")}
 
 
 materials = ["Timber", "Steel"]
 
 #GENERATE FILE
 #============
-#supply = hm.create_random_data_supply_pdf_reports(supply_count = 20, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-#demand = hm.create_random_data_demand_pdf_reports(demand_count = 20, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
-#hm.export_dataframe_to_csv(supply, r"" + constants["Supply file location"])
-#hm.export_dataframe_to_csv(demand, r"" + constants["Demand file location"])
+supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
+demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
+hm.export_dataframe_to_csv(supply, r"" + constants["Supply file location"])
+hm.export_dataframe_to_csv(demand, r"" + constants["Demand file location"])
 #========================================
 score_function_string = hm.generate_score_function_string(constants)
 supply = hm.import_dataframe_from_csv(r"" + constants["Supply file location"])

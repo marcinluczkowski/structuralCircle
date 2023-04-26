@@ -32,8 +32,10 @@ constants = {
     "Include transportation": True,
     "Cite latitude": "59.94161606",
     "Cite longitude": "10.72994518",
-    "Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
-    "Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
+    #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
+    #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
+    "Demand file location": r"./CSV/pdf_demand.csv",
+    "Supply file location": r"./CSV/pdf_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#

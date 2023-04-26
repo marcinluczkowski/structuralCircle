@@ -395,7 +395,8 @@ def import_dataframe_from_file(file_location, index_replacer):
         dataframe = pd.read_excel(file_location)
     else: #CSV file
         dataframe = pd.read_csv(file_location)
-    dataframe.drop(columns=["Column1"], inplace = True)
+    if "Column1" in list(dataframe.columns):
+        dataframe.drop(columns=["Column1"], inplace = True)
     dataframe.index = map(lambda text: index_replacer + str(text), dataframe.index)
     new_columns = {col: col.split('[')[0].strip() for col in dataframe.columns}
     dataframe = dataframe.rename(columns = new_columns)
@@ -505,19 +506,21 @@ def generate_pdf_report(results, filepath):
     pdf.set_font("Times", size=24, style ="")
     pdf.multi_cell(160, 7, txt="Summary of results")
     pdf.set_font("Times", size=10)
-    pdf.set_left_margin(28)
+    pdf.set_left_margin(30)
     pdf.ln(5)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
     pdf.cell(50, 10, f"Total score", 1, 0, "C", True)
-    pdf.cell(50, 10, "Substitutions", 1, 0, "C", True)
-    pdf.cell(50, 10, "Savings", 1, 1, "C", True)
+    pdf.cell(50, 10, f"Score without reuse", 1, 0, "C", True)
+    pdf.cell(25, 10, "Savings", 1, 0, "C", True)
+    pdf.cell(25, 10, "Substitutions", 1, 1, "C", True)
     pdf.set_fill_color(247, 247, 247)
     substitutions = round(results['Number of substitutions']/results['Number_demand']*100, 2)
     savings = round(results['Savings']/results['All new score']*100, 2)
     pdf.cell(50, 10, f"{results['Score']} {results['Unit']}", 1, 0, "C", True)
-    pdf.cell(50, 10, f"{substitutions}%", 1, 0, "C", True) 
-    pdf.cell(50, 10, f"{savings}%", 1, 1, "C", True)
+    pdf.cell(50, 10, f"{results['All new score']} {results['Unit']}", 1, 0, "C", True)
+    pdf.cell(25, 10, f"{savings}%", 1, 0, "C", True)
+    pdf.cell(25, 10, f"{substitutions}%", 1, 1, "C", True) 
     pdf.ln()
 
     #Short text summary
@@ -526,9 +529,9 @@ def generate_pdf_report(results, filepath):
     pdf.set_font("Times", size=12, style ="")
     summary = f"The '{results['Algorithm']}' algorithm yields the best results, substituting {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {results['Score']} {results['Unit']} is achieved. For comparison, a score of {results['All new score']} {results['Unit']} would have been obtained by employing exclusively new materials. This results in a total saving of {savings}%."
     if transportation_included:
-        summary += f" Note that transportation is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
+        summary += f" Note that impacts of transporting the materials to the construction site is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
     else:
-        summary += f" Note that transportation is not accounted for. "
+        summary += f" Note that impacts of transporting the materials to the construction site is not accounted for. "
     summary += f"Open the CSV file with the file path '{filepath}substitutions.csv' to examine the substitutions."
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
 
@@ -542,7 +545,7 @@ def generate_pdf_report(results, filepath):
     pdf.ln(5)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
-    pdf.set_left_margin(28)
+    pdf.set_left_margin(30)
     pdf.cell(50, 10, "Constant", 1, 0, "C", True)
     pdf.cell(50, 10, "Value", 1, 0, "C", True)
     pdf.cell(50, 10, "Unit", 1, 1, "C", True)
@@ -565,7 +568,7 @@ def generate_pdf_report(results, filepath):
     pdf.multi_cell(160, 7, txt="Information about datasets")
     pdf.set_font("Times", size=10)
     pdf.ln(5)
-    pdf.set_left_margin(28)
+    pdf.set_left_margin(30)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
     pdf.cell(30, 10, "Elements", 1, 0, "C", True)
@@ -591,7 +594,7 @@ def generate_pdf_report(results, filepath):
         pdf.set_font("Times", size=16, style ="")
         pdf.multi_cell(160, 7, txt="Impact of transportation")
         pdf.set_font("Times", size=10)
-        pdf.set_left_margin(28)
+        pdf.set_left_margin(30)
         pdf.ln(5)
         pdf.set_fill_color(96, 150, 208)
         pdf.set_draw_color(204, 204, 204)
@@ -609,7 +612,7 @@ def generate_pdf_report(results, filepath):
         pdf.set_y(65)
         pdf.set_font("Times", size=12, style ="")
         summary = f"All calculations in this report accounts for transportation. Transportation accounts for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation score for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
-        summary = f"All calculations in this report take transportation into consideration. Transportation is responsible for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation score for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
+        summary = f"All calculations in this report take impacts of transportation of the materials to the construction site into consideration. Transportation itself is responsible for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation impact for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
         
         pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
         y_information = 100
@@ -619,12 +622,12 @@ def generate_pdf_report(results, filepath):
     pdf.set_font("Times", size=16, style ="")
     pdf.multi_cell(160, 7, txt="Performance of algorithms")
     pdf.set_font("Times", size=10)
-    pdf.set_left_margin(28)
+    pdf.set_left_margin(17)
     pdf.ln(5)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
     pdf.cell(75, 10, "Name", 1, 0, "C", True)
-    pdf.cell(25, 10, "Score", 1, 0, "C", True)
+    pdf.cell(51, 10, "Total score", 1, 0, "C", True)
     pdf.cell(25, 10, "Substitutions", 1, 0, "C", True)
     pdf.cell(25, 10, "Time", 1, 1, "C", True)
 
@@ -634,9 +637,9 @@ def generate_pdf_report(results, filepath):
     for i in range(len(performance)):
         y_information += 10
         pdf.cell(75, 10, f"{performance.iloc[i]['Names']}", 1, 0, "C", True)
-        pdf.cell(25, 10, f"{performance.iloc[i]['Score']}", 1, 0, "C", True)
+        pdf.cell(51, 10, f"{performance.iloc[i]['Score']} {results['Unit']}", 1, 0, "C", True)
         pdf.cell(25, 10, f"{performance.iloc[i]['Sub_percent']}%", 1, 0, "C", True)
-        pdf.cell(25, 10, f"{performance.iloc[i]['Time']}", 1, 0, "C", True)
+        pdf.cell(25, 10, f"{performance.iloc[i]['Time']}s", 1, 0, "C", True)
         if len(performance) == 1:
             print_names += performance.iloc[i]['Names']
         elif i != len(performance) - 1:

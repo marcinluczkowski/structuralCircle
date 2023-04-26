@@ -395,7 +395,7 @@ def import_dataframe_from_file(file_location, index_replacer):
         dataframe = pd.read_excel(file_location)
     else: #CSV file
         dataframe = pd.read_csv(file_location)
-    dataframe.drop(columns=["Unnamed: 0"], inplace = True)
+    dataframe.drop(columns=["Column1"], inplace = True)
     dataframe.index = map(lambda text: index_replacer + str(text), dataframe.index)
     new_columns = {col: col.split('[')[0].strip() for col in dataframe.columns}
     dataframe = dataframe.rename(columns = new_columns)
@@ -524,9 +524,9 @@ def generate_pdf_report(results, filepath):
     pdf.set_left_margin(15)
     pdf.set_y(110)
     pdf.set_font("Times", size=12, style ="")
-    summary = f"The '{results['Algorithm']}' algorithm yields the best results, substituting {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using {results['Metric']} as the optimization metric, a total score of {results['Score']} {results['Unit']} is achieved. For comparison, a score of {results['All new score']} {results['Unit']} would have been obtained by employing exclusively new materials. This results in a total saving of {savings}%."
+    summary = f"The '{results['Algorithm']}' algorithm yields the best results, substituting {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {results['Score']} {results['Unit']} is achieved. For comparison, a score of {results['All new score']} {results['Unit']} would have been obtained by employing exclusively new materials. This results in a total saving of {savings}%."
     if transportation_included:
-        summary += f" Note that transportation is accounted for and contributes {results['Transportation percentage']}% to the total score. "
+        summary += f" Note that transportation is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
     else:
         summary += f" Note that transportation is not accounted for. "
     summary += f"Open the CSV file with the file path '{filepath}substitutions.csv' to examine the substitutions."
@@ -637,9 +637,11 @@ def generate_pdf_report(results, filepath):
         pdf.cell(25, 10, f"{performance.iloc[i]['Score']}", 1, 0, "C", True)
         pdf.cell(25, 10, f"{performance.iloc[i]['Sub_percent']}%", 1, 0, "C", True)
         pdf.cell(25, 10, f"{performance.iloc[i]['Time']}", 1, 0, "C", True)
-        if i != len(performance) - 1:
+        if len(performance) == 1:
             print_names += performance.iloc[i]['Names']
-            print_names += ", "   
+        elif i != len(performance) - 1:
+            print_names += performance.iloc[i]['Names']
+            print_names += ", " 
         else:
             print_names += "and " + performance.iloc[i]['Names']
         pdf.ln()
@@ -709,54 +711,52 @@ def generate_run_string(constants):
 def extract_best_solution(result, metric):
     results = extract_results_df(result, column_name = f"{metric}")
 
-def run_design_tool(constants):
-    score_function_string = generate_score_function_string(constants)
-    supply = import_dataframe_from_csv(r"" + constants["Supply file location"])
-    demand = import_dataframe_from_csv(r"" + constants["Demand file location"])
-    #Add necessary columns to run the algorithm
-    supply = add_necessary_columns_pdf(supply, constants)
-    demand = add_necessary_columns_pdf(demand, constants)
-    run_string = generate_run_string(constants)
-    result = eval(run_string)
-    simple_pairs = extract_pairs_df(result)
-    pdf_results = extract_results_df_pdf(result, constants)
-    pdf = generate_pdf_report(pdf_results, filepath = r"./Results/")
-
 def create_graph(supply, demand, target_column, number_of_intervals, save_filename):
     supply_lengths = supply[target_column].to_numpy()
     demand_lengths = demand[target_column].to_numpy()
     max_length = np.ceil(np.max([np.max(supply_lengths), np.max(demand_lengths)]))
     min_length = np.floor(np.min([np.min(supply_lengths), np.min(demand_lengths)]))
     interval_size = (max_length - min_length) / number_of_intervals
-    intervals = {}
+    supply_counts = {}
+    demand_counts = {}
     start = min_length
     for i in range(number_of_intervals):
         end = start + interval_size
-        intervals.append("{:.1f}-{:.1f}".format(start, end))
-        intervals["{:.1f}-{:.1f}".format(start, end)] = 0
+        #intervals.append("{:.1f}-{:.1f}".format(start, end))
+        supply_counts["{:.1f}-{:.1f}".format(start, end)] = 0
+        demand_counts["{:.1f}-{:.1f}".format(start, end)] = 0
         start = end
 
     for length in supply_lengths:
-        for interval in intervals:
+        for interval in supply_counts:
             start, end = map(float, interval.split("-"))
             if start <= length < end:
-                intervals[interval] += 1
+                supply_counts[interval] += 1
+                break
+    for length in supply_lengths:
+        for interval in demand_counts:
+            start, end = map(float, interval.split("-"))
+            if start <= length < end:
+                demand_counts[interval] += 1
                 break
 
+    
     boxplot,ax=plt.subplots(figsize = (7, 5))
-    label=["0-0.5","0.5-1.0","1.0-1.5","1.5-2.0",">2.0"]
+    label = list(supply_counts.keys())
+    supply_values = supply_counts.values()
+    demand_values = demand_counts.values()
     x=np.arange(len(label))
     width=0.25
     plt.rcParams["font.family"] = "Sans Serif"
     plt.grid(visible = True, color = "lightgrey", axis = "y")
     plt.xlabel("Lengths [m]", fontsize = 14)
     plt.ylabel("Number of elements", fontsize = 14)
-    bar1=ax.bar(x-width,CatXGB_error,width,label="Cat-XGB")
-    bar2=ax.bar(x,LightGBM_error,width,label="LightGBM")
-    bar3=ax.bar(x+width,LinReg_error,width,label="LinReg")
+    bar1=ax.bar(x-width,supply_values,width,label="Reuse")
+    bar2=ax.bar(x,demand_values,width,label="Demand")
     ax.set_facecolor("white")
     ax.set_xticks(x,label, fontsize = 12)
     ax.legend()
+    plt.plot()
     plt.savefig(save_filename, dpi = 300)
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

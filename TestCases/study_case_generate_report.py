@@ -26,15 +26,14 @@ constants = {
     "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
     "STEEL_DENSITY": 7850,
     ########################
-    "Project name": "Bod nidarosdomen",
+    "Project name": "Sognsveien 17",
     "Metric": "GWP",
     "Algorithms": ["bipartite", "greedy_plural", "greedy_single", "bipartite_plural"],
     "Include transportation": False,
-    "Cite latitude": "63.4269",
-    "Cite longitude": "10.3969",
+    "Cite latitude": "59.94161606",
+    "Cite longitude": "10.72994518",
     "Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
-    #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
-    "Supply file location":"./CSV/pdf_supply.csv",
+    "Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -72,7 +71,7 @@ score_function_string = hm.generate_score_function_string(constants)
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
 
-#hm.create_graph(supply, demand, "Length", number_of_intervals= 5, save_filename = r"C:\Users\sigur\OneDrive - NTNU\Masteroppgave\Grafer_study_case")
+#hm.create_graph(supply, demand, "Length", number_of_intervals= 2, save_filename = r"C:\Users\sigur\Downloads\test.png")
 
 constraint_dict = constants["constraint_dict"]
 #Add necessary columns to run the algorithm
@@ -84,7 +83,6 @@ simple_pairs = hm.extract_pairs_df(result)
 pdf_results = hm.extract_results_df_pdf(result, constants)
 pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
 print(hm.extract_pairs_df(result))
-
 
 
 

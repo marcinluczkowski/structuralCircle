@@ -122,7 +122,7 @@ def calculate():
         
         pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
         result_label.config(text="Report generated", foreground="green")
-        result_label.after(5000, clear_error_message)
+        result_label.after(10000, clear_error_message)
         open_report_button.place(relx=0.5,rely=0.95,anchor="center")
 
 
@@ -614,9 +614,12 @@ def OpenUrl():
 
 def open_report():
     filepath=r"./Results/generated_report.pdf"
+    #filepath=r"C:\Users\sigur\OneDrive\Dokumenter\NTNU notater\10.semester\Masteroppgave, Sigurd og Lars\structuralCircle\Results\generated_report.pdf"
     print("LOOOOL")
     if platform.system()=="Windows":
-        os.startfile(filepath)
+        current_directory = os.getcwd()
+        file = current_directory + filepath
+        os.startfile(file)
     elif platform.system() == "Darwin":
         subprocess.call(["open", filepath])
     else:

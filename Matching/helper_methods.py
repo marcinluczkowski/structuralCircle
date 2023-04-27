@@ -438,7 +438,7 @@ def count_matches(matches, algorithm):
     return matches.pivot_table(index = [algorithm], aggfunc = 'size')
 
 
-def generate_pdf_report(results, filepath):
+def generate_pdf_report(results,projectname, filepath):
     def new_page():
         # Add a page to the PDF
         pdf.add_page()
@@ -458,7 +458,7 @@ def generate_pdf_report(results, filepath):
     # Create a new PDF object
 
     #Add CSV containing results to "Results"-folder
-    export_dataframe_to_csv(results["Pairs"], filepath + "substitutions.csv")
+    export_dataframe_to_csv(results["Pairs"], filepath + (projectname+"_substitutions.csv"))
     if results["Transportation included"] == "No":
         transportation_included = False
     elif results["Transportation included"] == "Yes":
@@ -532,7 +532,7 @@ def generate_pdf_report(results, filepath):
         summary += f" Note that impacts of transporting the materials to the construction site is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
     else:
         summary += f" Note that impacts of transporting the materials to the construction site is not accounted for. "
-    summary += f"Open the CSV file with the file path '{filepath}substitutions.csv' to examine the substitutions."
+    summary += f"Open the CSV-file \"{projectname}_substitutions.csv\" to examine the substitutions."
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
 
 
@@ -657,7 +657,7 @@ def generate_pdf_report(results, filepath):
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
  
     # Save the PDF to a file
-    pdf.output(filepath + "generated_report.pdf")
+    pdf.output(filepath + projectname+"_report.pdf")
 
 
 

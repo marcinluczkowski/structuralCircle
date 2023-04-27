@@ -49,6 +49,14 @@ def checkalgos():
             One_or_more_choosen=True
     return One_or_more_choosen
 
+def giveFileName():
+    projectname=Projectname_entry.get()
+    projectname=projectname.replace(" ","_")
+    filename=projectname+"_report.pdf"
+    filename_tk.set(filename)
+    return projectname
+
+
 def checkinputfields():
     One_or_more_missing=False
     InputfieldsCombined_Inc_Transport=[Projectname_entry,ProjectLatitude_entry,ProjectLongitude_entry,Timber_reused_gwp_entry,Timber_new_gwp_entry,Timber_price_entry,Timber_reused_price_entry,Steel_reused_gwp_entry,Steel_new_gwp_entry,Steel_price_entry,Steel_reused_price_entry,GWP_valuation_entry,Transport_GWP_entry,Transport_price_entry]
@@ -103,7 +111,6 @@ def calculate():
         root.update()
         #messagebox.showinfo("Status", "Running program...")
         #messagebox.showerror("Invalid input", "Running program....")
-        print("STARTED")
         updateconstants()
         score_function_string = hm.generate_score_function_string(constants)
 
@@ -119,8 +126,8 @@ def calculate():
         simple_pairs = hm.extract_pairs_df(result)
         pdf_results = hm.extract_results_df_pdf(result, constants)
         
-        
-        pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
+        projectname=giveFileName()
+        pdf = hm.generate_pdf_report(pdf_results,projectname, filepath = r"./Results/")
         result_label.config(text="Report generated", foreground="green")
         result_label.after(10000, clear_error_message)
         open_report_button.place(relx=0.5,rely=0.95,anchor="center")
@@ -584,7 +591,7 @@ def warning_longruntime_brute():
         result_label.after(4000,clear_error_message)
 
 def warning_longruntime_genetic():
-    if genetic_var.get() and num_supply_elements.get()>50 and num_demand_elements.get()>50:
+    if genetic_var.get() and num_supply_elements.get()>50 or num_demand_elements.get()>50:
         result_label.configure(text="Warning! Genetic algorithm requires a very long runtime to completedue to the datasets size. ("+str(num_demand_elements.get())+" * "+str(num_supply_elements.get())+")", foreground="red")
         result_label.after(6000,clear_error_message)
     elif not genetic_var.get() and num_supply_elements.get()>50 and num_demand_elements.get()>50:
@@ -613,9 +620,11 @@ def OpenUrl():
     webbrowser.open_new(url)
 
 def open_report():
-    filepath=r"./Results/generated_report.pdf"
-    #filepath=r"C:\Users\sigur\OneDrive\Dokumenter\NTNU notater\10.semester\Masteroppgave, Sigurd og Lars\structuralCircle\Results\generated_report.pdf"
-    print("LOOOOL")
+    filename=filename_tk.get()
+    filename="./Results/"+filename
+    print("filename",filename)
+    filepath=r""+filename
+
     if platform.system()=="Windows":
         current_directory = os.getcwd()
         file = current_directory + filepath
@@ -646,6 +655,7 @@ demand_filepath_bool=tk.BooleanVar()
 supply_filepath_string=tk.StringVar()
 demand_filepath_string=tk.StringVar()
 matching_metric_var_constant=tk.StringVar()
+filename_tk=tk.StringVar()
 
 
 ###LABELS,BUTTONS and ENTRYS###

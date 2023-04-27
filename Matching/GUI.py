@@ -469,7 +469,7 @@ def on_matching_metric_change(*args):
 
     elif matching_metric_var.get() == "Sverre":
         #messagebox.showerror("Invalid input", "Please enter a valid number for Timber reused GWP")
-        messagebox.showerror("Invalid input","As a tribute to Sverre, this project supervisor, you can now click \"Calculate\" to see where some of our knowlodge orginates from!")
+        messagebox.showerror("Invalid input","As a tribute to Sverre, this project supervisor, you can now click \"Calculate\" to see where some of our knowledge orginates from!")
         include_transportation_checkbutton.place_forget()
         
         #GWP

@@ -29,7 +29,7 @@ constants = {
     "Project name": "Sognsveien 17",
     "Metric": "GWP",
     "Algorithms": ["bipartite", "greedy_plural"],
-    "Include transportation": True,
+    "Include transportation": False,
     "Cite latitude": "59.94161606",
     "Cite longitude": "10.72994518",
     #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
@@ -68,8 +68,6 @@ materials = ["Timber", "Steel"]
 #========================================
 
 score_function_string = hm.generate_score_function_string(constants)
-#supply = hm.import_dataframe_from_csv(r"" + constants["Supply file location"])
-#demand = hm.import_dataframe_from_csv(r"" + constants["Demand file location"])
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
 

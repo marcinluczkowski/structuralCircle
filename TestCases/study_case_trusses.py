@@ -11,7 +11,38 @@ import pandas as pd
 import random
 import matplotlib.pyplot as plt
 import LCA as lca
-import math
+
+#==========USER FILLS IN============#
+#Constants
+#TODO: FIND ALL DEFAULT VALUES FOR CONSTANTS, especially for price
+constants = {
+    "TIMBER_GWP": 28.9,       # based on NEPD-3442-2053-EN
+    "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25 based on Eberhardt
+    "TRANSPORT_GWP": 96.0,    # TODO kg/m3/t based on ????
+    "TIMBER_DENSITY": 491.0,  # kg, based on NEPD-3442-2053-EN
+    "STEEL_GWP": 800, #Random value
+    "STEEL_REUSE_GWP": 4, #Random value
+    "VALUATION_GWP": 0.6, #In kr:Per kg CO2, based on OECD
+    "TIMBER_PRICE": 435, #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
+    "TIMBER_REUSE_PRICE" : 100, #Per m^3, Random value
+    "STEEL_PRICE": 500, #Per m^2, Random value
+    "STEEL_REUSE_PRICE": 200, #Per m^2, Random value
+    "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
+    "STEEL_DENSITY": 7850,
+    ########################
+    "Project name": "Sognsveien 17",
+    "Metric": "GWP",
+    "Algorithms": ["bipartite", "greedy_plural", "bipartite_plural", "bipartite_plural_multiple"],
+    "Include transportation": False,
+    "Cite latitude": "59.94161606",
+    "Cite longitude": "10.72994518",
+    #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
+    #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
+    "Demand file location": r"./CSV/bipartite_plural_demand.csv",
+    "Supply file location": r"./CSV/bipartite_plural_supply.csv",
+    "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
+}
+#========================#
 
 class truss():
     def __init__(self) -> None:
@@ -53,7 +84,7 @@ def elements_from_trusses(trusses):
                 "Length": elem[0]*0.001,
                 "Width": elem[1][0]*0.001,
                 "Height": elem[1][1]*0.001,
-                "Inertia_moment": elem[1][0]*0.001 * elem[1][1]*0.001**3 / 12,
+                "Moment of Inertia": elem[1][0]*0.001 * elem[1][1]*0.001**3 / 12,
                 "Area": elem[1][0]*0.001 * elem[1][1]*0.001,
             }
             t.append(e)
@@ -100,9 +131,7 @@ def plot_histograms(df):
     all_elements = [item for sublist in truss_elements for item in sublist]
     all_elem_df = pd.DataFrame(all_elements)
 
-    # demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height'])
-    # supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Is_new'])
-    constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
+    constraint_dict = {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>='}
     
     # From that set, distinguish N_D demand and N_S supply elements, based on the desired number and ratios:
     # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
@@ -116,10 +145,17 @@ def plot_histograms(df):
     supply.index = ['S' + str(num) for num in supply.index]
     supply.insert(5, "Is_new", False)
 
+    #Add material timber:
+    supply["Material"] = "Timber"
+    demand["Material"] = "Timber"
+    constraint_dict = constants["constraint_dict"]
+    score_function_string = hm.generate_score_function_string(constants)
+    #Add necessary columns to run the algorithm
+    supply = hm.add_necessary_columns_pdf(supply, constants)
+    demand = hm.add_necessary_columns_pdf(demand, constants)
+    run_string = hm.generate_run_string(constants)
+    result = eval(run_string)
     # Run the matching
-    result = run_matching(demand=demand, supply=supply, constraints=constraint_dict, add_new=False, greedy_single=True, bipartite=True,
-            milp=False, sci_milp=False)
-
     pairs = hm.extract_pairs_df(result)
 
     # Print results
@@ -286,9 +322,8 @@ if __name__ == "__main__":
     #hm.plot_hexbin(all_elem_df, font_scale=1)
     #hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1, save_fig = save_figs, **plot_kwargs)
 
-    constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
-    score_function_string_demand = "@lca.calculate_lca_demand(length=Length, area=Area, gwp_factor=Gwp_factor)"
-    score_function_string_supply = "@lca.calculate_lca_demand(length=Length, area=Area, gwp_factor=Gwp_factor)"
+    constraint_dict = {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>='}
+    score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
 
     result_table = []
 
@@ -346,18 +381,20 @@ if __name__ == "__main__":
         set_a, set_b = pick_random(N_D, N_S, truss_elements, whole_trusses=False)
         demand = pd.DataFrame(set_a)
         demand.index = ['D' + str(num) for num in demand.index]
-        demand["Gwp_factor"] = lca.TIMBER_GWP
+
 
         supply = pd.DataFrame(set_b)
         supply.index = ['S' + str(num) for num in supply.index]
-        supply["Gwp_factor"] = lca.TIMBER_REUSE_GWP
-        
-        # hm.plot_hexbin(demand, supply)
-        
+        supply["Material"] = "Timber"
+        demand["Material"] = "Timber"
         # Run the matching
-        result = run_matching(demand, supply, score_function_string_demand=score_function_string_demand, score_function_string_supply = score_function_string_supply,
-                            constraints = constraint_dict, add_new = False,
-                            milp=False, sci_milp=False, greedy_single=False, greedy_plural=True, bipartite=False, solution_limit= 20000) 
+        constraint_dict = constants["constraint_dict"]
+        score_function_string = hm.generate_score_function_string(constants)
+        #Add necessary columns to run the algorithm
+        supply = hm.add_necessary_columns_pdf(supply, constants)
+        demand = hm.add_necessary_columns_pdf(demand, constants)
+        run_string = hm.generate_run_string(constants)
+        result = eval(run_string)
 
         pairs = hm.extract_pairs_df(result) # get matching pairs
         supply_assignments_df = hm.get_assignment_df(pairs, supply_ids= supply.index)

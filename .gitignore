@@ -2,7 +2,9 @@
 _Artur_sandbox/
 */backup/
 */__pycache__/
-/Local Files/**
+/Local Files/**/
 !/Local Files/**/
+
+
 
 *.pyc

@@ -1079,14 +1079,16 @@ class Matching():
         #compare_df['OK'] = np.where(compare_df['Length Assigned'] <= compare_df['Length Capacity'], True, False)
         
   
-def run_matching(demand, supply, score_function_string, constraints = None, add_new = True, solution_limit = 120,
-                bipartite = False, greedy_single = False, greedy_plural = False, genetic = False, milp = False, sci_milp = False, brute=False, brutevol2 = False,brutevol3=False,brutevol4=False, bipartite_plural = False, bipartite_plural_multiple = False):
+def run_matching(demand, supply, score_function_string, constraints = None,  manual_match_strings = None, add_new = True, solution_limit = 120,
+                bipartite = False, greedy_single = False, greedy_plural = False, genetic = False, milp = False, sci_milp = False
+                , brute=False, brutevol2 = False,brutevol3=False,brutevol4=False, bipartite_plural = False, bipartite_plural_multiple = False):
 
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
     # create matching object 
-    matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string,constraints=constraints, add_new=add_new, multi = True, solution_limit=solution_limit)
+    matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string,constraints=constraints,
+                         add_new=add_new, multi = True, manual_match_list = manual_match_strings ,solution_limit=solution_limit)
     matches =[] # results to return
     headers = []
     if greedy_single:

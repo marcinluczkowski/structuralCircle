@@ -53,7 +53,7 @@ score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor
 
 # add the forced matching between 
 #manual_matching =['D3 AND S3', 'D4 NOT S5']
-manual_matching = 'D1 NOT S1'
+manual_matching = ['D1 NOT S1']
 result_simple = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, manual_match_strings = manual_matching, 
                              sci_milp=False, milp=False, greedy_single=True, bipartite=True)
 

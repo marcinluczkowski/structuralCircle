@@ -36,7 +36,6 @@ constants = {
     "Demand file location": r"./CSV/pdf_demand.csv",
     "Supply file location": r"./CSV/pdf_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
-
 }
 
 def checkalgos():
@@ -117,11 +116,13 @@ def calculate():
         result = eval(run_string)
         simple_pairs = hm.extract_pairs_df(result)
         pdf_results = hm.extract_results_df_pdf(result, constants)
-        result_label.config(text="Report generated", foreground="green")
-        result_label.after(5000, clear_error_message)
+        
         
         pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
-        print("LOOOOLL")
+        result_label.config(text="Report generated", foreground="green")
+        result_label.after(5000, clear_error_message)
+        open_report_button.place(relx=0.5,rely=0.95,anchor="center")
+
 
 def updateconstants():
     constants["TIMBER_GWP"]=float(Timber_new_gwp_entry.get())
@@ -605,12 +606,13 @@ def on_general_entry_string_click(event,entry,variabel):
         entry.delete(0, tk.END)
         entry.config(text="",fg="black")
 
-
 def OpenUrl():
     url="https://nrksuper.no/serie/newton/DMPP21001720/sesong-2020/episode-19"
     webbrowser.open_new(url)
 
-
+def open_report():
+    filepath="./Results/generated_report.pdf"
+    webbrowser.open_new(filepath)
 
 # Create the main window and configure it to fill the whole screen
 root = tk.Tk()
@@ -810,6 +812,7 @@ result_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
 #Create the caulculate button
 calculate_button = ttk.Button(root, text="Calculate", command=calculate)
 calculate_button.place(relx=0.5,rely=0.8,anchor="center",relheight=0.05,relwidth=0.10)
+open_report_button = ttk.Button(root, text="Open report", command=open_report)
 result_label = ttk.Label(root, text="")
 result_label.place(relx=0.5,rely=0.9,anchor="center")
 root.mainloop()

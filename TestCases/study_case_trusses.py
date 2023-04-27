@@ -400,9 +400,9 @@ if __name__ == "__main__":
         name = "var_amount_10k"
         #name = 'var_ratio'
         time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
-        results_score_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)
-        results_old_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_substituted.csv', index=True)
-        results_time_df.to_csv(f'Results/CSV_Matching/{time}_Result_{name}_time.csv', index=True)
+        results_score_df.to_csv(f'Local Files/Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)
+        results_old_df.to_csv(f'Local Files/Results/CSV_Matching/{time}_Result_{name}_substituted.csv', index=True)
+        results_time_df.to_csv(f'Local Files/Results/CSV_Matching/{time}_Result_{name}_time.csv', index=True)
 
 
     # print(result_df.transpose())
@@ -411,7 +411,7 @@ if __name__ == "__main__":
     # --- write supply assignment dfs to Excel
     time_1 = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
     name_1 = "Assignments"
-    assignment_path = f'Results/Supply Assignments var amount/{time_1}_{name_1}_score.xlsx'
+    assignment_path = f'Local Files/Results/Supply Assignments var amount/{time_1}_{name_1}_score.xlsx'
     write_assignments = False
     if write_assignments:
         with pd.ExcelWriter(assignment_path) as writer:

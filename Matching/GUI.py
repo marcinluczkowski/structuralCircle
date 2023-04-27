@@ -120,7 +120,7 @@ def calculate():
         pdf_results = hm.extract_results_df_pdf(result, constants)
         
         
-        pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
+        pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Local Files/Results/")
         result_label.config(text="Report generated", foreground="green")
         result_label.after(10000, clear_error_message)
         open_report_button.place(relx=0.5,rely=0.95,anchor="center")
@@ -827,4 +827,6 @@ if __name__ == "__main__":
     open_report_button = ttk.Button(root, text="Open report", command=open_report)
     result_label = ttk.Label(root, text="")
     result_label.place(relx=0.5,rely=0.9,anchor="center")
+    
+    # Run the program
     root.mainloop()

@@ -10,7 +10,9 @@ from tkinter import messagebox
 from tkinter import filedialog
 import webbrowser
 import time
-
+import subprocess
+import platform
+import os
 
 constants = {
     "TIMBER_GWP": 28.9,       # based on NEPD-3442-2053-EN
@@ -611,8 +613,15 @@ def OpenUrl():
     webbrowser.open_new(url)
 
 def open_report():
-    filepath="./Results/generated_report.pdf"
-    webbrowser.open_new(filepath)
+    filepath=r"./Results/generated_report.pdf"
+    print("LOOOOL")
+    if platform.system()=="Windows":
+        os.startfile(filepath)
+    elif platform.system() == "Darwin":
+        subprocess.call(["open", filepath])
+    else:
+        subprocess.call(["xdg-open", filepath])
+
 
 # Create the main window and configure it to fill the whole screen
 root = tk.Tk()

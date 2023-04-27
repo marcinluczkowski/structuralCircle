@@ -10,11 +10,11 @@ import random
 from fpdf import FPDF
 from datetime import date
 import seaborn as sns
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+#from reportlab.lib.pagesizes import A4
+#from reportlab.lib.units import cm
+#from reportlab.lib import colors
+#from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
+#from reportlab.pylib.styles import getSampleStyleSheet, ParagraphStyle
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 

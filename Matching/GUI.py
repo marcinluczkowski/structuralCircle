@@ -35,7 +35,6 @@ constants = {
     "Demand file location": r"./CSV/pdf_demand.csv",
     "Supply file location": r"./CSV/pdf_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
-
 }
 
 def checkalgos():
@@ -596,205 +595,205 @@ def OpenUrl():
     webbrowser.open_new(url)
 
 
-
-# Create the main window and configure it to fill the whole screen
-root = tk.Tk()
-root.attributes('-fullscreen', True)
-#Create title
-root.title("Element Matching Machine")
-root.title_label = ttk.Label(root, text="Element Matching Program", font=("Montserrat", 34, "bold"), foreground="#00509e", background="#1F1F1F")
-root.title_label.place(relx=0.5,y=50,anchor="center")
-#Create describtion
-root.description_label = tk.Label(root, text="Choose demand and supply files (.XLSX) and fill in the below variables, then click \"Calculate\" to generate a report with the results from the desired matching algorithms.",font=("Montserrat", 12, "bold"), foreground="#00509e")
-root.description_label.place(relx=0.5,rely=0.105,anchor="center")
-
-
-##VARIABLES
-num_supply_elements = tk.IntVar()
-num_demand_elements = tk.IntVar()
-supply_filepath_bool=tk.BooleanVar()
-demand_filepath_bool=tk.BooleanVar()
-supply_filepath_string=tk.StringVar()
-demand_filepath_string=tk.StringVar()
-matching_metric_var_constant=tk.StringVar()
+if __name__ == "__main__":
+    # Create the main window and configure it to fill the whole screen
+    root = tk.Tk()
+    root.attributes('-fullscreen', True)
+    #Create title
+    root.title("Element Matching Machine")
+    root.title_label = ttk.Label(root, text="Element Matching Program", font=("Montserrat", 34, "bold"), foreground="#00509e", background="#1F1F1F")
+    root.title_label.place(relx=0.5,y=50,anchor="center")
+    #Create describtion
+    root.description_label = tk.Label(root, text="Choose demand and supply files (.XLSX) and fill in the below variables, then click \"Calculate\" to generate a report with the results from the desired matching algorithms.",font=("Montserrat", 12, "bold"), foreground="#00509e")
+    root.description_label.place(relx=0.5,rely=0.105,anchor="center")
 
 
-###LABELS,BUTTONS and ENTRYS###
-
-#Create Supply file label and browse button
-supply_file_label = tk.Label(root, text="No supply file selected",foreground="red")
-supply_file_label.place(relx=0.18, rely=0.21,anchor="center")
-supply_file_button = ttk.Button(root, text="Browse Supply File", command=browse_supply_file)
-supply_file_button.place(relx=0.18, rely=0.18,anchor="center")
-num_supply_label=tk.Label(root)
-num_supply_label.place(relx=0.18, rely=0.235,anchor="center")
-
-#Create Demand file label browse button
-demand_file_label = tk.Label(root, text="No demand file selected",foreground="red")
-demand_file_label.place(relx=0.80, rely=0.21,anchor="center")
-demand_file_button = ttk.Button(root, text="Browse Demand File", command=browse_demand_file)
-demand_file_button.place(relx=0.80, rely=0.18,anchor="center")
-num_demand_label=tk.Label(root)
-num_demand_label.place(relx=0.80, rely=0.235,anchor="center")
-#Create construction_site detalils label
-Construction_site_label = tk.Label(root, text="Construction site details:",font=("Montserrat",12,"bold"),foreground="#000000")
-Construction_site_label.place(relx=0.5,rely=0.14,anchor="center")
-
-#Create projectname label and entry
-Projectname_label = tk.Label(root, text="Project name:")
-Projectname_value_prefilled = tk.StringVar(value=constants["Project name"])
-Projectname_entry = tk.Entry(root,textvariable=Projectname_value_prefilled,fg="grey",widt=16)
-Projectname_label.place(relx=0.315,rely=0.18,anchor="center")
-Projectname_entry.place(relx=0.41,rely=0.18,anchor="center")
-Projectname_entry.bind('<FocusIn>', lambda event,entry=Projectname_entry,variabel="Project name":on_general_entry_string_click(event,entry,variabel))
-
-#Create projec latitude label and entry
-ProjectLatitude_label = tk.Label(root, text="Latitude:")
-ProjectLatitude_value_prefilled = tk.StringVar(value=constants["Cite latitude"])
-ProjectLatitude_entry = tk.Entry(root,textvariable=ProjectLatitude_value_prefilled,fg="grey",width=7)
-ProjectLatitude_label.place(relx=0.50,rely=0.18,anchor="center")
-ProjectLatitude_entry.place(relx=0.55,rely=0.18,anchor="center")
-ProjectLatitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLatitude_entry,variabel="Cite latitude":on_general_entry_string_click(event,entry,variabel))
-
-#Create project longitude label and entry
-ProjectLongitude_label = tk.Label(root, text="Longitude:")
-ProjectLongitude_value_prefilled = tk.StringVar(value=constants["Cite longitude"])
-ProjectLongitude_entry = tk.Entry(root,textvariable=ProjectLongitude_value_prefilled,fg="grey",width=7)
-ProjectLongitude_label.place(relx=0.61,rely=0.18,anchor="center")
-ProjectLongitude_entry.place(relx=0.665,rely=0.18,anchor="center")
-ProjectLongitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLongitude_entry,variabel="Cite longitude":on_general_entry_string_click(event,entry,variabel))
+    ##VARIABLES
+    num_supply_elements = tk.IntVar()
+    num_demand_elements = tk.IntVar()
+    supply_filepath_bool=tk.BooleanVar()
+    demand_filepath_bool=tk.BooleanVar()
+    supply_filepath_string=tk.StringVar()
+    demand_filepath_string=tk.StringVar()
+    matching_metric_var_constant=tk.StringVar()
 
 
-# Create the Matching metric dropdown menu
-matching_metric_var = tk.StringVar()
-matching_metric_label = ttk.Label(root, text="Matching metric:",font=("Montserrat",12,"bold"),foreground="#000000")
-matching_metric_label.place(relx=0.5,rely=0.24,anchor="center")
-matching_metric_dropdown = ttk.Combobox(root, textvariable=matching_metric_var, values=["Price", "GWP", "Combined"])
-matching_metric_dropdown.place(relx=0.5,rely=0.27,anchor="center")
-matching_metric_var.trace("w", on_matching_metric_change)
+    ###LABELS,BUTTONS and ENTRYS###
 
-###TIMBER
-#Create the timber reused GWP input field (not shown before matching metric is choosen)
-Timber_reused_gwp_label = tk.Label(root, text="Reused timber GWP [kgCO2eq per m^3]:")
-Timber_reused_GWP_prefilled=tk.DoubleVar(value=constants["TIMBER_REUSE_GWP"])
-Timber_reused_gwp_entry = tk.Entry(root,textvariable=Timber_reused_GWP_prefilled,fg="grey",widt=5)
-Timber_reused_gwp_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
-Timber_reused_gwp_entry.bind('<FocusIn>', lambda event,entry=Timber_reused_gwp_entry,variabel="TIMBER_REUSE_GWP":on_general_entry_click(event,entry,variabel))
+    #Create Supply file label and browse button
+    supply_file_label = tk.Label(root, text="No supply file selected",foreground="red")
+    supply_file_label.place(relx=0.18, rely=0.21,anchor="center")
+    supply_file_button = ttk.Button(root, text="Browse Supply File", command=browse_supply_file)
+    supply_file_button.place(relx=0.18, rely=0.18,anchor="center")
+    num_supply_label=tk.Label(root)
+    num_supply_label.place(relx=0.18, rely=0.235,anchor="center")
 
-#Create the new timber GWP input field (not shown before matching metric is choosen)
-Timber_new_gwp_label = tk.Label(root, text="New timber GWP [kgCO2eq per m^3]:")
-Timber_new_prefilled=tk.DoubleVar(value=constants["TIMBER_GWP"])
-Timber_new_gwp_entry = tk.Entry(root,textvariable=Timber_new_prefilled,fg="grey",widt=5)
-Timber_new_gwp_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
-Timber_new_gwp_entry.bind('<FocusIn>', lambda event,entry=Timber_new_gwp_entry,variabel="TIMBER_GWP":on_general_entry_click(event,entry,variabel))
+    #Create Demand file label browse button
+    demand_file_label = tk.Label(root, text="No demand file selected",foreground="red")
+    demand_file_label.place(relx=0.80, rely=0.21,anchor="center")
+    demand_file_button = ttk.Button(root, text="Browse Demand File", command=browse_demand_file)
+    demand_file_button.place(relx=0.80, rely=0.18,anchor="center")
+    num_demand_label=tk.Label(root)
+    num_demand_label.place(relx=0.80, rely=0.235,anchor="center")
+    #Create construction_site detalils label
+    Construction_site_label = tk.Label(root, text="Construction site details:",font=("Montserrat",12,"bold"),foreground="#000000")
+    Construction_site_label.place(relx=0.5,rely=0.14,anchor="center")
 
-#Create the new timber price input field (not shown before matching metric is choosen)
-Timber_price_label = tk.Label(root, text="New timber price [kr per m^3]:")
-Timber_price_prefilled=tk.DoubleVar(value=constants["TIMBER_PRICE"])
-Timber_price_entry = tk.Entry(root,textvariable=Timber_price_prefilled,fg="grey",widt=5)
-Timber_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
-Timber_price_entry.bind('<FocusIn>', lambda event,entry=Timber_price_entry,variabel="TIMBER_PRICE":on_general_entry_click(event,entry,variabel))
+    #Create projectname label and entry
+    Projectname_label = tk.Label(root, text="Project name:")
+    Projectname_value_prefilled = tk.StringVar(value=constants["Project name"])
+    Projectname_entry = tk.Entry(root,textvariable=Projectname_value_prefilled,fg="grey",widt=16)
+    Projectname_label.place(relx=0.315,rely=0.18,anchor="center")
+    Projectname_entry.place(relx=0.41,rely=0.18,anchor="center")
+    Projectname_entry.bind('<FocusIn>', lambda event,entry=Projectname_entry,variabel="Project name":on_general_entry_string_click(event,entry,variabel))
 
-#Create the new timber price input field (not shown before matching metric is choosen)
-Timber_reused_price_label = tk.Label(root, text="Reused timber price [kr per m^3]:")
-Timber_reused_price_prefilled=tk.DoubleVar(value=constants["TIMBER_REUSE_PRICE"])
-Timber_reused_price_entry = tk.Entry(root,textvariable=Timber_reused_price_prefilled,fg="grey",widt=5)
-Timber_reused_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
-Timber_reused_price_entry.bind('<FocusIn>', lambda event,entry=Timber_reused_price_entry,variabel="TIMBER_REUSE_PRICE":on_general_entry_click(event,entry,variabel))
+    #Create projec latitude label and entry
+    ProjectLatitude_label = tk.Label(root, text="Latitude:")
+    ProjectLatitude_value_prefilled = tk.StringVar(value=constants["Cite latitude"])
+    ProjectLatitude_entry = tk.Entry(root,textvariable=ProjectLatitude_value_prefilled,fg="grey",width=7)
+    ProjectLatitude_label.place(relx=0.50,rely=0.18,anchor="center")
+    ProjectLatitude_entry.place(relx=0.55,rely=0.18,anchor="center")
+    ProjectLatitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLatitude_entry,variabel="Cite latitude":on_general_entry_string_click(event,entry,variabel))
 
-###STEEL
-#Create the steel reused GWP input field (not shown before matching metric is choosen)
-Steel_reused_gwp_label = tk.Label(root, text="Reused steel GWP [kgCO2eq per m^3]:")
-Steel_reused_GWP_prefilled=tk.DoubleVar(value=constants["STEEL_REUSE_GWP"])
-Steel_reused_gwp_entry = tk.Entry(root,textvariable=Steel_reused_GWP_prefilled,fg="grey",widt=5)
-Steel_reused_gwp_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
-Steel_reused_gwp_entry.bind('<FocusIn>', lambda event,entry=Steel_reused_gwp_entry,variabel="STEEL_REUSE_GWP":on_general_entry_click(event,entry,variabel))
-
-#Create the new steel GWP input field (not shown before matching metric is choosen)
-Steel_new_gwp_label = tk.Label(root, text="New steel GWP [kgCO2eq per m^3]:")
-Steel_new_GWP_prefilled=tk.DoubleVar(value=constants["STEEL_GWP"])
-Steel_new_gwp_entry = tk.Entry(root,textvariable=Steel_new_GWP_prefilled,fg="grey",widt=5)
-Steel_new_gwp_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
-Steel_new_gwp_entry.bind('<FocusIn>', lambda event,entry=Steel_new_gwp_entry,variabel="STEEL_GWP":on_general_entry_click(event,entry,variabel))
-
-#Create the new steel price input field (not shown before matching metric is choosen)
-Steel_price_label = tk.Label(root, text="New steel price [kr per m^3]:")
-Steel_price_prefilled=tk.DoubleVar(value=constants["STEEL_PRICE"])
-Steel_price_entry = tk.Entry(root,textvariable=Steel_price_prefilled,fg="grey",widt=5)
-Steel_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
-Steel_price_entry.bind('<FocusIn>', lambda event,entry=Steel_price_entry,variabel="STEEL_PRICE":on_general_entry_click(event,entry,variabel))
-
-#Create the reused steel price input field (not shown before matching metric is choosen)
-Steel_reused_price_label = tk.Label(root, text="Reused steel price [kr per m^3]:")
-Steel_reused_price_prefilled=tk.DoubleVar(value=constants["STEEL_REUSE_PRICE"])
-Steel_reused_price_entry = tk.Entry(root,textvariable=Steel_reused_price_prefilled,fg="grey",widt=5)
-Steel_reused_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
-Steel_reused_price_entry.bind('<FocusIn>', lambda event,entry=Steel_reused_price_entry,variabel="STEEL_REUSE_PRICE":on_general_entry_click(event,entry,variabel))
-
-#Create the validation GWP label and field
-GWP_valuation_label = tk.Label(root, text="Valuation of GWP [kr per kgCO2]:")
-GWP_valuation_prefilled=tk.DoubleVar(value=constants["VALUATION_GWP"])
-GWP_valuation_entry = tk.Entry(root,textvariable=GWP_valuation_prefilled,fg="grey",widt=5)
-GWP_valuation_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
-GWP_valuation_entry.bind('<FocusIn>', lambda event,entry=GWP_valuation_entry,variabel="VALUATION_GWP":on_general_entry_click(event,entry,variabel))
-
-###TRANSPORT
-# Create the Include transportation checkbox
-include_transportation_var = tk.IntVar()
-include_transportation_checkbutton = tk.Checkbutton(root, text="Include transportation",font=("Montserrat", 12, "bold"), foreground="#000000", variable=include_transportation_var,command=include_transportation_checked)
-
-# Create the TransportGWP label and entry
-Transport_GWP_label = tk.Label(root, text="GWP transportation [factor]:")
-Transport_GWP_prefilled=tk.DoubleVar(value=constants["TRANSPORT_GWP"])
-Transport_GWP_entry = tk.Entry(root,textvariable=Transport_GWP_prefilled,fg="grey",widt=5)
-Transport_GWP_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
-Transport_GWP_entry.bind('<FocusIn>', lambda event,entry=Transport_GWP_entry,variabel="TRANSPORT_GWP":on_general_entry_click(event,entry,variabel))
-
-#Create the TransportPrice label and entry
-Transport_price_label = tk.Label(root, text="Transportation price [kr per km per tonne]:")
-Transport_price_prefilled=tk.DoubleVar(value=constants["PRICE_TRANSPORTATION"])
-Transport_price_entry = tk.Entry(root,textvariable=Transport_price_prefilled,fg="grey",widt=5)
-Transport_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
-Transport_price_entry.bind('<FocusIn>', lambda event,entry=Transport_price_entry,variabel="PRICE_TRANSPORTATION":on_general_entry_click(event,entry,variabel))
-
-###ALGORITHMS
-
-#Create choose algorithms label
-Choose_algorithms_label = tk.Label(root, text="Choose the desidered algorithms:",font=("Montserrat",12,"bold"),foreground="#000000")
-
-greedy_var = tk.IntVar()
-greedy_checkbutton = tk.Checkbutton(root, text="Greedy",font=("Montserrat", 12), foreground="#000000", variable=greedy_var,command=none)
-
-greedy_plural_var = tk.IntVar()
-greedy_plural_checkbutton = tk.Checkbutton(root, text="Greedy plural",font=("Montserrat", 12), foreground="#000000", variable=greedy_plural_var,command=none)
-
-bipartite_var = tk.IntVar()
-bipartite_checkbutton = tk.Checkbutton(root, text="Bipartite",font=("Montserrat", 12), foreground="#000000", variable=bipartite_var,command=none)
-
-bipartite_plural_var = tk.IntVar()
-bipartite_plural_checkbutton = tk.Checkbutton(root, text="Bipartite plural",font=("Montserrat", 12), foreground="#000000", variable=bipartite_plural_var,command=none)
-
-bipartite_multi_plural = tk.IntVar()
-bipartite_multi_plural_checkbutton = tk.Checkbutton(root, text="Bipartite multi plural",font=("Montserrat", 12), foreground="#000000", variable=bipartite_multi_plural,command=none)
-
-MILP_var = tk.IntVar()
-MILP_checkbutton = tk.Checkbutton(root, text="MILP",font=("Montserrat", 12), foreground="#000000", variable=MILP_var,command=none)
-
-brute_var = tk.IntVar()
-brute_checkbutton = tk.Checkbutton(root, text="Brute force",font=("Montserrat", 12), foreground="#000000", variable=brute_var,command=warning_longruntime_brute)
-
-genetic_var = tk.IntVar()
-genetic_checkbutton = tk.Checkbutton(root, text="Genetic",font=("Montserrat", 12), foreground="#000000", variable=genetic_var,command=warning_longruntime_genetic)
+    #Create project longitude label and entry
+    ProjectLongitude_label = tk.Label(root, text="Longitude:")
+    ProjectLongitude_value_prefilled = tk.StringVar(value=constants["Cite longitude"])
+    ProjectLongitude_entry = tk.Entry(root,textvariable=ProjectLongitude_value_prefilled,fg="grey",width=7)
+    ProjectLongitude_label.place(relx=0.61,rely=0.18,anchor="center")
+    ProjectLongitude_entry.place(relx=0.665,rely=0.18,anchor="center")
+    ProjectLongitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLongitude_entry,variabel="Cite longitude":on_general_entry_string_click(event,entry,variabel))
 
 
-result_frame = ttk.Frame(root)
-result_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
-#result_label = ttk.Label(result_frame, text="Result:")
-#result_label.pack(side=tk.BOTTOM)
+    # Create the Matching metric dropdown menu
+    matching_metric_var = tk.StringVar()
+    matching_metric_label = ttk.Label(root, text="Matching metric:",font=("Montserrat",12,"bold"),foreground="#000000")
+    matching_metric_label.place(relx=0.5,rely=0.24,anchor="center")
+    matching_metric_dropdown = ttk.Combobox(root, textvariable=matching_metric_var, values=["Price", "GWP", "Combined"])
+    matching_metric_dropdown.place(relx=0.5,rely=0.27,anchor="center")
+    matching_metric_var.trace("w", on_matching_metric_change)
 
-#Create the caulculate button
-calculate_button = ttk.Button(root, text="Calculate", command=calculate)
-calculate_button.place(relx=0.5,rely=0.8,anchor="center",relheight=0.05,relwidth=0.10)
-result_label = ttk.Label(root, text="")
-result_label.place(relx=0.5,rely=0.9,anchor="center")
-root.mainloop()
+    ###TIMBER
+    #Create the timber reused GWP input field (not shown before matching metric is choosen)
+    Timber_reused_gwp_label = tk.Label(root, text="Reused timber GWP [kgCO2eq per m^3]:")
+    Timber_reused_GWP_prefilled=tk.DoubleVar(value=constants["TIMBER_REUSE_GWP"])
+    Timber_reused_gwp_entry = tk.Entry(root,textvariable=Timber_reused_GWP_prefilled,fg="grey",widt=5)
+    Timber_reused_gwp_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+    Timber_reused_gwp_entry.bind('<FocusIn>', lambda event,entry=Timber_reused_gwp_entry,variabel="TIMBER_REUSE_GWP":on_general_entry_click(event,entry,variabel))
+
+    #Create the new timber GWP input field (not shown before matching metric is choosen)
+    Timber_new_gwp_label = tk.Label(root, text="New timber GWP [kgCO2eq per m^3]:")
+    Timber_new_prefilled=tk.DoubleVar(value=constants["TIMBER_GWP"])
+    Timber_new_gwp_entry = tk.Entry(root,textvariable=Timber_new_prefilled,fg="grey",widt=5)
+    Timber_new_gwp_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+    Timber_new_gwp_entry.bind('<FocusIn>', lambda event,entry=Timber_new_gwp_entry,variabel="TIMBER_GWP":on_general_entry_click(event,entry,variabel))
+
+    #Create the new timber price input field (not shown before matching metric is choosen)
+    Timber_price_label = tk.Label(root, text="New timber price [kr per m^3]:")
+    Timber_price_prefilled=tk.DoubleVar(value=constants["TIMBER_PRICE"])
+    Timber_price_entry = tk.Entry(root,textvariable=Timber_price_prefilled,fg="grey",widt=5)
+    Timber_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+    Timber_price_entry.bind('<FocusIn>', lambda event,entry=Timber_price_entry,variabel="TIMBER_PRICE":on_general_entry_click(event,entry,variabel))
+
+    #Create the new timber price input field (not shown before matching metric is choosen)
+    Timber_reused_price_label = tk.Label(root, text="Reused timber price [kr per m^3]:")
+    Timber_reused_price_prefilled=tk.DoubleVar(value=constants["TIMBER_REUSE_PRICE"])
+    Timber_reused_price_entry = tk.Entry(root,textvariable=Timber_reused_price_prefilled,fg="grey",widt=5)
+    Timber_reused_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+    Timber_reused_price_entry.bind('<FocusIn>', lambda event,entry=Timber_reused_price_entry,variabel="TIMBER_REUSE_PRICE":on_general_entry_click(event,entry,variabel))
+
+    ###STEEL
+    #Create the steel reused GWP input field (not shown before matching metric is choosen)
+    Steel_reused_gwp_label = tk.Label(root, text="Reused steel GWP [kgCO2eq per m^3]:")
+    Steel_reused_GWP_prefilled=tk.DoubleVar(value=constants["STEEL_REUSE_GWP"])
+    Steel_reused_gwp_entry = tk.Entry(root,textvariable=Steel_reused_GWP_prefilled,fg="grey",widt=5)
+    Steel_reused_gwp_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+    Steel_reused_gwp_entry.bind('<FocusIn>', lambda event,entry=Steel_reused_gwp_entry,variabel="STEEL_REUSE_GWP":on_general_entry_click(event,entry,variabel))
+
+    #Create the new steel GWP input field (not shown before matching metric is choosen)
+    Steel_new_gwp_label = tk.Label(root, text="New steel GWP [kgCO2eq per m^3]:")
+    Steel_new_GWP_prefilled=tk.DoubleVar(value=constants["STEEL_GWP"])
+    Steel_new_gwp_entry = tk.Entry(root,textvariable=Steel_new_GWP_prefilled,fg="grey",widt=5)
+    Steel_new_gwp_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+    Steel_new_gwp_entry.bind('<FocusIn>', lambda event,entry=Steel_new_gwp_entry,variabel="STEEL_GWP":on_general_entry_click(event,entry,variabel))
+
+    #Create the new steel price input field (not shown before matching metric is choosen)
+    Steel_price_label = tk.Label(root, text="New steel price [kr per m^3]:")
+    Steel_price_prefilled=tk.DoubleVar(value=constants["STEEL_PRICE"])
+    Steel_price_entry = tk.Entry(root,textvariable=Steel_price_prefilled,fg="grey",widt=5)
+    Steel_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+    Steel_price_entry.bind('<FocusIn>', lambda event,entry=Steel_price_entry,variabel="STEEL_PRICE":on_general_entry_click(event,entry,variabel))
+
+    #Create the reused steel price input field (not shown before matching metric is choosen)
+    Steel_reused_price_label = tk.Label(root, text="Reused steel price [kr per m^3]:")
+    Steel_reused_price_prefilled=tk.DoubleVar(value=constants["STEEL_REUSE_PRICE"])
+    Steel_reused_price_entry = tk.Entry(root,textvariable=Steel_reused_price_prefilled,fg="grey",widt=5)
+    Steel_reused_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+    Steel_reused_price_entry.bind('<FocusIn>', lambda event,entry=Steel_reused_price_entry,variabel="STEEL_REUSE_PRICE":on_general_entry_click(event,entry,variabel))
+
+    #Create the validation GWP label and field
+    GWP_valuation_label = tk.Label(root, text="Valuation of GWP [kr per kgCO2]:")
+    GWP_valuation_prefilled=tk.DoubleVar(value=constants["VALUATION_GWP"])
+    GWP_valuation_entry = tk.Entry(root,textvariable=GWP_valuation_prefilled,fg="grey",widt=5)
+    GWP_valuation_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+    GWP_valuation_entry.bind('<FocusIn>', lambda event,entry=GWP_valuation_entry,variabel="VALUATION_GWP":on_general_entry_click(event,entry,variabel))
+
+    ###TRANSPORT
+    # Create the Include transportation checkbox
+    include_transportation_var = tk.IntVar()
+    include_transportation_checkbutton = tk.Checkbutton(root, text="Include transportation",font=("Montserrat", 12, "bold"), foreground="#000000", variable=include_transportation_var,command=include_transportation_checked)
+
+    # Create the TransportGWP label and entry
+    Transport_GWP_label = tk.Label(root, text="GWP transportation [factor]:")
+    Transport_GWP_prefilled=tk.DoubleVar(value=constants["TRANSPORT_GWP"])
+    Transport_GWP_entry = tk.Entry(root,textvariable=Transport_GWP_prefilled,fg="grey",widt=5)
+    Transport_GWP_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+    Transport_GWP_entry.bind('<FocusIn>', lambda event,entry=Transport_GWP_entry,variabel="TRANSPORT_GWP":on_general_entry_click(event,entry,variabel))
+
+    #Create the TransportPrice label and entry
+    Transport_price_label = tk.Label(root, text="Transportation price [kr per km per tonne]:")
+    Transport_price_prefilled=tk.DoubleVar(value=constants["PRICE_TRANSPORTATION"])
+    Transport_price_entry = tk.Entry(root,textvariable=Transport_price_prefilled,fg="grey",widt=5)
+    Transport_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+    Transport_price_entry.bind('<FocusIn>', lambda event,entry=Transport_price_entry,variabel="PRICE_TRANSPORTATION":on_general_entry_click(event,entry,variabel))
+
+    ###ALGORITHMS
+
+    #Create choose algorithms label
+    Choose_algorithms_label = tk.Label(root, text="Choose the desidered algorithms:",font=("Montserrat",12,"bold"),foreground="#000000")
+
+    greedy_var = tk.IntVar()
+    greedy_checkbutton = tk.Checkbutton(root, text="Greedy",font=("Montserrat", 12), foreground="#000000", variable=greedy_var,command=none)
+
+    greedy_plural_var = tk.IntVar()
+    greedy_plural_checkbutton = tk.Checkbutton(root, text="Greedy plural",font=("Montserrat", 12), foreground="#000000", variable=greedy_plural_var,command=none)
+
+    bipartite_var = tk.IntVar()
+    bipartite_checkbutton = tk.Checkbutton(root, text="Bipartite",font=("Montserrat", 12), foreground="#000000", variable=bipartite_var,command=none)
+
+    bipartite_plural_var = tk.IntVar()
+    bipartite_plural_checkbutton = tk.Checkbutton(root, text="Bipartite plural",font=("Montserrat", 12), foreground="#000000", variable=bipartite_plural_var,command=none)
+
+    bipartite_multi_plural = tk.IntVar()
+    bipartite_multi_plural_checkbutton = tk.Checkbutton(root, text="Bipartite multi plural",font=("Montserrat", 12), foreground="#000000", variable=bipartite_multi_plural,command=none)
+
+    MILP_var = tk.IntVar()
+    MILP_checkbutton = tk.Checkbutton(root, text="MILP",font=("Montserrat", 12), foreground="#000000", variable=MILP_var,command=none)
+
+    brute_var = tk.IntVar()
+    brute_checkbutton = tk.Checkbutton(root, text="Brute force",font=("Montserrat", 12), foreground="#000000", variable=brute_var,command=warning_longruntime_brute)
+
+    genetic_var = tk.IntVar()
+    genetic_checkbutton = tk.Checkbutton(root, text="Genetic",font=("Montserrat", 12), foreground="#000000", variable=genetic_var,command=warning_longruntime_genetic)
+
+
+    result_frame = ttk.Frame(root)
+    result_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
+    #result_label = ttk.Label(result_frame, text="Result:")
+    #result_label.pack(side=tk.BOTTOM)
+
+    #Create the caulculate button
+    calculate_button = ttk.Button(root, text="Calculate", command=calculate)
+    calculate_button.place(relx=0.5,rely=0.8,anchor="center",relheight=0.05,relwidth=0.10)
+    result_label = ttk.Label(root, text="")
+    result_label.place(relx=0.5,rely=0.9,anchor="center")
+    root.mainloop()

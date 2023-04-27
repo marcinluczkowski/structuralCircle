@@ -127,7 +127,7 @@ def calculate():
         pdf_results = hm.extract_results_df_pdf(result, constants)
         
         projectname=giveFileName()
-        pdf = hm.generate_pdf_report(pdf_results,projectname, filepath = r"./Results/")
+        pdf = hm.generate_pdf_report(pdf_results,projectname, filepath = r"./Local Files/GUI Files/Results/")
         result_label.config(text="Report generated", foreground="green")
         result_label.after(10000, clear_error_message)
         open_report_button.place(relx=0.5,rely=0.95,anchor="center")
@@ -621,7 +621,7 @@ def OpenUrl():
 
 def open_report():
     filename=filename_tk.get()
-    filename="./Results/"+filename
+    filename=r"./Local Files/GUI Files/Results/"+filename
     print("filename",filename)
     filepath=r""+filename
 
@@ -647,15 +647,15 @@ if __name__ == "__main__":
     root.description_label.place(relx=0.5,rely=0.105,anchor="center")
 
 
-##VARIABLES
-num_supply_elements = tk.IntVar()
-num_demand_elements = tk.IntVar()
-supply_filepath_bool=tk.BooleanVar()
-demand_filepath_bool=tk.BooleanVar()
-supply_filepath_string=tk.StringVar()
-demand_filepath_string=tk.StringVar()
-matching_metric_var_constant=tk.StringVar()
-filename_tk=tk.StringVar()
+    ##VARIABLES
+    num_supply_elements = tk.IntVar()
+    num_demand_elements = tk.IntVar()
+    supply_filepath_bool=tk.BooleanVar()
+    demand_filepath_bool=tk.BooleanVar()
+    supply_filepath_string=tk.StringVar()
+    demand_filepath_string=tk.StringVar()
+    matching_metric_var_constant=tk.StringVar()
+    filename_tk=tk.StringVar()
 
 
     ###LABELS,BUTTONS and ENTRYS###

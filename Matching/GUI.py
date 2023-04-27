@@ -9,7 +9,10 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 import webbrowser
-
+import time
+import subprocess
+import platform
+import os
 
 constants = {
     "TIMBER_GWP": 28.9,       # based on NEPD-3442-2053-EN
@@ -84,10 +87,10 @@ def calculate():
         OpenUrl()
     
     elif not demand_filepath_bool.get() or not supply_filepath_bool.get():
-            messagebox.showerror("Invalid input", "Please select input files")
+        messagebox.showerror("Invalid input", "Please select input files")
 
     elif matching_metric_var.get() not in ["Price","GWP","Combined"]:
-         messagebox.showerror("Invalid input", "Please select a valid metric. \"Combined\", \"GWP\" or \"Price\". ")
+        messagebox.showerror("Invalid input", "Please select a valid metric. \"Combined\", \"GWP\" or \"Price\". ")
 
     elif one_or_more_missing:
         messagebox.showerror("Invalid input", "One or more input field is empty")
@@ -95,11 +98,15 @@ def calculate():
     elif not one_or_more_choosen:
         messagebox.showerror("Invalid input", "Please select at least one algorithm")
     
-    else:
+    else:        
+        result_label.config(text="Running program...", foreground="green")
+        root.update()
+        #messagebox.showinfo("Status", "Running program...")
+        #messagebox.showerror("Invalid input", "Running program....")
+        print("STARTED")
         updateconstants()
         score_function_string = hm.generate_score_function_string(constants)
 
-        #TODO FIX this
         supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
         demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
         constraint_dict = constants["constraint_dict"]
@@ -107,13 +114,18 @@ def calculate():
         supply = hm.add_necessary_columns_pdf(supply, constants)
         demand = hm.add_necessary_columns_pdf(demand, constants)
         run_string = hm.generate_run_string(constants)
+        
         result = eval(run_string)
         simple_pairs = hm.extract_pairs_df(result)
         pdf_results = hm.extract_results_df_pdf(result, constants)
+        
+        
         pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
-        print("IM DONE BITCH")
+        result_label.config(text="Report generated", foreground="green")
+        result_label.after(10000, clear_error_message)
+        open_report_button.place(relx=0.5,rely=0.95,anchor="center")
 
-    
+
 def updateconstants():
     constants["TIMBER_GWP"]=float(Timber_new_gwp_entry.get())
     constants["TIMBER_REUSE_GWP"]=float(Timber_reused_gwp_entry.get())
@@ -129,11 +141,17 @@ def updateconstants():
     constants["Project name"]=Projectname_entry.get()
     constants["Metric"]=matching_metric_var_constant.get()
     constants["Algorithms"]=get_list_algos()
-    constants["Include transportation"]=include_transportation_var.get()
+    constants["Include transportation"]=getIncludeTranportYesNo()
     constants["Cite latitude"]=ProjectLatitude_entry.get()
     constants["Cite longitude"]=ProjectLongitude_entry.get()
     constants["Demand file location"]=r""+demand_filepath_string.get()
     constants["Supply file location"]=r""+supply_filepath_string.get()
+
+def getIncludeTranportYesNo():
+    if include_transportation_var.get() == 1:
+        return True
+    else:
+        return False
 
 def get_list_algos():
     Algorithms=[]
@@ -158,12 +176,13 @@ def get_list_algos():
 
 def browse_supply_file():
     global supply_filepath
-    supply_filepath = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx")],
-        title="Select an Excel file"
+    supply_filepath = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx"),("CSV Files", "*.csv"), ("all", "*")],
+        title="Select a .xlsx or .csv file"
     )
     if supply_filepath:
         supply_filename = supply_filepath.split("/")[-1]
         supply_file_label.config(text=supply_filename,foreground="green")
+        #TODO: Support both excel and csv file
         supply_df=pd.read_excel(supply_filepath)
         num_supply=int(len(supply_df.index))
         num_supply_elements.set(num_supply)
@@ -175,8 +194,8 @@ def browse_supply_file():
 
 def browse_demand_file():
     global demand_filepath
-    demand_filepath = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx")],
-        title="Select a CSV file"
+    demand_filepath = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx"),("CSV Files", "*.csv")],
+        title="Select a .xlsx or .csv file"
     )
 
     if demand_filepath:
@@ -589,11 +608,22 @@ def on_general_entry_string_click(event,entry,variabel):
         entry.delete(0, tk.END)
         entry.config(text="",fg="black")
 
-
 def OpenUrl():
     url="https://nrksuper.no/serie/newton/DMPP21001720/sesong-2020/episode-19"
     webbrowser.open_new(url)
 
+def open_report():
+    filepath=r"./Results/generated_report.pdf"
+    #filepath=r"C:\Users\sigur\OneDrive\Dokumenter\NTNU notater\10.semester\Masteroppgave, Sigurd og Lars\structuralCircle\Results\generated_report.pdf"
+    print("LOOOOL")
+    if platform.system()=="Windows":
+        current_directory = os.getcwd()
+        file = current_directory + filepath
+        os.startfile(file)
+    elif platform.system() == "Darwin":
+        subprocess.call(["open", filepath])
+    else:
+        subprocess.call(["xdg-open", filepath])
 
 if __name__ == "__main__":
     # Create the main window and configure it to fill the whole screen
@@ -794,6 +824,7 @@ if __name__ == "__main__":
     #Create the caulculate button
     calculate_button = ttk.Button(root, text="Calculate", command=calculate)
     calculate_button.place(relx=0.5,rely=0.8,anchor="center",relheight=0.05,relwidth=0.10)
+    open_report_button = ttk.Button(root, text="Open report", command=open_report)
     result_label = ttk.Label(root, text="")
     result_label.place(relx=0.5,rely=0.9,anchor="center")
     root.mainloop()

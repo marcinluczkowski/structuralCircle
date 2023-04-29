@@ -6,39 +6,16 @@ import helper_methods as hm
 from matching import run_matching
 import LCA as lca
 
-#==========USER FILLS IN============#
-#Constants
-#TODO: FIND ALL DEFAULT VALUES FOR CONSTANTS, especially for price
-constants = {
-    "TIMBER_GWP": 28.9,       # based on NEPD-3442-2053-EN
-    "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25 based on Eberhardt
-    "TRANSPORT_GWP": 96.0,    # TODO kg/m3/t based on ????
-    "TIMBER_DENSITY": 491.0,  # kg, based on NEPD-3442-2053-EN
-    "STEEL_GWP": 800, #Random value
-    "STEEL_REUSE_GWP": 4, #Random value
-    "VALUATION_GWP": 0.6, #In kr:Per kg CO2, based on OECD
-    "TIMBER_PRICE": 435, #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
-    "TIMBER_REUSE_PRICE" : 100, #Per m^3, Random value
-    "STEEL_PRICE": 500, #Per m^2, Random value
-    "STEEL_REUSE_PRICE": 200, #Per m^2, Random value
-    "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
-    "STEEL_DENSITY": 7850,
-    ########################
-    "Project name": "Sognsveien 17",
-    "Metric": "GWP",
-    "Algorithms": ["bipartite", "greedy_plural"],
-    "Include transportation": False,
-    "Cite latitude": "59.94161606",
-    "Cite longitude": "10.72994518",
-    #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
-    #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
-    "Demand file location": r"./CSV/transportation_demand.csv",
-    "Supply file location": r"./CSV/transportation_supply.csv",
-    "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
-}
-#========================#
-#Generating dataset
-#===================
+#Where is the actual site where our elements must be transportet too
+demand_coordinates = {"Latitude": "63.4269", "Longitude": "10.3969"}
+
+#Defines the coordinates from where the NEW elementes are transported from, 
+#Moelv:
+#new_coordinates={"Latitude":"10.7005","Longitude":"60.9277"}
+new_coordinates = {"Latitude": "63.4269", "Longitude": "10.3969"}
+
+
+#Defines different coordinates from where REUSED elements can be transported from
 supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
 tiller = ["Tiller", "63.3604", "10.4008"]
@@ -52,29 +29,21 @@ supply_coords.loc[len(supply_coords)] = orkanger
 supply_coords.loc[len(supply_coords)] = storlien
 
 
-demand_coords = {"Steel": ("Norsk Stål Trondheim", "63.4384474", "10.40994"), "Timber": ("XL-BYGG Lade","63.4423683","10.4438836")}
+constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
 
+demand = hm.create_random_data_demand(demand_count =10, demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"])
+supply = hm.create_random_data_supply(supply_count=10,demand_lat = demand_coordinates["Latitude"], demand_lon = demand_coordinates["Longitude"],supply_coords = supply_coords)
 
-materials = ["Timber", "Steel"]
+supply.head()
+score_function_string_demand = "@lca.calculate_lca_demand(length=Length, area=Area, gwp_factor=Gwp_factor)"
+score_function_string_supply_transportation = "@lca.calculate_lca_supply(length=Length, area=Area, gwp_factor=Gwp_factor,demand_lat=Demand_lat,demand_lon=Demand_lon,supply_lat=Supply_lat,supply_lon=Supply_lon,include_transportation=True)"
 
-#GENERATE FILE
-#============
-supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
-hm.export_dataframe_to_csv(supply, r"" + "./CSV/transportation_supply.csv")
-hm.export_dataframe_to_csv(demand, r"" + "./CSV/transportation_demand.csv")
-#========================================
-score_function_string = hm.generate_score_function_string(constants)
-supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
-demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
+#result_with_transportation = run_matching(demand, supply, score_function_string_demand,score_function_string_supply_transportation, constraints = constraint_dict, add_new = True, sci_milp=True, milp=True, greedy_single=True, bipartite=True,brute=True)
+score_function_string_supply_wo_transportation = "@lca.calculate_lca_supply(length=Length, area=Area, gwp_factor=Gwp_factor,demand_lat=Demand_lat,demand_lon=Demand_lon,supply_lat=Supply_lat,supply_lon=Supply_lon,include_transportation=False)"
+hm.export_dataframe_to_csv(demand,r"C:\Users\sigur\OneDrive - NTNU\Masteroppgave\CSV\genetic_demand.csv")
+hm.export_dataframe_to_csv(supply,r"C:\Users\sigur\OneDrive - NTNU\Masteroppgave\CSV\genetic_supply.csv")
+result_wo_transportation = run_matching(demand, supply, score_function_string_demand,score_function_string_supply_wo_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,genetic=True,brute=True)
 
-
-constraint_dict = constants["constraint_dict"]
-#Add necessary columns to run the algorithm
-supply = hm.add_necessary_columns_pdf(supply, constants)
-demand = hm.add_necessary_columns_pdf(demand, constants)
-run_string = hm.generate_run_string(constants)
-result_wo_transportation = eval(run_string)
 
 simple_pairs_wo_transportation = hm.extract_pairs_df(result_wo_transportation)
 simple_results_wo_transportation = hm.extract_results_df(result_wo_transportation, column_name = "LCA")
@@ -84,12 +53,8 @@ print()
 print("Simple results without transportation LCA")
 print(simple_results_wo_transportation)
 
-#Include transporation
-constants["Include transportation"] = True
-score_function_string = hm.generate_score_function_string(constants) #New scorestring
-run_string = hm.generate_run_string(constants) #New runstring
-result_transportation = eval(run_string)
-
+score_function_string_transportation = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor,distance = Distance, include_transportation=True)"
+result_transportation = run_matching(demand, supply, score_function_string_transportation, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,genetic=False,brute=False)
 simple_pairs_transportation = hm.extract_pairs_df(result_transportation)
 simple_results_transportation = hm.extract_results_df(result_transportation, column_name = "LCA")
 print("Simple pairs WITH transportation LCA:")
@@ -98,5 +63,17 @@ print()
 print("Simple results WITH transportation LCA")
 print(simple_results_transportation)
 
+
+
+score_function_string_score = "@lca.calculate_score(length=Length, area=Area, gwp_factor=Gwp_factor, distance = Distance, price_per_m2=Price_per_m2, priceGWP=Gwp_price, include_transportation=True)"
+
+result_score = run_matching(demand, supply, score_function_string_score, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True,genetic=False,brute=False)
+simple_pairs_score = hm.extract_pairs_df(result_score)
+simple_results_score = hm.extract_results_df(result_score, column_name = "Total cost (transport, emissions, material price)")
+print("Simple pairs with price:")
+print(simple_pairs_score)
+print()
+print("Simple results with price")
+print(simple_results_score)
 
 

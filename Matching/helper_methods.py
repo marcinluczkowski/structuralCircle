@@ -13,6 +13,7 @@ from reportlab.lib.units import cm
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+import folium
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 
@@ -395,7 +396,7 @@ def import_dataframe_from_file(file_location, index_replacer):
         dataframe = pd.read_excel(file_location)
     else: #CSV file
         dataframe = pd.read_csv(file_location)
-    dataframe.drop(columns=["Column1"], inplace = True)
+    #dataframe.drop(columns=["Column1"], inplace = True)
     dataframe.index = map(lambda text: index_replacer + str(text), dataframe.index)
     new_columns = {col: col.split('[')[0].strip() for col in dataframe.columns}
     dataframe = dataframe.rename(columns = new_columns)
@@ -758,5 +759,64 @@ def create_graph(supply, demand, target_column, number_of_intervals, save_filena
     ax.legend()
     plt.plot()
     plt.savefig(save_filename, dpi = 300)
+
+def create_map(supply):
+    supply = supply.copy()
+    supply_locations = supply[["Latitude", "Longitude"]]
+    cite_coords = (supply.iloc[0]["Cite_lat"], supply.iloc[0]["Cite_lon"])
+    coordinates_count = supply_locations.groupby(['Latitude', 'Longitude']).size().reset_index(name='Count')
+    coordinates_dict = dict(zip(coordinates_count[['Latitude', 'Longitude']].apply(tuple, axis=1), coordinates_count['Count']))
+
+    marker_colors = ["blue", "green"]
+
+    map = folium.Map(location=[supply_locations.Latitude.mean(), supply_locations.Longitude.mean()], control_scale=True)
+    folium.Marker([cite_coords[0], cite_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(map)
+
+    # Create a custom legend with the marker colors and labels
+    
+    for coord, count in coordinates_dict.items():
+        marker_number = coordinates_dict[coord]
+        location = [coord[0],coord[1]]
+        icon_html = '<div style="font-size: 12px; font-weight: bold; color: white; background-color: green; border-radius: 50%; padding: 5px 5px; height: 25px; width: 25px; text-align: center; line-height: 1.5;">{}</div>'.format(marker_number)
+        folium.Marker(
+        location=location,
+        icon=folium.DivIcon(
+            html=icon_html)
+        ).add_to(map)
+
+    legend_html = '''
+        <div style="position: fixed; 
+                    top: 10px; right: 10px; width: 150px; height: 60px; 
+                    border:2px solid grey; z-index:9999; font-size:14px;
+                    background-color: white;">
+        &nbsp; <div style="display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: white; background-color: green; border-radius: 50%; padding: 5px 5px; height: 15px; width: 15px; text-align: center; line-height: 1.5;">#</div> Reuse elements<br>
+        &nbsp; <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location
+        </div>
+        '''
+    
+
+    # Add the legend to the map
+    map.get_root().html.add_child(folium.Element(legend_html))
+
+    # Display the map
+    map.show_in_browser()
+    return None
+
+def create_map2(supply):
+    supply = supply.copy()
+    grouped_data = supply.groupby(['Latitude', 'Longitude']).agg({'location_name': 'nunique', 'element_name': 'count'}).reset_index()
+    grouped_data = grouped_data.rename(columns={'location_name': 'num_locations', 'element_name': 'num_elements'})
+
+    # Create the map
+    map = folium.Map(location=[grouped_data['Latitude'].mean(), grouped_data['Longitude'].mean()], zoom_start=10)
+
+    # Add a CircleMarker for each group of locations
+    for index, row in grouped_data.iterrows():
+        folium.CircleMarker(location=[row['Latitude'], row['Longitude']],
+                            radius=row['num_locations']*2,
+                            tooltip=f"Locations: {row['num_locations']}, Elements: {row['num_elements']}",
+                            color='red', fill=True, fill_color='red', fill_opacity=0.5).add_to(map)
+    map.show_in_browser()
+    return None
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

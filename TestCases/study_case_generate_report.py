@@ -26,14 +26,14 @@ constants = {
     "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
     "STEEL_DENSITY": 7850,
     ########################
-    "Project name": "Sognsveien 17",
+    "Project name": "Bod nidarosdomen",
     "Metric": "GWP",
     "Algorithms": ["bipartite", "greedy_plural", "greedy_single", "bipartite_plural"],
     "Include transportation": False,
-    "Cite latitude": "59.94161606",
-    "Cite longitude": "10.72994518",
-    "Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
-    "Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
+    "Cite latitude": "63.4269097",
+    "Cite longitude": "10.3969375",
+    "Demand file location": r"./CSV/pdf_demand.csv",
+    "Supply file location": r"./CSV/pdf_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -42,12 +42,12 @@ constants = {
 supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
 tiller = ["Tiller", "63.3604", "10.4008"]
-gjovik = ["Gjovik", "60.8941", "10.5001"]
+#gjovik = ["Gjovik", "60.8941", "10.5001"]
 orkanger = ["Orkanger", "63.3000", "9.8468"]
 storlien = ["Storlien", "63.3160", "12.1018"]
 
 supply_coords.loc[len(supply_coords)] = tiller
-supply_coords.loc[len(supply_coords)] = gjovik
+#supply_coords.loc[len(supply_coords)] = gjovik
 supply_coords.loc[len(supply_coords)] = orkanger
 supply_coords.loc[len(supply_coords)] = storlien
 
@@ -59,8 +59,8 @@ materials = ["Timber", "Steel"]
 
 #GENERATE FILE
 #============
-#supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-#demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
+#supply = hm.create_random_data_supply_pdf_reports(supply_count = 50, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
+#demand = hm.create_random_data_demand_pdf_reports(demand_count = 50, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
 #hm.export_dataframe_to_csv(supply, r"" + "./CSV/pdf_supply.csv")
 #hm.export_dataframe_to_csv(demand, r"" + "./CSV/pdf_demand.csv")
 #========================================
@@ -77,13 +77,15 @@ constraint_dict = constants["constraint_dict"]
 #Add necessary columns to run the algorithm
 supply = hm.add_necessary_columns_pdf(supply, constants)
 demand = hm.add_necessary_columns_pdf(demand, constants)
+hm.create_map(supply)
+"""
 run_string = hm.generate_run_string(constants)
 result = eval(run_string)
 simple_pairs = hm.extract_pairs_df(result)
 pdf_results = hm.extract_results_df_pdf(result, constants)
 pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
 print(hm.extract_pairs_df(result))
-
+"""
 
 
 

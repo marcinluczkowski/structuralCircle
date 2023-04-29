@@ -31,7 +31,7 @@ logging.basicConfig(
 
 class Matching():
     """Class describing the matching problem, with its constituent parts."""
-    def __init__(self, demand, supply, score_function_string, add_new=False, multi=False, constraints={}, solution_limit=60):
+    def __init__(self, demand, supply, score_function_string, add_new=False, constraints={}, manual_match_list = None, multi = None, solution_limit=120):
         """_summary_
 
         :param demand: _description_
@@ -42,11 +42,9 @@ class Matching():
         :type score_function_string: _type_
         :param add_new: _description_, defaults to False
         :type add_new: bool, optional
-        :param multi: _description_, defaults to False
-        :type multi: bool, optional
         :param constraints: _description_, defaults to {}
         :type constraints: dict, optional
-        :param solution_limit: _description_, defaults to 60
+        :param solution_limit: stop matching algorithm when reaching this limit., defaults to 60 [s]
         :type solution_limit: int, optional
         """
         self.demand = demand.infer_objects()
@@ -70,7 +68,7 @@ class Matching():
             self.supply = pd.concat((self.supply, demand_copy), ignore_index=False).infer_objects()
         else:
             self.supply = self.supply.infer_objects()
-        self.multi = multi
+        self.multi = multi # TODO Delete if not used. 
         self.graph = None
         self.result = None  #saves latest result of the matching
         self.result_transport = None
@@ -81,6 +79,9 @@ class Matching():
         self.solution_limit = solution_limit           
         #Create incidence and weight for the method
         self.incidence = self.evaluate_incidence()
+        # if manual matching, modify incidence here
+        if not manual_match_list is None:
+            self.user_defined_pairs(manual_match_list)
         self.weights, self.weights_transport = self.evaluate_weights()
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))
 
@@ -139,8 +140,24 @@ class Matching():
         return pd.DataFrame(bool_array, columns= self.incidence.columns, index= self.incidence.index)
 
     def evaluate_column(self, supply_val, parameter, compare, current_bool):
-        """Evaluates a column in the incidence matrix according to the constraints
-            Returns a np array that can substitute the input column."""
+        """evaluate_column Evaluates a column in the incidence matrix according to the constraints
+
+        Parameters
+        ----------
+        supply_val : str
+            _description_
+        parameter : str
+            _description_
+        compare : str
+            _description_
+        current_bool : _type_
+            _description_
+
+        Returns
+        -------
+        boolean list
+            list of boolean AND operation between current column and the evaluated constraint.
+        """        
         demand_array = self.demand[parameter].to_numpy(dtype = float) # array of demand parameters to evaluate. 
         compare_array = ne.evaluate(f"{supply_val} {compare} demand_array")        
         return ne.evaluate("current_bool & compare_array")
@@ -165,6 +182,84 @@ class Matching():
         end = time.time()  
         logging.info("Weight evaluation of incidence matrix: %s sec", round(end - start, 3))
         return pd.DataFrame(weights, index = self.incidence.index, columns = self.incidence.columns), pd.DataFrame(weights_transport, index = self.incidence.index, columns = self.incidence.columns)
+
+    def user_defined_pairs(self, constraint_list_user):
+        """user_defined_pairs _summary_
+
+        Parameters
+        ----------
+        constraint_list_user : _type_
+            _description_
+        """
+        
+        def evaluate_constraints_string(self, constraint_str):
+
+            els = constraint_str.split(' ') # split the string at spaces
+            dem = els[0]; sup = els[2] # the value of the incidence matrix to work on.
+            try:
+                match = self.incidence.loc[dem, sup]
+            except:
+                raise ValueError("The object cannot be found in the incidence matrix. Make sure that input string is correct.")
+            if match: # test if the match is possible
+                if els[1] == "NOT": #restrict matching
+                    self.incidence.loc[dem, sup] = False # these two elements should not be matched. 
+                elif els[1] == "AND": # lock matching. Set remaining items in col to False
+                    self.incidence.loc[: , sup] = False # Set the whole column to False to restrict mathing of any elements.
+                    self.incidence.loc[dem, :] = False
+                    self.incidence.loc[dem , sup] = True # Set the only possible matching with supply True. 
+                    #TODO This aproach does not allow for possible remaining cutoff to be used. Could be fixed, For example by splitting the forced match element into another cut of piece as well.
+
+
+        if not isinstance(constraint_list_user, list):
+            constraint_list_user = [constraint_list_user] # ensure that we're working on a list.
+        # make all items lowercase
+        constraint_list_user = list(map(str.lower, constraint_list_user))
+        # for each string in the list. 
+        for constraint in constraint_list_user:
+            if not isinstance(constraint, str):
+                raise TypeError # should be constraint
+            evaluate_constraints_string(self, constraint_str = constraint)
+            
+        return None
+
+    def user_defined_pairs(self, constraint_list_user):
+        """user_defined_pairs _summary_
+
+        Parameters
+        ----------
+        constraint_list_user : _type_
+            _description_
+        """
+        
+        def evaluate_constraints_string(self, constraint_str):
+
+            els = constraint_str.split(' ') # split the string at spaces
+            dem = els[0]; sup = els[2] # the value of the incidence matrix to work on.
+            try:
+                match = self.incidence.loc[dem, sup]
+            except:
+                raise ValueError("The object cannot be found in the incidence matrix. Make sure that input string is correct.")
+            if match: # test if the match is possible
+                if els[1] == "NOT": #restrict matching
+                    self.incidence.loc[dem, sup] = False # these two elements should not be matched. 
+                elif els[1] == "AND": # lock matching. Set remaining items in col to False
+                    self.incidence.loc[: , sup] = False # Set the whole column to False to restrict mathing of any elements.
+                    self.incidence.loc[dem, :] = False
+                    self.incidence.loc[dem , sup] = True # Set the only possible matching with supply True. 
+                    #TODO This aproach does not allow for possible remaining cutoff to be used. Could be fixed, For example by splitting the forced match element into another cut of piece as well.
+
+
+        if not isinstance(constraint_list_user, list):
+            constraint_list_user = [constraint_list_user] # ensure that we're working on a list.
+        # make all items lowercase
+        constraint_list_user = list(map(str.lower, constraint_list_user))
+        # for each string in the list. 
+        for constraint in constraint_list_user:
+            if not isinstance(constraint, str):
+                raise TypeError # should be constraint
+            evaluate_constraints_string(self, constraint_str = constraint)
+            
+        return None
 
     def add_pair(self, demand_id, supply_id):
         """Execute matrix matching"""
@@ -256,9 +351,15 @@ class Matching():
 
     @_matching_decorator
     def match_greedy(self, plural_assign=False):
-        """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
+        """_summary_
+
+        Args:
+            plural_assign (bool, optional): _description_. Defaults to False.
+        """
+        #"""Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
 
         sorted_weights = self.weights.join(self.demand.Score)
+
         sorted_weights = sorted_weights.sort_values(by='Score', axis=0, ascending=False)
         sorted_weights = sorted_weights.drop(columns=['Score'])
         #sorted_weights.replace(np.nan, np.inf, inplace=True)  
@@ -267,7 +368,7 @@ class Matching():
         for i in range(sorted_weights.shape[0]):
             row_id = sorted_weights.iloc[[i]].index[0]
             vals = np.array(sorted_weights.iloc[[i]])[0]
-#            if np.any(vals):    # checks if not empty row (no matches)
+            #if np.any(vals):    # checks if not empty row (no matches)
             if sum(~np.isnan(vals)) > 0: # check if there it at least one element not np.nan
                 lowest = np.nanmin(vals)
                 col_id = sorted_weights.columns[np.where(vals == lowest)][0]
@@ -295,7 +396,8 @@ class Matching():
         #demand_sorted.sort_values(by=['Length', 'Area'], axis=0, ascending=False, inplace = True)
         demand_sorted.sort_values(by=['Score'], axis=0, ascending=False, inplace = True)
         #supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True, inplace = True)
-        supply_sorted.sort_values(by=['Is_new', 'Score'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
+        #supply_sorted.sort_values(by=['Is_new', 'Score'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
+        supply_sorted.sort_values(by=['Score'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
         incidence_np = self.incidence.copy(deep=True).values      
 
         columns = self.supply.index.to_list()
@@ -850,7 +952,6 @@ class Matching():
         #TODO Evaluate if the cost function is the best we can have. 
         # the CP Solver works only on integers. Consequently, all values are multiplied by 1000 before solving the
         m_fac = 10000
-        max_time = self.solution_limit
         # --- Create the data needed for the solver ---        
         data = {} # initiate empty dictionary
         data['lengths'] = (self.demand.Length * m_fac).astype(int)
@@ -909,7 +1010,7 @@ class Matching():
         model.Maximize(cp_model.LinearExpr.Sum(objective))
         # --- Solve ---
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = max_time
+        solver.parameters.max_time_in_seconds = self.solution_limit
         status = solver.Solve(model)
         test = solver.ObjectiveValue()
         index_series = self.supply.index
@@ -978,14 +1079,16 @@ class Matching():
         #compare_df['OK'] = np.where(compare_df['Length Assigned'] <= compare_df['Length Capacity'], True, False)
         
   
-def run_matching(demand, supply, score_function_string, constraints = None, add_new = True, solution_limit = 120,
-                bipartite = False, greedy_single = False, greedy_plural = False, genetic = False, milp = False, sci_milp = False, brute=False, brutevol2 = False,brutevol3=False,brutevol4=False, bipartite_plural = False, bipartite_plural_multiple = False):
+def run_matching(demand, supply, score_function_string, constraints = None,  manual_match_strings = None, add_new = True, solution_limit = 120,
+                bipartite = False, greedy_single = False, greedy_plural = False, genetic = False, milp = False, sci_milp = False
+                , brute=False, brutevol2 = False,brutevol3=False,brutevol4=False, bipartite_plural = False, bipartite_plural_multiple = False):
 
     """Run selected matching algorithms and returns results for comparison.
     By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
     #TODO Can **kwargs be used instead of all these arguments
     # create matching object 
-    matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string,constraints=constraints, add_new=add_new, multi = True, solution_limit=solution_limit)
+    matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string,constraints=constraints,
+                         add_new=add_new, multi = True, manual_match_list = manual_match_strings ,solution_limit=solution_limit)
     matches =[] # results to return
     headers = []
     if greedy_single:
@@ -1029,7 +1132,7 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=8, supply_count=8)
+    demand, supply = hm.create_random_data(demand_count=4, supply_count=5)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
     result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, greedy_plural = False, bipartite=False, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)

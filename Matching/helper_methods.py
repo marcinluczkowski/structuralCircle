@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import rc
 import igraph as ig
 import logging
 import LCA as lca
@@ -8,11 +9,12 @@ import itertools
 import random
 from fpdf import FPDF
 from datetime import date
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+import seaborn as sns
+#from reportlab.lib.pagesizes import A4
+#from reportlab.lib.units import cm
+#from reportlab.lib import colors
+#from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
+#from reportlab.pylib.styles import getSampleStyleSheet, ParagraphStyle
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 
@@ -121,7 +123,6 @@ def remove_alternatives(x, y):
 
 def transform_weights(weights):
     """Transform the weight matrix to only contain one column with new elements in stead of one column for each new element
-
     Args:
         DataFrame: weight matrix
 
@@ -133,6 +134,223 @@ def transform_weights(weights):
     weights["N"]=weights[cols].sum(axis=1)
     weights = weights.drop(columns=cols)
     return weights
+
+
+### ADD PLOTS
+
+def plot_histograms(df, save_fig = False, **kwargs):
+    
+    # csfont = {'fontname':'Times New Roman'}
+    # plt.rcParams.update({'font.size': 22}) # must set in top
+    plt.rcParams['font.size'] = 12
+    plt.rcParams["font.family"] = "Times New Roman"
+
+    ### List unique values of width/height:
+    # TODO redo the histogram so that names are displayed, not area.
+    df['Cross-sections'] = df['Width'].astype(str) + "x" + df['Height'].astype(str)
+    
+    ### Plot the histogram of truss elements:
+    df.hist(column=['Length', 'Area'], bins=20)
+ 
+    # plt.Axes.set_axisbelow(b=True)
+    plt.title('Area')
+
+    if save_fig:
+        f_name = 'histogram'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
+    plt.show()
+
+
+def plot_scatter(df, **kwargs):
+    ### Scatter plot of all elements width/height:
+    df.plot.scatter(x='Width', y='Height')
+    plt.xlabel('Width')
+    plt.ylabel('Height')
+    plt.show()
+
+
+
+def plot_hexbin(df, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwargs):
+    # Based on https://seaborn.pydata.org/examples/hexbin_marginals.html
+    #plt.figure()    
+    # TODO Sverre, try with section names: sns.jointplot(x=df['Length'], y=df['Section'], kind="hex", color="#4CB391")
+    
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
+    g = sns.jointplot(x=df['Length'], y=df['Area'], kind="hex", color="#4CB391")
+    
+    #g.set_axis_labels(**kwargs)
+    # sns.jointplot(x=supply['Length'], y=supply['Area'], kind="hex", color="#eb4034")
+        
+    if save_fig:
+        f_name = 'hexbin'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
+    plt.show()
+
+def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwargs):
+    """Plot the Cross Section and length histogram using remapped values"""
+    sns.set_theme(style = style, font_scale = font_scale, height = 20, rc = kwargs) # set styling configuration
+    
+    # get all unique areas
+    cross_secs = ['(36x36)', '(36x48)', '(36x148)', '(36x198)', '(48x148)', '(48x198)', '(61x198)', '(73x198)', '(73x223)']
+     
+    map_dict = {a:cs for a, cs in zip(sorted(unique_values), cross_secs)}
+    map_dict2 = {a:(i+1) for i, a in enumerate(sorted(unique_values))}
+    df['Cross Sections [mm]'] = df.Area.map(map_dict2).astype(int)
+    g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391")
+    g.ax_joint.set_yticks(list(map_dict2.values()))
+    g.ax_joint.set_yticklabels(cross_secs)
+
+    if save_fig:
+        f_name = 'hexbin_mapped'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+
+    plt.show()
+
+def barplot_sns(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
+                show_fig = False, **kwargs):
+    """Add docstring""" 
+    if normalize:
+        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
+
+def plot_savings(result_df, type, normalize = True, style = 'ticks', font_scale = 1.1, 
+                 show_fig = True,save_fig = False, **kwargs):
+    #plt.figure()
+    if normalize: # normalize the dataframe according to best score in each row
+        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
+
+    # Setting for the plot    
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
+    
+    # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
+    plot = sns.lineplot(data=result_df, palette="tab10", dashes = False, markers=True)
+    plot.set(xlabel='Elements (Demand : Supply)', ylabel='(GWP) score savings [%]')
+    plt.xticks(rotation=30)
+    plt.ylim((90, None))
+    legend = plt.legend()
+    # get label texts inside legend and set font size
+    for text in legend.get_texts():
+        text.set_fontsize(kwargs['xtick.labelsize'])    
+    plt.tight_layout()
+    if save_fig:
+        f_name = f"score saved {type}_2"
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+    if show_fig:
+        plt.show()
+    plt.close()
+def plot_old(result_df, type, normalize = True, style = 'ticks', font_scale = 1.1, 
+             show_fig = True, save_fig = False, **kwargs):
+    
+    if normalize: # normalize the dataframe according to best score in each row
+        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
+
+    plt.figure()
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
+    # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
+    plot = sns.lineplot(data=result_df, palette="tab10", dashes = False, markers=True)
+    plot.set(xlabel='Elements (Demand : Supply)', ylabel='Substitutions ratio [%]')
+    plt.xticks(rotation=30)
+
+    # adjust font on labels
+    legend = plt.legend()
+    for text in legend.get_texts():
+        text.set_fontsize(kwargs['xtick.labelsize'])  
+    plt.tight_layout()
+    if save_fig:
+        f_name = f'reused elements {type}_2'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+    if show_fig:
+        plt.show()
+    plt.close()
+def plot_time(result_df, type, style = 'ticks', font_scale = 1.1, 
+              show_fig = True, save_fig = False, **kwargs):
+    #plt.figure()
+    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
+    #palette names = 'tab10'
+    result_df.replace(0, np.nan, inplace = True)
+    plot = sns.lineplot(data=result_df.add(0.001), palette="tab10", dashes = False, markers=True)
+    plot.set(yscale="log", xlabel='Elements (Demand : Supply)', ylabel='Time [s]')
+    plt.xticks(rotation=65)
+    #plt.axhline(1.0, linestyle = ':', color = 'k')
+    plt.vlines(x='1024:10240', ymin=result_df.loc['1024:10240', 'MIP'] - 1800, ymax=result_df.loc['1024:10240', 'MIP'] + 5000, 
+               linewidth = kwargs['lines.linewidth'], colors='k', ls=':', lw=2, label=None)
+    plt.text('1024:10240', result_df.loc['1024:10240', 'MIP'], '*', fontsize = kwargs['xtick.labelsize'])
+    # adjust font on labels
+    legend = plt.legend()
+    for text in legend.get_texts():
+        text.set_fontsize(kwargs['xtick.labelsize'])  
+    plt.tight_layout()
+    if save_fig:
+        f_name = f'time plot {type}2'
+        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
+    if show_fig:
+        plt.show()
+    plt.close()
+def plot_bubble(demand, supply, **kwargs):
+
+    # if close to one another, don't add but increase size:
+    demand_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
+    tolerance_length = 2.5
+    tolerance_area = 0.002
+    dot_size = 70
+
+    for index, row in demand.iterrows():
+        if demand_chart.empty:
+            # add first bubble
+            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        # check if similiar bubble already present:
+        elif demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].empty:
+            # not, so add new bubble
+            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        else:
+            # already present, so increase the bubble size:
+            ind = demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
+            demand_chart.at[ind,'dot_size'] = demand_chart.at[ind,'dot_size'] +1
+
+    demand_chart['dot_size_scaled'] = dot_size * (demand_chart['dot_size']**0.5)
+
+    supply_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
+    for index, row in supply.iterrows():
+        if supply_chart.empty:
+            # add first bubble
+            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        # check if similiar bubble already present:
+        elif supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].empty:
+            # not, so add new bubble
+            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
+        else:
+            # already present, so increase the bubble size:
+            ind = supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
+            supply_chart.at[ind,'dot_size'] = supply_chart.at[ind,'dot_size'] +1
+
+    supply_chart['dot_size_scaled'] = dot_size * (supply_chart['dot_size']**0.5)
+
+    plt.scatter(demand_chart.Length, demand_chart.Area, s=list(demand_chart.dot_size_scaled), c='b', alpha=0.5, label='Demand')
+    plt.scatter(supply_chart.Length, supply_chart.Area, s=list(supply_chart.dot_size_scaled), c='g', alpha=0.5, label='Supply')
+
+    lgnd = plt.legend(loc="lower right")
+    lgnd.legendHandles[0]._sizes = [50]
+    lgnd.legendHandles[1]._sizes = [50]
+
+    plt.xlabel("Length", size=16)
+    plt.ylabel("Area", size=16)
+
+    for i, row in demand_chart.iterrows():
+        if row['dot_size'] < 10:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
+        else:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
+    for i, row in supply_chart.iterrows():
+        if row['dot_size'] < 10:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
+        else:
+           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
+
+    plt.show()
+
+
+  
 
 def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new_lon, demand_gwp=lca.TIMBER_GWP,gwp_price=lca.GWP_PRICE,new_price=lca.NEW_ELEMENT_PRICE_TIMBER, length_min = 1, length_max = 15.0, area_min = 0.15, area_max = 0.15):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
@@ -395,7 +613,8 @@ def import_dataframe_from_file(file_location, index_replacer):
         dataframe = pd.read_excel(file_location)
     else: #CSV file
         dataframe = pd.read_csv(file_location)
-    dataframe.drop(columns=["Column1"], inplace = True)
+    if "Column1" in list(dataframe.columns):
+        dataframe.drop(columns=["Column1"], inplace = True)
     dataframe.index = map(lambda text: index_replacer + str(text), dataframe.index)
     new_columns = {col: col.split('[')[0].strip() for col in dataframe.columns}
     dataframe = dataframe.rename(columns = new_columns)
@@ -437,7 +656,7 @@ def count_matches(matches, algorithm):
     return matches.pivot_table(index = [algorithm], aggfunc = 'size')
 
 
-def generate_pdf_report(results, filepath):
+def generate_pdf_report(results,projectname, filepath):
     def new_page():
         # Add a page to the PDF
         pdf.add_page()
@@ -447,7 +666,7 @@ def generate_pdf_report(results, filepath):
         pdf.rect(0, 0, 210, 297, "F")
         
         # Add the image to the PDF
-        pdf.image(r"./Results/NTNU-logo.png", x=10, y=10, w=30)
+        pdf.image(r"./Local Files/GUI Files/NTNU-logo.png", x=10, y=10, w=30)
 
         # Add the date to the upper right corner of the PDF
         pdf.set_xy(200, 10)
@@ -457,7 +676,7 @@ def generate_pdf_report(results, filepath):
     # Create a new PDF object
 
     #Add CSV containing results to "Results"-folder
-    export_dataframe_to_csv(results["Pairs"], filepath + "substitutions.csv")
+    export_dataframe_to_csv(results["Pairs"], filepath + (projectname+"_substitutions.csv"))
     if results["Transportation included"] == "No":
         transportation_included = False
     elif results["Transportation included"] == "Yes":
@@ -505,19 +724,21 @@ def generate_pdf_report(results, filepath):
     pdf.set_font("Times", size=24, style ="")
     pdf.multi_cell(160, 7, txt="Summary of results")
     pdf.set_font("Times", size=10)
-    pdf.set_left_margin(28)
+    pdf.set_left_margin(30)
     pdf.ln(5)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
     pdf.cell(50, 10, f"Total score", 1, 0, "C", True)
-    pdf.cell(50, 10, "Substitutions", 1, 0, "C", True)
-    pdf.cell(50, 10, "Savings", 1, 1, "C", True)
+    pdf.cell(50, 10, f"Score without reuse", 1, 0, "C", True)
+    pdf.cell(25, 10, "Savings", 1, 0, "C", True)
+    pdf.cell(25, 10, "Substitutions", 1, 1, "C", True)
     pdf.set_fill_color(247, 247, 247)
     substitutions = round(results['Number of substitutions']/results['Number_demand']*100, 2)
     savings = round(results['Savings']/results['All new score']*100, 2)
     pdf.cell(50, 10, f"{results['Score']} {results['Unit']}", 1, 0, "C", True)
-    pdf.cell(50, 10, f"{substitutions}%", 1, 0, "C", True) 
-    pdf.cell(50, 10, f"{savings}%", 1, 1, "C", True)
+    pdf.cell(50, 10, f"{results['All new score']} {results['Unit']}", 1, 0, "C", True)
+    pdf.cell(25, 10, f"{savings}%", 1, 0, "C", True)
+    pdf.cell(25, 10, f"{substitutions}%", 1, 1, "C", True) 
     pdf.ln()
 
     #Short text summary
@@ -526,10 +747,10 @@ def generate_pdf_report(results, filepath):
     pdf.set_font("Times", size=12, style ="")
     summary = f"The '{results['Algorithm']}' algorithm yields the best results, substituting {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {results['Score']} {results['Unit']} is achieved. For comparison, a score of {results['All new score']} {results['Unit']} would have been obtained by employing exclusively new materials. This results in a total saving of {savings}%."
     if transportation_included:
-        summary += f" Note that transportation is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
+        summary += f" Note that impacts of transporting the materials to the construction site is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
     else:
-        summary += f" Note that transportation is not accounted for. "
-    summary += f"Open the CSV file with the file path '{filepath}substitutions.csv' to examine the substitutions."
+        summary += f" Note that impacts of transporting the materials to the construction site is not accounted for. "
+    summary += f"Open the CSV-file \"{projectname}_substitutions.csv\" to examine the substitutions."
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
 
 
@@ -542,7 +763,7 @@ def generate_pdf_report(results, filepath):
     pdf.ln(5)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
-    pdf.set_left_margin(28)
+    pdf.set_left_margin(30)
     pdf.cell(50, 10, "Constant", 1, 0, "C", True)
     pdf.cell(50, 10, "Value", 1, 0, "C", True)
     pdf.cell(50, 10, "Unit", 1, 1, "C", True)
@@ -565,7 +786,7 @@ def generate_pdf_report(results, filepath):
     pdf.multi_cell(160, 7, txt="Information about datasets")
     pdf.set_font("Times", size=10)
     pdf.ln(5)
-    pdf.set_left_margin(28)
+    pdf.set_left_margin(30)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
     pdf.cell(30, 10, "Elements", 1, 0, "C", True)
@@ -591,7 +812,7 @@ def generate_pdf_report(results, filepath):
         pdf.set_font("Times", size=16, style ="")
         pdf.multi_cell(160, 7, txt="Impact of transportation")
         pdf.set_font("Times", size=10)
-        pdf.set_left_margin(28)
+        pdf.set_left_margin(30)
         pdf.ln(5)
         pdf.set_fill_color(96, 150, 208)
         pdf.set_draw_color(204, 204, 204)
@@ -609,7 +830,7 @@ def generate_pdf_report(results, filepath):
         pdf.set_y(65)
         pdf.set_font("Times", size=12, style ="")
         summary = f"All calculations in this report accounts for transportation. Transportation accounts for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation score for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
-        summary = f"All calculations in this report take transportation into consideration. Transportation is responsible for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation score for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
+        summary = f"All calculations in this report take impacts of transportation of the materials to the construction site into consideration. Transportation itself is responsible for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation impact for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
         
         pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
         y_information = 100
@@ -619,12 +840,12 @@ def generate_pdf_report(results, filepath):
     pdf.set_font("Times", size=16, style ="")
     pdf.multi_cell(160, 7, txt="Performance of algorithms")
     pdf.set_font("Times", size=10)
-    pdf.set_left_margin(28)
+    pdf.set_left_margin(17)
     pdf.ln(5)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
     pdf.cell(75, 10, "Name", 1, 0, "C", True)
-    pdf.cell(25, 10, "Score", 1, 0, "C", True)
+    pdf.cell(51, 10, "Total score", 1, 0, "C", True)
     pdf.cell(25, 10, "Substitutions", 1, 0, "C", True)
     pdf.cell(25, 10, "Time", 1, 1, "C", True)
 
@@ -634,9 +855,9 @@ def generate_pdf_report(results, filepath):
     for i in range(len(performance)):
         y_information += 10
         pdf.cell(75, 10, f"{performance.iloc[i]['Names']}", 1, 0, "C", True)
-        pdf.cell(25, 10, f"{performance.iloc[i]['Score']}", 1, 0, "C", True)
+        pdf.cell(51, 10, f"{performance.iloc[i]['Score']} {results['Unit']}", 1, 0, "C", True)
         pdf.cell(25, 10, f"{performance.iloc[i]['Sub_percent']}%", 1, 0, "C", True)
-        pdf.cell(25, 10, f"{performance.iloc[i]['Time']}", 1, 0, "C", True)
+        pdf.cell(25, 10, f"{performance.iloc[i]['Time']}s", 1, 0, "C", True)
         if len(performance) == 1:
             print_names += performance.iloc[i]['Names']
         elif i != len(performance) - 1:
@@ -654,7 +875,7 @@ def generate_pdf_report(results, filepath):
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
  
     # Save the PDF to a file
-    pdf.output(filepath + "generated_report.pdf")
+    pdf.output(filepath + projectname+"_report.pdf")
 
 
 

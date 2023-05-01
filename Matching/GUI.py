@@ -8,6 +8,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
+import customtkinter
+import tkintermapview
 import webbrowser
 import time
 import subprocess
@@ -149,8 +151,8 @@ def updateconstants():
     constants["Metric"]=matching_metric_var_constant.get()
     constants["Algorithms"]=get_list_algos()
     constants["Include transportation"]=getIncludeTranportYesNo()
-    constants["Cite latitude"]=ProjectLatitude_entry.get()
-    constants["Cite longitude"]=ProjectLongitude_entry.get()
+    constants["Cite latitude"]=latitude_coordinate.get()
+    constants["Cite longitude"]=longitude_coordinate.get()
     constants["Demand file location"]=r""+demand_filepath_string.get()
     constants["Supply file location"]=r""+supply_filepath_string.get()
 
@@ -635,9 +637,101 @@ def open_report():
         subprocess.call(["xdg-open", filepath])
 
 
+def open_map():
+    def change_map(new_map: str):
+        if new_map == "OpenStreetMap":
+            map_widget.set_tile_server("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png")
+        elif new_map == "Google normal":
+            map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+        elif new_map == "Google satellite":
+            map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+
+    def search_event(event=None):
+        map_widget.set_address(entryadress.get())
+        map_widget.set_zoom(14)
+
+    def add_marker_event(coords):
+        global markedexist
+        global marker
+        #print("Add marker:", coords)
+        if markedexist:
+            marker.delete()
+        marker = map_widget.set_marker(coords[0], coords[1], text="Construction cite")
+        latcordstring=str(round(coords[0],4))
+        loncordstring=str(round(coords[1],4))
+
+        latitude_coordinate.set(latcordstring)
+        longitude_coordinate.set(loncordstring)
+
+        ProjectLatitude_entry.delete(0,tk.END)
+        ProjectLongitude_entry.delete(0,tk.END)
+        ProjectLatitude_entry.insert(0,latcordstring)
+        ProjectLongitude_entry.insert(0,loncordstring)
+        markedexist=True
+        resultmap_label.configure(text="Coordinates set to: " +latcordstring+" , " +loncordstring, foreground="green")
+        result_label.after(5000,clear_error_message_map)
+
+
+    def clear_error_message_map():
+        resultmap_label.config(text="")
+
+    # def left_click_event(coordinates_tuple):
+    #     global markedexist
+    #     global marker
+    #     if markedexist:
+    #         marker.delete()
+    #     print("Left click event with coordinates:", coordinates_tuple)
+    #     marker = map_widget.set_marker(coordinates_tuple[0], coordinates_tuple[1], text="Construction cite")
+    #     markedexist=True
+
+    global marker
+    global markedexist
+    markedexist=False
+
+    root_tk = tk.Toplevel(root)
+    screen_width_05 = int(root.winfo_screenwidth()*0.8)
+    screen_height_05 = int(root.winfo_screenheight()*0.8)
+    root_tk.geometry(f"{screen_width_05}x{screen_height_05}")
+    root_tk.title("Set construction cite")
+  
+    description_label = tk.Label(root_tk, text="Find your desired construction cite on the map. Then right click and \"set construction cite\" to set a marker.",font=("Montserrat", 12, "bold"), foreground="#00509e")
+    description_label.place(relx=0.5,rely=0.05,anchor="center")
+
+    # create map widget
+    map_widget = tkintermapview.TkinterMapView(root_tk, width=int(root_tk.winfo_screenwidth()*0.65), height=int(root_tk.winfo_screenheight()*0.66), corner_radius=0)
+    map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)  # google normal
+    # set current widget position and zoom
+    map_widget.set_position(63.4269, 10.3969) #Nidarosdomen
+    map_widget.set_zoom(5)
+    map_widget.add_right_click_menu_command(label="Set construction cite", command=add_marker_event,pass_coords=True)
+    #map_widget.add_left_click_map_command(left_click_event)
+    map_widget.place(relx=0.98, rely=0.98, anchor=tk.SE)
+
+    #Search adress entry
+    entryadress = customtkinter.CTkEntry(master=root_tk,placeholder_text="type address")
+    entryadress.bind("<Return>",search_event)
+    entryadress.place(relx=0.5,rely=0.1,anchor=tk.N)
+
+    #Search button:
+    searchbutton=customtkinter.CTkButton(master=root_tk,text="Search",width=90,command=search_event)
+    searchbutton.place(relx=0.62,rely=0.1,anchor=tk.N)    
+
+    #Map Option
+
+    map_label = customtkinter.CTkLabel(master=root_tk, text="Choose map graphic:")
+    map_label.place(relx=0.08,rely=0.55,anchor=tk.CENTER)
+                                    
+    map_option_menu = customtkinter.CTkOptionMenu(master=root_tk, values=["Google normal","OpenStreetMap","Google satellite"],command=change_map)
+    map_option_menu.place(relx=0.08,rely=0.6,anchor=tk.CENTER)
+
+    resultmap_label = ttk.Label(root_tk, text="")
+    resultmap_label.place(relx=0.29,rely=0.955,anchor="center")
+
+    root_tk.mainloop()
+
+
 # Create the main window and configure it to fill the whole screen
 root = tk.Tk()
-
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 root.geometry(f"{screen_width}x{screen_height}")
@@ -661,6 +755,9 @@ supply_filepath_string=tk.StringVar()
 demand_filepath_string=tk.StringVar()
 matching_metric_var_constant=tk.StringVar()
 filename_tk=tk.StringVar()
+latitude_coordinate=tk.StringVar()
+longitude_coordinate=tk.StringVar()
+
 
 
 ###LABELS,BUTTONS and ENTRYS###
@@ -692,7 +789,7 @@ Projectname_label.place(relx=0.315,rely=0.18,anchor="center")
 Projectname_entry.place(relx=0.41,rely=0.18,anchor="center")
 Projectname_entry.bind('<FocusIn>', lambda event,entry=Projectname_entry,variabel="Project name":on_general_entry_string_click(event,entry,variabel))
 
-#Create projec latitude label and entry
+#Create project latitude label and entry
 ProjectLatitude_label = tk.Label(root, text="Latitude:")
 ProjectLatitude_value_prefilled = tk.StringVar(value=constants["Cite latitude"])
 ProjectLatitude_entry = tk.Entry(root,textvariable=ProjectLatitude_value_prefilled,fg="grey",width=7)
@@ -708,6 +805,8 @@ ProjectLongitude_label.place(relx=0.61,rely=0.18,anchor="center")
 ProjectLongitude_entry.place(relx=0.665,rely=0.18,anchor="center")
 ProjectLongitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLongitude_entry,variabel="Cite longitude":on_general_entry_string_click(event,entry,variabel))
 
+openmap_button = ttk.Button(root, text="Set from map", command=open_map)
+openmap_button.place(relx=0.61,rely=0.22,anchor="center",relheight=0.05,relwidth=0.10)
 
 # Create the Matching metric dropdown menu
 matching_metric_var = tk.StringVar()

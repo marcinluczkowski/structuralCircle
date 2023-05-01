@@ -645,6 +645,9 @@ def open_map():
             map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
         elif new_map == "Google satellite":
             map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+    
+    def clear_error_message_map():
+        resultmap_label.config(text="")
 
     def search_event(event=None):
         map_widget.set_address(entryadress.get())
@@ -668,12 +671,9 @@ def open_map():
         ProjectLatitude_entry.insert(0,latcordstring)
         ProjectLongitude_entry.insert(0,loncordstring)
         markedexist=True
+        cancelbutton.place(relx=0.08,rely=0.1,anchor=tk.CENTER)
         resultmap_label.configure(text="Coordinates set to: " +latcordstring+" , " +loncordstring, foreground="green")
         result_label.after(5000,clear_error_message_map)
-
-
-    def clear_error_message_map():
-        resultmap_label.config(text="")
 
     # def left_click_event(coordinates_tuple):
     #     global markedexist
@@ -726,6 +726,10 @@ def open_map():
 
     resultmap_label = ttk.Label(root_tk, text="")
     resultmap_label.place(relx=0.29,rely=0.955,anchor="center")
+    
+    #cancelbutton=tk.Button(master=root_tk, text="Close window",fg="red",command=root_tk.destroy)
+
+    cancelbutton=customtkinter.CTkButton(master=root_tk, text="Close window",fg_color="red",command=root_tk.destroy)
 
     root_tk.mainloop()
 

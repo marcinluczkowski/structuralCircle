@@ -95,9 +95,9 @@ def extract_results_df_pdf(dict_list, constants):
         if metric == "GWP":
             used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne")})
         elif metric == "Combined":
-            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne"), "Price of transportation": (constants["PRICE_transportation"], "kr/km/tonne")})
+            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne"), "Price of transportation": (constants["PRICE_TRANSPORTATION"], "kr/km/tonne")})
         elif metric == "Price":
-            used_constants.update({"Price of transportation": (constants["PRICE_transportation"], "kr/km/tonne")})                 
+            used_constants.update({"Price of transportation": (constants["PRICE_TRANSPORTATION"], "kr/km/tonne")})                 
     else:
         results_dict["Transportation included"] = "No"
         results_dict["Transportation percentage"] = 0

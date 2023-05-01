@@ -637,7 +637,12 @@ def open_report():
 
 # Create the main window and configure it to fill the whole screen
 root = tk.Tk()
-root.attributes('-fullscreen', True)
+
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+root.geometry(f"{screen_width}x{screen_height}")
+
+#root.attributes('-fullscreen', True)
 #Create title
 root.title("Element Matching Machine")
 root.title_label = ttk.Label(root, text="Element Matching Program", font=("Montserrat", 34, "bold"), foreground="#00509e")

@@ -14,6 +14,9 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import folium
+from selenium import webdriver
+import time
+import os
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 
@@ -773,8 +776,9 @@ def create_map(supply):
     folium.Marker([cite_coords[0], cite_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(map)
 
     # Create a custom legend with the marker colors and labels
-    
+    fit_view_coordinates = [cite_coords]
     for coord, count in coordinates_dict.items():
+        fit_view_coordinates.append(coord)
         marker_number = coordinates_dict[coord]
         location = [coord[0],coord[1]]
         icon_html = '<div style="font-size: 12px; font-weight: bold; color: white; background-color: green; border-radius: 50%; padding: 5px 5px; height: 25px; width: 25px; text-align: center; line-height: 1.5;">{}</div>'.format(marker_number)
@@ -784,22 +788,42 @@ def create_map(supply):
             html=icon_html)
         ).add_to(map)
 
+    map.fit_bounds(fit_view_coordinates)
+    """
     legend_html = '''
         <div style="position: fixed; 
                     top: 10px; right: 10px; width: 150px; height: 60px; 
                     border:2px solid grey; z-index:9999; font-size:14px;
                     background-color: white;">
-        &nbsp; <div style="display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: white; background-color: green; border-radius: 50%; padding: 5px 5px; height: 15px; width: 15px; text-align: center; line-height: 1.5;">#</div> Reuse elements<br>
+        &nbsp; <div style="display: inline-flex; align-items: center; justify-content: center; font-size: 6px; font-weight: bold; color: white; background-color: green; border-radius: 50%; height: 10px; width: 10px; text-align: center; line-height: 1.5;">#</div> Reuse elements<br>
         &nbsp; <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location
         </div>
         '''
-    
+    """
+    legend_html = '''
+        <div style="position: fixed; 
+                    top: 10px; right: 10px; width: 150px; height: 50px; 
+                    border:2px solid grey; z-index:9999; font-size:14px;
+                    background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
+        <i class="fa-solid fa-circle" style="color:green;font-size=0.5px;"></i> Reuse elements<br>
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location  
+        </div>
+        '''
 
     # Add the legend to the map
     map.get_root().html.add_child(folium.Element(legend_html))
-
+    #img = map._to_png(5)
+    #mg.save(r"./Results/map.png")
     # Display the map
-    map.show_in_browser()
+    #map.show_in_browser()
+    map.save(r"./Results/map.html")
+    driver = webdriver.Chrome()
+    #driver.get(r"./Results/map.html")
+    filepath = os.getcwd() + r"/Results/map.html"
+    driver.get("file:///" + filepath)
+    time.sleep(3)
+    driver.save_screenshot(r"./Results/map.png")
+    driver.quit()
     return None
 
 def create_map2(supply):

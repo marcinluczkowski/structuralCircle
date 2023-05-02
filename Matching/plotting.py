@@ -26,39 +26,27 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, save_
 
     supply_lengths = supply[target_column].to_numpy()
     demand_lengths = demand[target_column].to_numpy()
-    if target_column == "Moment of Inertia":
-        supply_lengths = supply_lengths*10e3
-        demand_lengths = demand_lengths*10e3
-        #test = 3
-
     min_length_pre = np.min([np.min(supply_lengths), np.min(demand_lengths)])
     if min_length_pre < 1:
         num_zeros = count_leading_zeros(min_length_pre)
-        shifter = num_zeros + 2
-        min_length = np.floor(min_length_pre * 10**shifter)/10**shifter
-        dec_format_min = shifter + 1
+        unit_change = num_zeros+1
+        unit_pure = unit.replace("[", "").replace("]", "")
+        unit_change_pure = r"10$^{-"+ str(unit_change) + r"}$"
+        unit = f"x {unit_change_pure} [{unit_pure}]"
+        dec_format = 2
+        supply_lengths = supply_lengths*10**unit_change
+        demand_lengths = demand_lengths*10**unit_change
+        min_length_pre = min_length_pre *10**unit_change
     else:
-        min_length = np.floor(min_length_pre)
-        dec_format_min = 1
-
-
-
+        dec_format = 1
+    min_length = np.floor(min_length_pre * 10)/10
     max_length_pre = np.max([np.max(supply_lengths), np.max(demand_lengths)])
-    if max_length_pre < 1:
-        num_zeros_decimal = str(max_length_pre).count('0') - str(max_length_pre).index('.')
-        num_zeros = count_leading_zeros(max_length_pre)
-        shifter = num_zeros + 2
-        max_length = np.ceil(max_length_pre * 10**shifter)/10**shifter
-        dec_format_max = shifter + 1
-    else:
-        max_length = np.ceil(max_length_pre)
-        dec_format_max = 1
-    
+    max_length = np.ceil(max_length_pre*10)/10
+   
     
     interval_size = (max_length - min_length) / number_of_intervals
     #dec_format_max = len(str(max_length_pre).split('.')[1])
     #dec_format_min = len(str(min_length_pre).split('.')[1])
-    dec_format = np.max([dec_format_max, dec_format_min])
     #dec_format = shifter
     supply_counts = {}
     demand_counts = {}

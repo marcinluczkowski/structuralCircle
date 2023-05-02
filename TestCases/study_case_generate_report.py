@@ -71,9 +71,9 @@ score_function_string = hm.generate_score_function_string(constants)
 #demand = hm.import_dataframe_from_csv(r"" + constants["Demand file location"])
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
-plot.create_graph(supply, demand, target_column="Length", unit="[m]", number_of_intervals=5, save_filename=r"./Results/testplot2.png")
-plot.create_graph(supply, demand, target_column="Area", unit="[m^2]", number_of_intervals=4, save_filename=r"./Results/testplot3.png")
-plot.create_graph(supply, demand, target_column="Moment of Inertia", unit="[m^4]", number_of_intervals=4, save_filename=r"./Results/testplot4.png")
+plot.create_graph(supply, demand, target_column="Length", unit=r"[m]", number_of_intervals=5, save_filename=r"./Results/testplot2.png")
+plot.create_graph(supply, demand, target_column="Area", unit=r"[m^2]", number_of_intervals=5, save_filename=r"./Results/testplot3.png")
+plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m^4]", number_of_intervals=5, save_filename=r"./Results/testplot4.png")
 #hm.create_graph(supply, demand, "Length", number_of_intervals= 2, save_filename = r"C:\Users\sigur\Downloads\test.png")
 
 constraint_dict = constants["constraint_dict"]

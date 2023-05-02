@@ -769,12 +769,9 @@ def create_map(supply):
     cite_coords = (supply.iloc[0]["Cite_lat"], supply.iloc[0]["Cite_lon"])
     coordinates_count = supply_locations.groupby(['Latitude', 'Longitude']).size().reset_index(name='Count')
     coordinates_dict = dict(zip(coordinates_count[['Latitude', 'Longitude']].apply(tuple, axis=1), coordinates_count['Count']))
-
     marker_colors = ["blue", "green"]
-
     map = folium.Map(location=[supply_locations.Latitude.mean(), supply_locations.Longitude.mean()], control_scale=True)
     folium.Marker([cite_coords[0], cite_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(map)
-
     # Create a custom legend with the marker colors and labels
     fit_view_coordinates = [cite_coords]
     for coord, count in coordinates_dict.items():
@@ -802,10 +799,10 @@ def create_map(supply):
     """
     legend_html = '''
         <div style="position: fixed; 
-                    top: 10px; right: 10px; width: 150px; height: 50px; 
+                    top: 10px; right: 10px; width: 200px; height: 50px; 
                     border:2px solid grey; z-index:9999; font-size:14px;
                     background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
-        <i class="fa-solid fa-circle" style="color:green;font-size=0.5px;"></i> Reuse elements<br>
+        <i class="fa-solid fa-circle" style="color:green;font-size=0.5px;"></i> Reuse elements locations<br>
         <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location  
         </div>
         '''
@@ -817,30 +814,185 @@ def create_map(supply):
     # Display the map
     #map.show_in_browser()
     map.save(r"./Results/map.html")
-    driver = webdriver.Chrome()
+    options = webdriver.ChromeOptions()
+    options.add_experimental_option("useAutomationExtension", False)
+    options.add_experimental_option("excludeSwitches",["enable-automation"])
+    driver = webdriver.Chrome(chrome_options=options)
     #driver.get(r"./Results/map.html")
     filepath = os.getcwd() + r"/Results/map.html"
     driver.get("file:///" + filepath)
-    time.sleep(3)
+    driver.maximize_window()
+    time.sleep(5)
     driver.save_screenshot(r"./Results/map.png")
     driver.quit()
-    return None
 
-def create_map2(supply):
-    supply = supply.copy()
-    grouped_data = supply.groupby(['Latitude', 'Longitude']).agg({'location_name': 'nunique', 'element_name': 'count'}).reset_index()
-    grouped_data = grouped_data.rename(columns={'location_name': 'num_locations', 'element_name': 'num_elements'})
+def create_map_substitutions(supply, pdf_results):
+    matches = list(pdf_results["Pairs"][pdf_results["Pairs"].str.contains("S")])
+    supply = supply.copy().loc[matches]
+    supply_locations = supply[["Latitude", "Longitude"]]
+    cite_coords = (supply.iloc[0]["Cite_lat"], supply.iloc[0]["Cite_lon"])
+    coordinates_count = supply_locations.groupby(['Latitude', 'Longitude']).size().reset_index(name='Count')
+    coordinates_dict = dict(zip(coordinates_count[['Latitude', 'Longitude']].apply(tuple, axis=1), coordinates_count['Count']))
+    map = folium.Map(location=[supply_locations.Latitude.mean(), supply_locations.Longitude.mean()], control_scale=True)
+    folium.Marker([cite_coords[0], cite_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(map)
+    # Create a custom legend with the marker colors and labels
+    fit_view_coordinates = [cite_coords]
+    for coord, count in coordinates_dict.items():
+        fit_view_coordinates.append(coord)
+        marker_number = coordinates_dict[coord]
+        location = [coord[0],coord[1]]
+        icon_html = '<div style="font-size: 12px; font-weight: bold; color: white; background-color: green; border-radius: 50%; padding: 5px 5px; height: 25px; width: 25px; text-align: center; line-height: 1.5;">{}</div>'.format(marker_number)
+        folium.Marker(
+        location=location,
+        icon=folium.DivIcon(
+            html=icon_html)
+        ).add_to(map)
 
-    # Create the map
-    map = folium.Map(location=[grouped_data['Latitude'].mean(), grouped_data['Longitude'].mean()], zoom_start=10)
+    map.fit_bounds(fit_view_coordinates)
+    """
+    legend_html = '''
+        <div style="position: fixed; 
+                    top: 10px; right: 10px; width: 150px; height: 60px; 
+                    border:2px solid grey; z-index:9999; font-size:14px;
+                    background-color: white;">
+        &nbsp; <div style="display: inline-flex; align-items: center; justify-content: center; font-size: 6px; font-weight: bold; color: white; background-color: green; border-radius: 50%; height: 10px; width: 10px; text-align: center; line-height: 1.5;">#</div> Reuse elements<br>
+        &nbsp; <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location
+        </div>
+        '''
+    """
+    legend_html = '''
+        <div style="position: fixed; 
+                    top: 10px; right: 10px; width: 180px; height: 50px; 
+                    border:2px solid grey; z-index:9999; font-size:14px;
+                    background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
+        <i class="fa-solid fa-circle" style="color:green;font-size=0.5px;"></i> Substitutions locations<br>
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location  
+        </div>
+        '''
 
-    # Add a CircleMarker for each group of locations
-    for index, row in grouped_data.iterrows():
-        folium.CircleMarker(location=[row['Latitude'], row['Longitude']],
-                            radius=row['num_locations']*2,
-                            tooltip=f"Locations: {row['num_locations']}, Elements: {row['num_elements']}",
-                            color='red', fill=True, fill_color='red', fill_opacity=0.5).add_to(map)
-    map.show_in_browser()
-    return None
+    # Add the legend to the map
+    map.get_root().html.add_child(folium.Element(legend_html))
+    #img = map._to_png(5)
+    #mg.save(r"./Results/map.png")
+    # Display the map
+    #map.show_in_browser()
+    map.save(r"./Results/map_subs.html")
+    options = webdriver.ChromeOptions()
+    options.add_experimental_option("useAutomationExtension", False)
+    options.add_experimental_option("excludeSwitches",["enable-automation"])
+    driver = webdriver.Chrome(chrome_options=options)
+    #driver.get(r"./Results/map.html")
+    filepath = os.getcwd() + r"/Results/map_subs.html"
+    driver.get("file:///" + filepath)
+    driver.maximize_window()
+    time.sleep(5)
+    driver.save_screenshot(r"./Results/map_subs.png")
+    driver.quit()
+
+def create_map_manufacturer_matches(demand, pdf_results):
+    matches = list(pdf_results["Pairs"][pdf_results["Pairs"].str.contains("N")])
+    indexes = list(map(lambda x: x.replace("N", "D"), matches))
+    demand = demand.copy().loc[indexes]
+    demand_locations = demand[["Latitude", "Longitude"]]
+    cite_coords = (demand.iloc[0]["Cite_lat"], demand.iloc[0]["Cite_lon"])
+    coordinates_count = demand_locations.groupby(['Latitude', 'Longitude']).size().reset_index(name='Count')
+    coordinates_dict = dict(zip(coordinates_count[['Latitude', 'Longitude']].apply(tuple, axis=1), coordinates_count['Count']))
+    m = folium.Map(location=[demand_locations.Latitude.mean(), demand_locations.Longitude.mean()], control_scale=True)
+    folium.Marker([cite_coords[0], cite_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
+    # Create a custom legend with the marker colors and labels
+    fit_view_coordinates = [cite_coords]
+    for coord, count in coordinates_dict.items():
+        fit_view_coordinates.append(coord)
+        marker_number = coordinates_dict[coord]
+        location = [coord[0],coord[1]]
+        icon_html = '<div style="font-size: 12px; font-weight: bold; color: white; background-color: red; border-radius: 50%; padding: 5px 5px; height: 25px; width: 25px; text-align: center; line-height: 1.5;">{}</div>'.format(marker_number)
+        folium.Marker(
+        location=location,
+        icon=folium.DivIcon(
+            html=icon_html)
+        ).add_to(m)
+
+    m.fit_bounds(fit_view_coordinates)
+
+    legend_html = '''
+        <div style="position: fixed; 
+                    top: 10px; right: 10px; width: 180px; height: 50px; 
+                    border:2px solid grey; z-index:9999; font-size:14px;
+                    background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
+        <i class="fa-solid fa-circle" style="color:red;font-size=0.5px;"></i> Manufacturer locations<br>
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location  
+        </div>
+        '''
+
+    # Add the legend to the map
+    m.get_root().html.add_child(folium.Element(legend_html))
+    #img = map._to_png(5)
+    #mg.save(r"./Results/map.png")
+    # Display the map
+    #map.show_in_browser()
+    m.save(r"./Results/map_subs_manufacturer.html")
+    options = webdriver.ChromeOptions()
+    options.add_experimental_option("useAutomationExtension", False)
+    options.add_experimental_option("excludeSwitches",["enable-automation"])
+    driver = webdriver.Chrome(chrome_options=options)
+    #driver.get(r"./Results/map.html")
+    filepath = os.getcwd() + r"/Results/map_subs_manufacturer.html"
+    driver.get("file:///" + filepath)
+    driver.maximize_window()
+    time.sleep(5)
+    driver.save_screenshot(r"./Results/map_subs_manufacturer.png")
+    driver.quit()
+
+def create_map_dataframe(df, color, legend_text, save_name):
+    df = df.copy()
+    df_locations = df[["Latitude", "Longitude"]]
+    cite_coords = (df.iloc[0]["Cite_lat"], df.iloc[0]["Cite_lon"])
+    coordinates_count = df_locations.groupby(['Latitude', 'Longitude']).size().reset_index(name='Count')
+    coordinates_dict = dict(zip(coordinates_count[['Latitude', 'Longitude']].apply(tuple, axis=1), coordinates_count['Count']))
+    m = folium.Map(location=[df_locations.Latitude.mean(), df_locations.Longitude.mean()], control_scale=True)
+    folium.Marker([cite_coords[0], cite_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
+    # Create a custom legend with the marker colors and labels
+    fit_view_coordinates = [cite_coords]
+    for coord, count in coordinates_dict.items():
+        fit_view_coordinates.append(coord)
+        marker_number = coordinates_dict[coord]
+        location = [coord[0],coord[1]]
+        icon_html = f'<div style="font-size: 12px; font-weight: bold; color: white; background-color: {color}; border-radius: 50%; padding: 5px 5px; height: 25px; width: 25px; text-align: center; line-height: 1.5;">{marker_number}</div>'
+        folium.Marker(
+        location=location,
+        icon=folium.DivIcon(
+            html=icon_html)
+        ).add_to(m)
+
+    m.fit_bounds(fit_view_coordinates)
+
+    legend_html = f'''
+        <div style="position: fixed; 
+                    top: 10px; right: 10px; width: 180px; height: 50px; 
+                    border:2px solid grey; z-index:9999; font-size:14px;
+                    background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
+        <i class="fa-solid fa-circle" style="color:{color};font-size=0.5px;"></i> {legend_text}<br>
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location  
+        </div>
+        '''
+
+    # Add the legend to the map
+    m.get_root().html.add_child(folium.Element(legend_html))
+    #img = map._to_png(5)
+    #mg.save(r"./Results/map.png")
+    # Display the map
+    #map.show_in_browser()
+    m.save(r""+f"./Results/{save_name}.html")
+    options = webdriver.ChromeOptions()
+    options.add_experimental_option("useAutomationExtension", False)
+    options.add_experimental_option("excludeSwitches",["enable-automation"])
+    driver = webdriver.Chrome(chrome_options=options)
+    #driver.get(r"./Results/map.html")
+    filepath = os.getcwd() + r"" + f"/Results/{save_name}.html"
+    driver.get("file:///" + filepath)
+    driver.maximize_window()
+    time.sleep(5)
+    driver.save_screenshot(r""+ f"./Results/{save_name}.png")
+    driver.quit()
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

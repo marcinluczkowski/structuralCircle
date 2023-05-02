@@ -42,12 +42,12 @@ constants = {
 supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
 tiller = ["Tiller", "63.3604", "10.4008"]
-#gjovik = ["Gjovik", "60.8941", "10.5001"]
+gjovik = ["Gjovik", "60.8941", "10.5001"]
 orkanger = ["Orkanger", "63.3000", "9.8468"]
 storlien = ["Storlien", "63.3160", "12.1018"]
 
 supply_coords.loc[len(supply_coords)] = tiller
-#supply_coords.loc[len(supply_coords)] = gjovik
+supply_coords.loc[len(supply_coords)] = gjovik
 supply_coords.loc[len(supply_coords)] = orkanger
 supply_coords.loc[len(supply_coords)] = storlien
 
@@ -77,15 +77,19 @@ constraint_dict = constants["constraint_dict"]
 #Add necessary columns to run the algorithm
 supply = hm.add_necessary_columns_pdf(supply, constants)
 demand = hm.add_necessary_columns_pdf(demand, constants)
-hm.create_map(supply)
-"""
+
 run_string = hm.generate_run_string(constants)
 result = eval(run_string)
 simple_pairs = hm.extract_pairs_df(result)
 pdf_results = hm.extract_results_df_pdf(result, constants)
-pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
-print(hm.extract_pairs_df(result))
-"""
+#hm.create_map_substitutions(supply, pdf_results)
+#hm.create_map(supply)
+#hm.create_map_manufacturer_matches(demand, pdf_results)
+#hm.create_map_manufacturers(demand)
+hm.create_map_dataframe(demand, color = "red", legend_text="Manufacturer locations", save_name="map_manufacturer_test")
+#hm.create_map_dataframe(supply, color = "green", legend_text="")
+#pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
+#print(hm.extract_pairs_df(result))
 
 
 

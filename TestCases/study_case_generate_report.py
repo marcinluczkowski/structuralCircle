@@ -90,8 +90,3 @@ hm.create_map_dataframe(demand, color = "red", legend_text="Manufacturer locatio
 #hm.create_map_dataframe(supply, color = "green", legend_text="")
 #pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
 #print(hm.extract_pairs_df(result))
-
-
-
-
-

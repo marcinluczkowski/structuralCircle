@@ -132,7 +132,10 @@ def calculate():
         pdf = hm.generate_pdf_report(pdf_results,projectname, filepath = r"./Results/")
         result_label.config(text="Report generated", foreground="green")
         result_label.after(10000, clear_error_message)
-        open_report_button.place(relx=0.5,rely=0.95,anchor="center")
+        open_report_button.place(relx=0.5,rely=0.93,anchor="center")
+        open_reused_map_button.place(relx=0.37,rely=0.95,anchor="center")
+        open_manufactorer_map_button.place(relx=0.65,rely=0.95,anchor="center")
+
 
 
 def updateconstants():
@@ -636,6 +639,13 @@ def open_report():
     else:
         subprocess.call(["xdg-open", filepath])
 
+def open_reused_map():
+    pass
+
+def open_manufactorer_map():
+    pass
+
+
 
 def open_map():
     def change_map(new_map: str):
@@ -796,6 +806,7 @@ Projectname_entry.bind('<FocusIn>', lambda event,entry=Projectname_entry,variabe
 #Create project latitude label and entry
 ProjectLatitude_label = tk.Label(root, text="Latitude:")
 ProjectLatitude_value_prefilled = tk.StringVar(value=constants["Cite latitude"])
+latitude_coordinate.set(constants["Cite latitude"])
 ProjectLatitude_entry = tk.Entry(root,textvariable=ProjectLatitude_value_prefilled,fg="grey",width=7)
 ProjectLatitude_label.place(relx=0.50,rely=0.18,anchor="center")
 ProjectLatitude_entry.place(relx=0.55,rely=0.18,anchor="center")
@@ -804,6 +815,7 @@ ProjectLatitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLatitude_entry
 #Create project longitude label and entry
 ProjectLongitude_label = tk.Label(root, text="Longitude:")
 ProjectLongitude_value_prefilled = tk.StringVar(value=constants["Cite longitude"])
+longitude_coordinate.set(constants["Cite longitude"])
 ProjectLongitude_entry = tk.Entry(root,textvariable=ProjectLongitude_value_prefilled,fg="grey",width=7)
 ProjectLongitude_label.place(relx=0.61,rely=0.18,anchor="center")
 ProjectLongitude_entry.place(relx=0.665,rely=0.18,anchor="center")
@@ -942,7 +954,14 @@ result_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
 #Create the caulculate button
 calculate_button = ttk.Button(root, text="Calculate", command=calculate)
 calculate_button.place(relx=0.5,rely=0.8,anchor="center",relheight=0.05,relwidth=0.10)
-open_report_button = ttk.Button(root, text="Open report", command=open_report)
+open_report_button = ttk.Button(root, text="Open report",style='Bold.TButton', command=open_report)
+open_reused_map_button = ttk.Button(root, text="Open reuse elements map", command=open_reused_map)
+open_manufactorer_map_button = ttk.Button(root, text="Open manufacturer elements map", command=open_manufactorer_map)
+
+bold_style = ttk.Style()
+bold_style.configure('Bold.TButton', font=('TkDefaultFont', 12, 'bold'))
+
+
 result_label = ttk.Label(root, text="")
-result_label.place(relx=0.5,rely=0.9,anchor="center")
+result_label.place(relx=0.5,rely=0.88,anchor="center")
 root.mainloop()

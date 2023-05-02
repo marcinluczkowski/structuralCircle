@@ -6,32 +6,71 @@ import logging
 import LCA as lca
 import itertools
 import random
-from fpdf import FPDF
-from datetime import date
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+import matplotlib.ticker as ticker
 import folium
 from selenium import webdriver
 import time
 import os
 
-def create_graph(supply, demand, target_column, number_of_intervals, save_filename):
+def create_graph(supply, demand, target_column, unit, number_of_intervals, save_filename):
+    def count_leading_zeros(num):
+        count = 0
+        num_str = str(num)
+        decimal_pos = num_str.find(".")
+        for i in range(decimal_pos+1, len(num_str)):
+            if num_str[i] != "0":
+                break
+            else:
+                count += 1
+        return count
+
     supply_lengths = supply[target_column].to_numpy()
     demand_lengths = demand[target_column].to_numpy()
-    max_length = np.ceil(np.max([np.max(supply_lengths), np.max(demand_lengths)]))
-    min_length = np.floor(np.min([np.min(supply_lengths), np.min(demand_lengths)]))
+    if target_column == "Moment of Inertia":
+        supply_lengths = supply_lengths*10e3
+        demand_lengths = demand_lengths*10e3
+        #test = 3
+
+    min_length_pre = np.min([np.min(supply_lengths), np.min(demand_lengths)])
+    if min_length_pre < 1:
+        num_zeros = count_leading_zeros(min_length_pre)
+        shifter = num_zeros + 2
+        min_length = np.floor(min_length_pre * 10**shifter)/10**shifter
+        dec_format_min = shifter + 1
+    else:
+        min_length = np.floor(min_length_pre)
+        dec_format_min = 1
+
+
+
+    max_length_pre = np.max([np.max(supply_lengths), np.max(demand_lengths)])
+    if max_length_pre < 1:
+        num_zeros_decimal = str(max_length_pre).count('0') - str(max_length_pre).index('.')
+        num_zeros = count_leading_zeros(max_length_pre)
+        shifter = num_zeros + 2
+        max_length = np.ceil(max_length_pre * 10**shifter)/10**shifter
+        dec_format_max = shifter + 1
+    else:
+        max_length = np.ceil(max_length_pre)
+        dec_format_max = 1
+    
+    
     interval_size = (max_length - min_length) / number_of_intervals
+    #dec_format_max = len(str(max_length_pre).split('.')[1])
+    #dec_format_min = len(str(min_length_pre).split('.')[1])
+    dec_format = np.max([dec_format_max, dec_format_min])
+    #dec_format = shifter
     supply_counts = {}
     demand_counts = {}
     start = min_length
     for i in range(number_of_intervals):
         end = start + interval_size
         #intervals.append("{:.1f}-{:.1f}".format(start, end))
-        supply_counts["{:.1f}-{:.1f}".format(start, end)] = 0
-        demand_counts["{:.1f}-{:.1f}".format(start, end)] = 0
+        #supply_counts["{:.1f}-{:.1f}".format(start, end)] = 0
+        #intervals.append(f"{start}:.{dec_format}f-{end}:.{dec_format}f")
+        supply_counts[f"{start:.{dec_format}f}-{end:.{dec_format}f}"] = 0
+        demand_counts[f"{start:.{dec_format}f}-{end:.{dec_format}f}"] = 0
+        #demand_counts["{:.1f}-{:.1f}".format(start, end)] = 0
         start = end
 
     for length in supply_lengths:
@@ -40,31 +79,38 @@ def create_graph(supply, demand, target_column, number_of_intervals, save_filena
             if start <= length < end:
                 supply_counts[interval] += 1
                 break
-    for length in supply_lengths:
+    for length in demand_lengths:
         for interval in demand_counts:
             start, end = map(float, interval.split("-"))
             if start <= length < end:
                 demand_counts[interval] += 1
                 break
 
-    
-    boxplot,ax=plt.subplots(figsize = (7, 5))
     label = list(supply_counts.keys())
     supply_values = supply_counts.values()
     demand_values = demand_counts.values()
-    x=np.arange(len(label))
-    width=0.25
-    plt.rcParams["font.family"] = "Sans Serif"
-    plt.grid(visible = True, color = "lightgrey", axis = "y")
-    plt.xlabel("Lengths [m]", fontsize = 14)
-    plt.ylabel("Number of elements", fontsize = 14)
-    bar1=ax.bar(x-width,supply_values,width,label="Reuse")
-    bar2=ax.bar(x,demand_values,width,label="Demand")
-    ax.set_facecolor("white")
-    ax.set_xticks(x,label, fontsize = 12)
+    x = np.arange(len(label))
+    plt.rcParams["font.family"] = "Times new roman"
+    boxplot, ax = plt.subplots(figsize=(7, 5))
+    plt.xlabel(f"{target_column} {unit}", fontsize=14)
+    plt.ylabel("Number of elements", fontsize=14)
+    width = 0.25
+    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color ="#ef8114")
+    bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = "#00509e")
+    ax.set_xticks(x, label, fontsize=12)
     ax.legend()
-    plt.plot()
-    plt.savefig(save_filename, dpi = 300)
+    ax.set_facecolor("white")
+    ax.grid(visible=True, color="lightgrey", axis="y", zorder=1)
+    #for position in ['top', 'bottom', 'left', 'right']:
+    #    ax.spines[position].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_color('#DDDDDD')
+    ax.tick_params(bottom=False, left=False)
+    plt.savefig(save_filename, dpi=300)
+
+
 
 def create_map_substitutions(df, pdf_results, df_type, color, legend_text, save_name):
     if df_type == "supply":

@@ -5,6 +5,7 @@ sys.path.append('./Matching')
 import helper_methods as hm
 from matching import run_matching
 import LCA as lca
+import plotting as plot
 
 
 #==========USER FILLS IN============#
@@ -59,8 +60,8 @@ materials = ["Timber", "Steel"]
 
 #GENERATE FILE
 #============
-#supply = hm.create_random_data_supply_pdf_reports(supply_count = 50, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-#demand = hm.create_random_data_demand_pdf_reports(demand_count = 50, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
+#supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
+#demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
 #hm.export_dataframe_to_csv(supply, r"" + "./CSV/pdf_supply.csv")
 #hm.export_dataframe_to_csv(demand, r"" + "./CSV/pdf_demand.csv")
 #========================================
@@ -70,7 +71,9 @@ score_function_string = hm.generate_score_function_string(constants)
 #demand = hm.import_dataframe_from_csv(r"" + constants["Demand file location"])
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
-
+plot.create_graph(supply, demand, target_column="Length", unit="[m]", number_of_intervals=5, save_filename=r"./Results/testplot2.png")
+plot.create_graph(supply, demand, target_column="Area", unit="[m^2]", number_of_intervals=4, save_filename=r"./Results/testplot3.png")
+plot.create_graph(supply, demand, target_column="Moment of Inertia", unit="[m^4]", number_of_intervals=4, save_filename=r"./Results/testplot4.png")
 #hm.create_graph(supply, demand, "Length", number_of_intervals= 2, save_filename = r"C:\Users\sigur\Downloads\test.png")
 
 constraint_dict = constants["constraint_dict"]
@@ -78,15 +81,20 @@ constraint_dict = constants["constraint_dict"]
 supply = hm.add_necessary_columns_pdf(supply, constants)
 demand = hm.add_necessary_columns_pdf(demand, constants)
 
-run_string = hm.generate_run_string(constants)
-result = eval(run_string)
-simple_pairs = hm.extract_pairs_df(result)
-pdf_results = hm.extract_results_df_pdf(result, constants)
-#hm.create_map_substitutions(supply, pdf_results)
-#hm.create_map(supply)
-#hm.create_map_manufacturer_matches(demand, pdf_results)
-#hm.create_map_manufacturers(demand)
-hm.create_map_dataframe(demand, color = "red", legend_text="Manufacturer locations", save_name="map_manufacturer_test")
-#hm.create_map_dataframe(supply, color = "green", legend_text="")
+
+#run_string = hm.generate_run_string(constants)
+#result = eval(run_string)
+#simple_pairs = hm.extract_pairs_df(result)
+#pdf_results = hm.extract_results_df_pdf(result, constants)
+
+
+
+###########PLOTTING MAPS###########
+#plot.create_map_dataframe(demand, color = "red", legend_text="Manufacturer locations", save_name="map_manu")
+#plot.create_map_dataframe(supply, color="green", legend_text="Possible reuse locations", save_name="map_reuse_test")
+#plot.create_map_substitutions(supply, pdf_results, df_type ="supply", color="green", legend_text="Substitutions locations", save_name="map_subs")
+#plot.create_map_substitutions(demand, pdf_results, df_type ="demand", color="red", legend_text="Manufacturer locations", save_name="map_subs_manu")
+###################################
+
 #pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
 #print(hm.extract_pairs_df(result))

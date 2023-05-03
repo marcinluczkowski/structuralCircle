@@ -187,13 +187,13 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
     return supply.round(4)
 
 def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, area_min, area_max, materials, supply_coords):
-    steel_cs = {"IPE100": (1.03*10e-3, 1.71*10e-6),
-                "IPE140": (1.64*10e-3, 5.41*10e-6),
-                "IPE160": (2.01*10e-3, 8.69*10e-6),
-                "IPE180": (2.39*10e-3, 13.20*10e-6),
-                "IPE220": (3.34*10e-3, 27.7*10e-6),
-                "IPE270": (4.59*10e-3, 57.9*10e-6),
-                "IPE300": (5.38*10e-3, 83.6*10e-6)
+    steel_cs = {"IPE100": (1.03e-3, 1.71e-6),
+                "IPE140": (1.64e-3, 5.41e-6),
+                "IPE160": (2.01e-3, 8.69e-6),
+                "IPE180": (2.39e-3, 13.20e-6),
+                "IPE220": (3.34e-3, 27.7e-6),
+                "IPE270": (4.59e-3, 57.9e-6),
+                "IPE300": (5.38e-3, 83.6e-6)
     }
 
 
@@ -228,13 +228,13 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
     return supply
 
 def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, area_min, area_max, materials, demand_coords):
-    steel_cs = {"IPE100": (1.03*10e-3, 1.71*10e-6),
-                "IPE140": (1.64*10e-3, 5.41*10e-6),
-                "IPE160": (2.01*10e-3, 8.69*10e-6),
-                "IPE180": (2.39*10e-3, 13.20*10e-6),
-                "IPE220": (3.34*10e-3, 27.7*10e-6),
-                "IPE270": (4.59*10e-3, 57.9*10e-6),
-                "IPE300": (5.38*10e-3, 83.6*10e-6)
+    steel_cs = {"IPE100": (1.03e-3, 1.71e-6),
+                "IPE140": (1.64e-3, 5.41e-6),
+                "IPE160": (2.01e-3, 8.69e-6),
+                "IPE180": (2.39e-3, 13.20e-6),
+                "IPE220": (3.34e-3, 27.7e-6),
+                "IPE270": (4.59e-3, 57.9e-6),
+                "IPE300": (5.38e-3, 83.6e-6)
     }
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()

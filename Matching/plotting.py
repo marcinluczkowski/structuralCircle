@@ -12,15 +12,61 @@ from selenium import webdriver
 import time
 import os
 
-def create_graph_specific_material(supply, demand, target_column, unit, number_of_intervals, material_string, save_filename):
+def create_graph_specific_material(supply, demand, target_column, unit, number_of_intervals, material_string, fig_title, save_filename):
     requested_supply = supply.loc[supply["Material"] == material_string]
     requested_demand = demand.loc[demand["Material"] == material_string]
-    create_graph(requested_supply, requested_demand, target_column, unit, number_of_intervals, save_filename)
+    create_graph(requested_supply, requested_demand, target_column, unit, number_of_intervals, fig_title, save_filename)
 
-def create_graph(supply, demand, target_column, unit, number_of_intervals, save_filename):
+def plot_materials(supply, demand, fig_title, save_filename):
+    supply_counts = supply["Material"].value_counts().to_dict()
+    demand_counts = demand["Material"].value_counts().to_dict()
+    unique_keys = list(set(supply_counts.keys()) | set(demand_counts.keys()))
+
+    for key in unique_keys:
+        if key not in supply_counts:
+            supply_counts[key] = 0
+        if key not in demand_counts:
+            demand_counts[key] = 0
+
+    sorted_supply = {key: supply_counts[key] for key in unique_keys}
+    sorted_demand = {key: demand_counts[key] for key in unique_keys}
+
+    label = list(sorted_supply.keys())
+    supply_values = sorted_supply.values()
+    demand_values = sorted_demand.values()
+    x = np.arange(len(label))
+    plt.rcParams["font.family"] = "Times new roman"
+    boxplot, ax = plt.subplots(figsize=(7, 5))
+    plt.xlabel("Materials", fontsize=14)
+    plt.ylabel("Number of elements", fontsize=14)
+    plt.title(fig_title)
+    ax.yaxis.get_major_locator().set_params(integer=True)
+    width = 0.25
+    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color ="#ef8114")
+    bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = "#00509e")
+    ax.set_xticks(x, label, fontsize=12)
+    ax.legend()
+    ax.set_facecolor("white")
+    ax.grid(visible=True, color="lightgrey", axis="y", zorder=1)
+    #for position in ['top', 'bottom', 'left', 'right']:
+    #    ax.spines[position].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_color('#DDDDDD')
+    ax.tick_params(bottom=False, left=False)
+    plt.savefig(save_filename, dpi=300)
+
+
+
+def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_title, save_filename):
     def count_leading_zeros(num):
         count = 0
         num_str = str(num)
+        if "e" in num_str:
+            neg_pos = num_str.find("-")
+            neg_num = num_str[neg_pos+1:]
+            return float(neg_num) - 1
         decimal_pos = num_str.find(".")
         for i in range(decimal_pos+1, len(num_str)):
             if num_str[i] != "0":
@@ -44,9 +90,9 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, save_
         min_length_pre = min_length_pre *10**unit_change
     else:
         dec_format = 1
-    min_length = np.floor(min_length_pre * 10)/10
+    min_length = np.floor(min_length_pre * 10**dec_format)/10**dec_format
     max_length_pre = np.max([np.max(supply_lengths), np.max(demand_lengths)])
-    max_length = np.ceil(max_length_pre*10)/10
+    max_length = np.ceil(max_length_pre*10**dec_format)/10**dec_format
    
     
     interval_size = (max_length - min_length) / number_of_intervals
@@ -69,13 +115,13 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, save_
     for length in supply_lengths:
         for interval in supply_counts:
             start, end = map(float, interval.split("-"))
-            if start <= length < end:
+            if start <= length <= end:
                 supply_counts[interval] += 1
                 break
     for length in demand_lengths:
         for interval in demand_counts:
             start, end = map(float, interval.split("-"))
-            if start <= length < end:
+            if start <= length <= end:
                 demand_counts[interval] += 1
                 break
 
@@ -87,6 +133,8 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, save_
     boxplot, ax = plt.subplots(figsize=(7, 5))
     plt.xlabel(f"{target_column} {unit}", fontsize=14)
     plt.ylabel("Number of elements", fontsize=14)
+    plt.title(fig_title)
+    ax.yaxis.get_major_locator().set_params(integer=True)
     width = 0.25
     bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color ="#ef8114")
     bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = "#00509e")

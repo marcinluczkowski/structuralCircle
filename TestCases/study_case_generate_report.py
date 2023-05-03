@@ -60,10 +60,10 @@ materials = ["Timber", "Steel"]
 
 #GENERATE FILE
 #============
-supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, demand_coords = demand_coords)
-hm.export_dataframe_to_csv(supply, r"" + "./CSV/pdf_supply.csv")
-hm.export_dataframe_to_csv(demand, r"" + "./CSV/pdf_demand.csv")
+#supply = hm.create_random_data_supply_pdf_reports(supply_count = 100, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.02, materials = materials, supply_coords = supply_coords)
+#demand = hm.create_random_data_demand_pdf_reports(demand_count = 100, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.02, materials = materials, demand_coords = demand_coords)
+#hm.export_dataframe_to_csv(supply, r"" + "./CSV/pdf_supply.csv")
+#hm.export_dataframe_to_csv(demand, r"" + "./CSV/pdf_demand.csv")
 #========================================
 
 score_function_string = hm.generate_score_function_string(constants)
@@ -71,10 +71,10 @@ score_function_string = hm.generate_score_function_string(constants)
 #demand = hm.import_dataframe_from_csv(r"" + constants["Demand file location"])
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
-plot.create_graph(supply, demand, target_column="Length", unit=r"[m]", number_of_intervals=5, save_filename=r"./Results/testplot2.png")
-plot.create_graph(supply, demand, target_column="Area", unit=r"[m^2]", number_of_intervals=5, save_filename=r"./Results/testplot3.png")
-plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m^4]", number_of_intervals=5, save_filename=r"./Results/testplot4.png")
-#hm.create_graph(supply, demand, "Length", number_of_intervals= 2, save_filename = r"C:\Users\sigur\Downloads\test.png")
+#plot.create_graph(supply, demand, target_column="Length", unit=r"[m]", number_of_intervals=5, fig_title = "", save_filename=r"./Results/testplot2.png")
+#plot.create_graph(supply, demand, target_column="Area", unit=r"[m$^2$]", number_of_intervals=5, fig_title = "", save_filename=r"./Results/testplot3.png")
+#plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m$^4$]", number_of_intervals=5, fig_title = "", save_filename=r"./Results/testplot4.png")
+plot.plot_materials(supply, demand, "", save_filename=r"./Results/material_plot.png")
 
 constraint_dict = constants["constraint_dict"]
 #Add necessary columns to run the algorithm

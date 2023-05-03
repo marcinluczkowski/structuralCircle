@@ -26,8 +26,8 @@ constants = {
     "VALUATION_GWP": 0.6, #In kr:Per kg CO2, based on OECD
     "TIMBER_PRICE": 435, #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
     "TIMBER_REUSE_PRICE" : 100, #Per m^3, Random value
-    "STEEL_PRICE": 500, #Per m^2, R'andom value'
-    "STEEL_REUSE_PRICE": 200, #Per m^2, Random value
+    "STEEL_PRICE": 500, #Per m^3, R'andom value'
+    "STEEL_REUSE_PRICE": 200, #Per m^3, Random value
     "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
     "STEEL_DENSITY": 7850,
     ########################
@@ -133,10 +133,9 @@ def calculate():
         result_label.config(text="Report generated", foreground="green")
         result_label.after(10000, clear_error_message)
         open_report_button.place(relx=0.5,rely=0.93,anchor="center")
-        open_reused_map_button.place(relx=0.37,rely=0.95,anchor="center")
-        open_manufactorer_map_button.place(relx=0.65,rely=0.95,anchor="center")
-
-
+        if include_transportation_var.get() == 1:
+            open_reused_map_button.place(relx=0.37,rely=0.95,anchor="center")
+            open_manufactorer_map_button.place(relx=0.65,rely=0.95,anchor="center")
 
 def updateconstants():
     constants["TIMBER_GWP"]=float(Timber_new_gwp_entry.get())

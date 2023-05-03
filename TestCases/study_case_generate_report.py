@@ -60,10 +60,10 @@ materials = ["Timber", "Steel"]
 
 #GENERATE FILE
 #============
-#supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-#demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
-#hm.export_dataframe_to_csv(supply, r"" + "./CSV/pdf_supply.csv")
-#hm.export_dataframe_to_csv(demand, r"" + "./CSV/pdf_demand.csv")
+supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, demand_coords = demand_coords)
+hm.export_dataframe_to_csv(supply, r"" + "./CSV/pdf_supply.csv")
+hm.export_dataframe_to_csv(demand, r"" + "./CSV/pdf_demand.csv")
 #========================================
 
 score_function_string = hm.generate_score_function_string(constants)

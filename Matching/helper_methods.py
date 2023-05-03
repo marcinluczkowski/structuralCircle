@@ -187,12 +187,22 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
     return supply.round(4)
 
 def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, area_min, area_max, materials, supply_coords):
+    steel_cs = {"IPE100": (1.03*10e-3, 1.71*10e-6),
+                "IPE140": (1.64*10e-3, 5.41*10e-6),
+                "IPE160": (2.01*10e-3, 8.69*10e-6),
+                "IPE180": (2.39*10e-3, 13.20*10e-6),
+                "IPE220": (3.34*10e-3, 27.7*10e-6),
+                "IPE270": (4.59*10e-3, 57.9*10e-6),
+                "IPE300": (5.38*10e-3, 83.6*10e-6)
+    }
+
+
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     supply = pd.DataFrame()
     supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
-    supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
-    #TODO: Only works for squared sections! Not applicable for steel sections
-    supply['Moment of Inertia'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    supply['Area'] = 0 
+    #TODO: Only works for squared sections! Not applicable for steel sections #
+    supply['Moment of Inertia'] = 0
     supply['Material'] = ""
     supply["Location"]=0
     supply["Latitude"]=0
@@ -200,6 +210,14 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
     
     for row in range(len(supply)):
         material = materials[random.randint(0, len(materials)-1)]
+        if material == "Timber":
+            area = np.random.uniform(area_min, area_max)
+            supply.loc[row, "Area"] = area
+            supply.loc[row, "Moment of Inertia"] = area**2/12
+        elif material == "Steel":
+            cs = random.choice(list(steel_cs.keys()))
+            supply.loc[row, "Area"] = steel_cs[cs][0]
+            supply.loc[row, "Moment of Inertia"] = steel_cs[cs][1]
         supply.loc[row, "Material"] = material
         lokasjon=random.randint(0, len(supply_coords)-1)
         supply.loc[row,"Latitude"]=supply_coords.loc[lokasjon,"Latitude"]
@@ -207,15 +225,23 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
         supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Location"]
     #supply.index = map(lambda text: 'S' + str(text), supply.index) 
 
-    return supply.round(4)
+    return supply
 
 def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, area_min, area_max, materials, demand_coords):
+    steel_cs = {"IPE100": (1.03*10e-3, 1.71*10e-6),
+                "IPE140": (1.64*10e-3, 5.41*10e-6),
+                "IPE160": (2.01*10e-3, 8.69*10e-6),
+                "IPE180": (2.39*10e-3, 13.20*10e-6),
+                "IPE220": (3.34*10e-3, 27.7*10e-6),
+                "IPE270": (4.59*10e-3, 57.9*10e-6),
+                "IPE300": (5.38*10e-3, 83.6*10e-6)
+    }
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()
     demand['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = demand_count) + length_min
-    demand['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = demand_count) + area_min
+    demand['Area'] = 0
     #TODO: Only works for squared sections! Not applicable for steel sections
-    demand['Moment of Inertia'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    demand['Moment of Inertia'] = 0
     demand['Material'] = ""
     demand["Manufacturer"]=0
     demand["Latitude"]=0
@@ -223,6 +249,14 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
     
     for row in range(len(demand)):
         material = materials[random.randint(0, len(materials)-1)]
+        if material == "Timber":
+            area = np.random.uniform(area_min, area_max)
+            demand.loc[row, "Area"] = area
+            demand.loc[row, "Moment of Inertia"] = area**2/12
+        elif material == "Steel":
+            cs = random.choice(list(steel_cs.keys()))
+            demand.loc[row, "Area"] = steel_cs[cs][0]
+            demand.loc[row, "Moment of Inertia"] = steel_cs[cs][1]
         demand.loc[row, "Material"] = material
         provider = demand_coords[material]
         demand.loc[row,"Manufacturer"]= provider[0]
@@ -230,7 +264,7 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
         demand.loc[row,"Longitude"]=provider[2]
     #demand.index = map(lambda text: 'D' + str(text), demand.index)
 
-    return demand.round(4)
+    return demand
 
 def extract_brute_possibilities(incidence_matrix):
     """Extracts all matching possibilities based on the incidence matrix.

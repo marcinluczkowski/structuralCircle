@@ -12,6 +12,11 @@ from selenium import webdriver
 import time
 import os
 
+def create_graph_specific_material(supply, demand, target_column, unit, number_of_intervals, material_string, save_filename):
+    requested_supply = supply.loc[supply["Material"] == material_string]
+    requested_demand = supply.loc[supply["Material"] == material_string]
+    create_graph(requested_supply, requested_demand, target_column, unit, number_of_intervals, save_filename)
+
 def create_graph(supply, demand, target_column, unit, number_of_intervals, save_filename):
     def count_leading_zeros(num):
         count = 0

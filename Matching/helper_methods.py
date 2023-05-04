@@ -7,6 +7,7 @@ import LCA as lca
 import random
 from fpdf import FPDF
 from datetime import date
+import plotting as plot
 
 
 # ==== HELPER METHODS ====
@@ -64,7 +65,7 @@ def extract_results_df_pdf(dict_list, constants):
     all_new_score = match_object.demand["Score"].sum()
     all_new_transport = match_object.demand["Transportation"].sum()
     results_dict["All new score"] = round(all_new_score, 2)
-
+    
 
     results_dict.update(constants)
     if metric == "GWP":
@@ -195,7 +196,6 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
                 "IPE270": (4.59e-3, 57.9e-6),
                 "IPE300": (5.38e-3, 83.6e-6)
     }
-
 
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     supply = pd.DataFrame()
@@ -467,7 +467,7 @@ def count_matches(matches, algorithm):
     return matches.pivot_table(index = [algorithm], aggfunc = 'size')
 
 
-def generate_pdf_report(results, projectname, filepath):
+def generate_pdf_report(results, projectname,supply,demand, filepath):
     def new_page():
         # Add a page to the PDF
         pdf.add_page()
@@ -687,6 +687,11 @@ def generate_pdf_report(results, projectname, filepath):
  
     # Save the PDF to a file
     pdf.output(filepath + projectname+"_report.pdf")
+
+    #Generate HTML maps of elements
+    plot.create_map_substitutions(supply,results,"supply",color="green",legend_text="Reused elements locations",save_name=r"map_reused_subs")
+    plot.create_map_substitutions(demand,results,"demand",color="red",legend_text="New manufactured elements locations",save_name=r"map_manufactured_subs")
+
 
 
 

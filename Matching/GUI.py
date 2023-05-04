@@ -128,7 +128,7 @@ def calculate():
         pdf_results = hm.extract_results_df_pdf(result, constants)
         
         projectname=giveFileName()
-        pdf = hm.generate_pdf_report(pdf_results,projectname, filepath = r"./Local_files/GUI_files/Results/")
+        pdf = hm.generate_pdf_report(pdf_results,projectname,supply,demand, filepath = r"./Local_files/GUI_files/Results/")
         result_label.config(text="Report generated", foreground="green")
         result_label.after(10000, clear_error_message)
         open_report_button.place(relx=0.5,rely=0.93,anchor="center")
@@ -192,8 +192,12 @@ def browse_supply_file():
     if supply_filepath:
         supply_filename = supply_filepath.split("/")[-1]
         supply_file_label.config(text=supply_filename,foreground="green")
-        #TODO: Support both excel and csv file
-        supply_df=pd.read_excel(supply_filepath)
+        
+        if supply_filename.split(".")[-1]=="xlsx":
+            supply_df=pd.read_excel(supply_filepath)
+        elif supply_filename.split(".")[-1]=="csv":
+            supply_df=pd.read_csv(supply_filepath)
+
         num_supply=int(len(supply_df.index))
         num_supply_elements.set(num_supply)
         num_supply_label.config(text=f"Number of supply elements: {num_supply}")
@@ -211,7 +215,12 @@ def browse_demand_file():
     if demand_filepath:
         demand_filename = demand_filepath.split("/")[-1]
         demand_file_label.config(text=demand_filename,foreground="green")
-        demand_df=pd.read_excel(demand_filepath)
+        
+        if demand_filename.split(".")[-1]=="xlsx":
+            demand_df=pd.read_excel(demand_filepath)
+        elif demand_filename.split(".")[-1]=="csv":
+            demand_df=pd.read_csv(demand_filepath)
+        
         num_demand=int(len(demand_df.index))
         num_demand_elements.set(num_demand)
         num_demand_label.config(text=f"Number of demand elements: {num_demand}")
@@ -600,13 +609,10 @@ def warning_longruntime_genetic():
     elif not genetic_var.get() and num_supply_elements.get()>50 and num_demand_elements.get()>50:
         result_label.configure(text="")
         result_label.after(0,clear_error_message)
-
     
 def clear_error_message():
     result_label.config(text="")
 # Define the function that will be executed when the Calculate button is pressed   
-
-
 
 def on_general_entry_click(event,entry,variabel):
     if float(entry.get())==constants[variabel]:
@@ -638,12 +644,31 @@ def open_report():
         subprocess.call(["xdg-open", filepath])
 
 def open_reused_map():
-    pass
+
+    filename=r"map_reused_subs.html"
+    filepath = r"./Local_files/GUI_files/Results/Maps/"+filename
+
+    if platform.system()=="Windows":
+        current_directory = os.getcwd()
+        file = current_directory + filepath
+        os.startfile(file)
+    elif platform.system() == "Darwin":
+        subprocess.call(["open", filepath])
+    else:
+        subprocess.call(["xdg-open", filepath])
 
 def open_manufactorer_map():
-    pass
+    filename=r"map_manufactured_subs.html"
+    filepath = r"./Local_files/GUI_files/Results/Maps/"+filename
 
-
+    if platform.system()=="Windows":
+        current_directory = os.getcwd()
+        file = current_directory + filepath
+        os.startfile(file)
+    elif platform.system() == "Darwin":
+        subprocess.call(["open", filepath])
+    else:
+        subprocess.call(["xdg-open", filepath])
 
 def open_map():
     def change_map(new_map: str):
@@ -748,6 +773,10 @@ screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 root.geometry(f"{screen_width}x{screen_height}")
 
+# set the icon of the window
+icon_path = "Local_files/logo_blaa_oransje.png"
+icon = tk.PhotoImage(file=icon_path)
+root.iconphoto(True, icon)
 #root.attributes('-fullscreen', True)
 #Create title
 root.title("Element Matching Machine")
@@ -769,8 +798,6 @@ matching_metric_var_constant=tk.StringVar()
 filename_tk=tk.StringVar()
 latitude_coordinate=tk.StringVar()
 longitude_coordinate=tk.StringVar()
-
-
 
 ###LABELS,BUTTONS and ENTRYS###
 

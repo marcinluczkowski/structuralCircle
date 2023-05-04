@@ -598,7 +598,7 @@ def generate_pdf_report(results, projectname, filepath):
     pdf.multi_cell(160, 7, txt="Information about datasets")
     pdf.set_font("Times", size=10)
     pdf.ln(5)
-    pdf.set_left_margin(28)
+    pdf.set_left_margin(30)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
     pdf.cell(30, 10, "Elements", 1, 0, "C", True)

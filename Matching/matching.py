@@ -604,49 +604,7 @@ class Matching():
             elif reward != 0:
                 fitness += 100/reward
             return fitness
-        
-        def fitness_func_matrix(solution, solution_idx):
-            #This fitness function is NOT any faster than the original version! 
-            #What takes so long time with genetic is the fact that the fitness-function is called extremely many times
-            """_summary_
-
-            Args:
-                solution (list): a list of integers representing the solution of the matching
-                solution_idx (int): the index of the solution
-
-            Returns:
-                float: the fitness of the solution
-            """
-            fitness = 0
-            reward = 0
-            penalty = -max_weight
-            solutions = np.array_split(solution, number_of_demand_elements)
-            product = np.multiply(solutions, weights_matrix_negative) 
-
-            #Checking how many supply elements that are assigned multiple times
-            duplicates = np.sum(solutions, axis = 0)[:-1] #Removing the last item since new elements can be assigned to several demand elements
-            num_supply_match_duplicates = np.count_nonzero(duplicates > 1)
-            if num_supply_match_duplicates > 1:
-                end = time.time()
-                print("Matrix time:", round(end-start, 10))
-                return -10e10
-            
-            #Checking how many NaN-matches are in the oslution
-            number_nan_match = np.count_nonzero(product == -1.0) #Number of matches that are not allowed 
-            fitness += number_nan_match * penalty
-
-            #Checking how many supply elements that are matched with each demand element
-            num_supply_matches_demand = np.sum(solutions, axis = 1)
-            num_no_supply_matches_demand = np.count_nonzero(num_supply_matches_demand < 1)
-            num_supply_matches_demand_above_one = np.count_nonzero(num_supply_matches_demand > 1)
-            fitness += num_no_supply_matches_demand * penalty + 10 * num_supply_matches_demand_above_one * penalty
-
-            #Adding rewards for matching reclaimed elements
-            reward += np.sum(product) + number_nan_match #Must add number_nan_match to get the sum of weights for possible matches
-            if reward != 0:
-                fitness += 100/reward
-            return fitness
-            
+           
         #Using pygad-module
         """Parameters are set by use of trial and error. These parameters have given a satisfactory solution"""
         ga_instance = pygad.GA(

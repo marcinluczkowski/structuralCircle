@@ -28,7 +28,7 @@ constants = {
     ########################
     "Project name": "Sognsveien 17",
     "Metric": "GWP",
-    "Algorithms": ["genetic", "greedy_plural"],
+    "Algorithms": ["greedy_single"],
     "Include transportation": False,
     "Cite latitude": "59.94161606",
     "Cite longitude": "10.72994518",
@@ -38,53 +38,92 @@ constants = {
     "Supply file location": r"./CSV/genetic_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
-#========================#
-#Generating dataset
-#===================
-supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
-
-tiller = ["Tiller", "63.3604", "10.4008"]
-gjovik = ["Gjovik", "60.8941", "10.5001"]
-orkanger = ["Orkanger", "63.3000", "9.8468"]
-storlien = ["Storlien", "63.3160", "12.1018"]
-
-supply_coords.loc[len(supply_coords)] = tiller
-supply_coords.loc[len(supply_coords)] = gjovik
-supply_coords.loc[len(supply_coords)] = orkanger
-supply_coords.loc[len(supply_coords)] = storlien
 
 
-demand_coords = {"Steel": ("Norsk Stål Trondheim", "63.4384474", "10.40994"), "Timber": ("XL-BYGG Lade","63.4423683","10.4438836")}
+def generate_datasets(d_counts, s_counts):
+    supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
+
+    tiller = ["Tiller", "63.3604", "10.4008"]
+    gjovik = ["Gjovik", "60.8941", "10.5001"]
+    orkanger = ["Orkanger", "63.3000", "9.8468"]
+    storlien = ["Storlien", "63.3160", "12.1018"]
+
+    supply_coords.loc[len(supply_coords)] = tiller
+    supply_coords.loc[len(supply_coords)] = gjovik
+    supply_coords.loc[len(supply_coords)] = orkanger
+    supply_coords.loc[len(supply_coords)] = storlien
 
 
-materials = ["Timber", "Steel"]
+    demand_coords = {"Steel": ("Norsk Stål Trondheim", "63.4384474", "10.40994"), "Timber": ("XL-BYGG Lade","63.4423683","10.4438836")}
 
-#GENERATE FILE
-#============
-supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
-hm.export_dataframe_to_csv(supply, r"" + "./CSV/genetic_supply.csv")
-hm.export_dataframe_to_csv(demand, r"" + "./CSV/genetic_demand.csv")
-#========================================
-score_function_string = hm.generate_score_function_string(constants)
-supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
-demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
 
-#hm.create_graph(supply, demand, "Length", number_of_intervals= 2, save_filename = r"C:\Users\sigur\Downloads\test.png")
+    materials = ["Timber", "Steel"]
 
+    #GENERATE FILE
+    #============
+    supply = hm.create_random_data_supply_pdf_reports(supply_count = s_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
+    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
+    supply.index = map(lambda text: "S" + str(text), supply.index)
+    demand.index = map(lambda text: "D" + str(text), demand.index)
+    return demand, supply
+
+# ========== SCENARIO 1 ============== 
+var1 = 1
+d_counts = np.linspace(5, 6, num = 2).astype(int)
+s_counts = (d_counts * var1).astype(int)
+internal_runs = 10
 constraint_dict = constants["constraint_dict"]
-#Add necessary columns to run the algorithm
-supply = hm.add_necessary_columns_pdf(supply, constants)
-demand = hm.add_necessary_columns_pdf(demand, constants)
+score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
-result_simple = eval(run_string)
+results = [] #list of results for each iteration
 
-simple_pairs = hm.extract_pairs_df(result_simple)
-simple_results = hm.extract_results_df(result_simple, constants["Metric"])
+hm.print_header("Starting Run")
 
-print("Simple pairs:")
-print(simple_pairs)
+for d, s in zip(d_counts, s_counts):
+    #create data
+    internal_results = []
+    for i in range(internal_runs):
+        demand, supply = generate_datasets(d, s)
+        #Add necessary columns to run the algorithm
+        supply = hm.add_necessary_columns_pdf(supply, constants)
+        demand = hm.add_necessary_columns_pdf(demand, constants)
+        result = eval(run_string)
+        internal_results.append(result)
+    results.append(internal_results)
+    
+    
+n_els = d_counts+s_counts # number of elements for each iteration
 
-print()
-print("Simple results")
-print(simple_results)
+time_dict = {res[list(res.keys())[0]] : [] for res in results[0][0]} # create a dictionary for the time spent running each method with different number of elements
+lca_dict = {res[list(res.keys())[0]] : [] for res in results[0][0]}
+
+for iteration in results:
+    for internal in iteration:
+        temp = []
+        for method in internal: # iterate through all methods
+            test = 4
+    lca_dict[method['Name']].append(method['Match object'].result) 
+    time_dict[method['Name']].append(method['Match object'].solution_time) 
+
+pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
+pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
+
+fig, ax = plt.subplots()
+for key, items in time_dict.items():
+    plt.plot(n_els, items, label = key)
+plt.legend()
+plt.xlabel('Number of elements')
+plt.ylabel('Solution time [s]')
+plt.yscale('log')
+plt.plot()
+plt.show()
+
+fig, ax = plt.subplots()
+for key, items in lca_dict.items():
+    plt.plot(n_els, items, label = key)
+plt.legend()
+plt.xlabel('Number of elements')
+plt.ylabel('Total score')
+#plt.yscale('log')
+plt.plot()
+plt.show()

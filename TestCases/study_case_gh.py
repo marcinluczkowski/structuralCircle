@@ -5,96 +5,63 @@ import pandas as pd
 import numpy as np
 import sys
 import LCA as lca
-import helper_methods as hm
-from matching import run_matching
+
 # read input argument from console
-#NOTE TO SVERRE: DONT KNOW IF THIS IS NEEDED?
-"""
 method_name = sys.argv[1]
 demand_path = sys.argv[2]
 supply_path = sys.argv[3]
 result_path = sys.argv[4]
 constraint_string = sys.argv[5]
-"""
-######################
 
-#==========USER FILLS IN============#
-#Constants
-#TODO: FIND ALL DEFAULT VALUES FOR CONSTANTS, especially for price
-constants = {
-    "TIMBER_GWP": 28.9,       # based on NEPD-3442-2053-EN
-    "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25 based on Eberhardt
-    "TRANSPORT_GWP": 96.0,    # TODO kg/m3/t based on ????
-    "TIMBER_DENSITY": 491.0,  # kg, based on NEPD-3442-2053-EN
-    "STEEL_GWP": 800, #Random value
-    "STEEL_REUSE_GWP": 4, #Random value
-    "VALUATION_GWP": 0.6, #In kr:Per kg CO2, based on OECD
-    "TIMBER_PRICE": 435, #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
-    "TIMBER_REUSE_PRICE" : 100, #Per m^3, Random value
-    "STEEL_PRICE": 500, #Per m^2, Random value
-    "STEEL_REUSE_PRICE": 200, #Per m^2, Random value
-    "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
-    "STEEL_DENSITY": 7850,
-    ########################
-    "Project name": "Sognsveien 17",
-    "Metric": "GWP",
-    "Algorithms": ["bipartite", "greedy_plural", "bipartite_plural", "bipartite_plural_multiple"],
-    "Include transportation": False,
-    "Cite latitude": "59.94161606",
-    "Cite longitude": "10.72994518",
-    #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
-    #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
-    "Demand file location": r"./CSV/gh_demand.csv",
-    "Supply file location": r"./CSV/gh_supply.csv",
-    "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
-}
-#========================#
-#Generating dataset
-#===================
-supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
+# read and clean demand df
+#read and clean demand df
+demand = pd.read_json(demand_path)
+demand_header = demand.iloc[0]
+demand.columns = demand_header
+demand.drop(axis = 1, index= 0, inplace=True)
+demand.reset_index(drop = True, inplace = True)
+demand.Length *=0.01
+demand.Area *=0.0001
+demand.Inertia_moment *=0.00000001
+demand.Height *=0.01
+demand.Gwp_factor = lca.TIMBER_GWP
+#read and clean supply df
+supply = pd.read_json(supply_path)
+supply_header = supply.iloc[0]
+supply.columns = supply_header
+supply.drop(axis = 1, index= 0, inplace=True)
+supply.reset_index(drop = True, inplace = True)
+supply.Length *=0.01
+supply.Area *=0.0001
+supply.Inertia_moment *=0.00000001
+supply.Height *=0.01
+supply.Gwp_factor = lca.TIMBER_REUSE_GWP
 
-tiller = ["Tiller", "63.3604", "10.4008"]
-gjovik = ["Gjovik", "60.8941", "10.5001"]
-orkanger = ["Orkanger", "63.3000", "9.8468"]
-storlien = ["Storlien", "63.3160", "12.1018"]
+# constraints: these are added 
 
-supply_coords.loc[len(supply_coords)] = tiller
-supply_coords.loc[len(supply_coords)] = gjovik
-supply_coords.loc[len(supply_coords)] = orkanger
-supply_coords.loc[len(supply_coords)] = storlien
+# create matching object
+constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>=', 'Height': '>='} # make this as dynamic dictionary based on input string.
+score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
+
+# TODO add run method
+# result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=True, milp=False, greedy_single=True, bipartite=True)
+
+matching = Matching( demand, supply, add_new=False, constraints = constraint_dict)
+matching.evaluate()
+matching.get_weights() #TODO Move into methods which needs weighting
+# do the matching
+if method_name == "nestedList":
+    matching.match_nested_loop(plural_assign=True)
+
+elif method_name == "bipartiteGraph":
+    matching.match_bipartite_graph()
+
+elif method_name == "milp":
+    matching.match_cp_solver()
+
+else:
+    matching.match_nested_loop(plural_assign=True)
 
 
-demand_coords = {"Steel": ("Norsk Stål Trondheim", "63.4384474", "10.40994"), "Timber": ("XL-BYGG Lade","63.4423683","10.4438836")}
-
-
-materials = ["Timber", "Steel"]
-
-#GENERATE FILE
-#============
-supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
-hm.export_dataframe_to_csv(supply, r"" + "./CSV/gh_supply.csv")
-hm.export_dataframe_to_csv(demand, r"" + "./CSV/gh_demand.csv")
-#========================================
-score_function_string = hm.generate_score_function_string(constants)
-supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
-demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
-
-#hm.create_graph(supply, demand, "Length", number_of_intervals= 2, save_filename = r"C:\Users\sigur\Downloads\test.png")
-
-constraint_dict = constants["constraint_dict"]
-#Add necessary columns to run the algorithm
-supply = hm.add_necessary_columns_pdf(supply, constants)
-demand = hm.add_necessary_columns_pdf(demand, constants)
-run_string = hm.generate_run_string(constants)
-result_simple = eval(run_string)
-
-simple_pairs = hm.extract_pairs_df(result_simple)
-simple_results = hm.extract_results_df(result_simple, constants["Metric"])
-
-print("Simple pairs:")
-print(simple_pairs)
-
-print()
-print("Simple results")
-print(simple_results)
+# write result file
+matching.pairs.to_json(result_path)

@@ -4,15 +4,10 @@ import matplotlib.pyplot as plt
 import igraph as ig
 import logging
 import LCA as lca
-import itertools
 import random
 from fpdf import FPDF
 from datetime import date
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 
@@ -192,12 +187,22 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
     return supply.round(4)
 
 def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, area_min, area_max, materials, supply_coords):
+    steel_cs = {"IPE100": (1.03e-3, 1.71e-6),
+                "IPE140": (1.64e-3, 5.41e-6),
+                "IPE160": (2.01e-3, 8.69e-6),
+                "IPE180": (2.39e-3, 13.20e-6),
+                "IPE220": (3.34e-3, 27.7e-6),
+                "IPE270": (4.59e-3, 57.9e-6),
+                "IPE300": (5.38e-3, 83.6e-6)
+    }
+
+
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     supply = pd.DataFrame()
     supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
-    supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
-    #TODO: Only works for squared sections! Not applicable for steel sections
-    supply['Moment of Inertia'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    supply['Area'] = 0 
+    #TODO: Only works for squared sections! Not applicable for steel sections #
+    supply['Moment of Inertia'] = 0
     supply['Material'] = ""
     supply["Location"]=0
     supply["Latitude"]=0
@@ -205,6 +210,14 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
     
     for row in range(len(supply)):
         material = materials[random.randint(0, len(materials)-1)]
+        if material == "Timber":
+            area = np.random.uniform(area_min, area_max)
+            supply.loc[row, "Area"] = area
+            supply.loc[row, "Moment of Inertia"] = area**2/12
+        elif material == "Steel":
+            cs = random.choice(list(steel_cs.keys()))
+            supply.loc[row, "Area"] = steel_cs[cs][0]
+            supply.loc[row, "Moment of Inertia"] = steel_cs[cs][1]
         supply.loc[row, "Material"] = material
         lokasjon=random.randint(0, len(supply_coords)-1)
         supply.loc[row,"Latitude"]=supply_coords.loc[lokasjon,"Latitude"]
@@ -212,15 +225,23 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
         supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Location"]
     #supply.index = map(lambda text: 'S' + str(text), supply.index) 
 
-    return supply.round(4)
+    return supply
 
 def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, area_min, area_max, materials, demand_coords):
+    steel_cs = {"IPE100": (1.03e-3, 1.71e-6),
+                "IPE140": (1.64e-3, 5.41e-6),
+                "IPE160": (2.01e-3, 8.69e-6),
+                "IPE180": (2.39e-3, 13.20e-6),
+                "IPE220": (3.34e-3, 27.7e-6),
+                "IPE270": (4.59e-3, 57.9e-6),
+                "IPE300": (5.38e-3, 83.6e-6)
+    }
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()
     demand['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = demand_count) + length_min
-    demand['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = demand_count) + area_min
+    demand['Area'] = 0
     #TODO: Only works for squared sections! Not applicable for steel sections
-    demand['Moment of Inertia'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    demand['Moment of Inertia'] = 0
     demand['Material'] = ""
     demand["Manufacturer"]=0
     demand["Latitude"]=0
@@ -228,6 +249,14 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
     
     for row in range(len(demand)):
         material = materials[random.randint(0, len(materials)-1)]
+        if material == "Timber":
+            area = np.random.uniform(area_min, area_max)
+            demand.loc[row, "Area"] = area
+            demand.loc[row, "Moment of Inertia"] = area**2/12
+        elif material == "Steel":
+            cs = random.choice(list(steel_cs.keys()))
+            demand.loc[row, "Area"] = steel_cs[cs][0]
+            demand.loc[row, "Moment of Inertia"] = steel_cs[cs][1]
         demand.loc[row, "Material"] = material
         provider = demand_coords[material]
         demand.loc[row,"Manufacturer"]= provider[0]
@@ -235,7 +264,7 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
         demand.loc[row,"Longitude"]=provider[2]
     #demand.index = map(lambda text: 'D' + str(text), demand.index)
 
-    return demand.round(4)
+    return demand
 
 def extract_brute_possibilities(incidence_matrix):
     """Extracts all matching possibilities based on the incidence matrix.
@@ -395,8 +424,7 @@ def import_dataframe_from_file(file_location, index_replacer):
         dataframe = pd.read_excel(file_location)
     else: #CSV file
         dataframe = pd.read_csv(file_location)
-    if "Column1" in list(dataframe.columns):
-        dataframe.drop(columns=["Column1"], inplace = True)
+    #dataframe.drop(columns=["Column1"], inplace = True)
     dataframe.index = map(lambda text: index_replacer + str(text), dataframe.index)
     new_columns = {col: col.split('[')[0].strip() for col in dataframe.columns}
     dataframe = dataframe.rename(columns = new_columns)
@@ -506,21 +534,19 @@ def generate_pdf_report(results,projectname, filepath):
     pdf.set_font("Times", size=24, style ="")
     pdf.multi_cell(160, 7, txt="Summary of results")
     pdf.set_font("Times", size=10)
-    pdf.set_left_margin(30)
+    pdf.set_left_margin(28)
     pdf.ln(5)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
     pdf.cell(50, 10, f"Total score", 1, 0, "C", True)
-    pdf.cell(50, 10, f"Score without reuse", 1, 0, "C", True)
-    pdf.cell(25, 10, "Savings", 1, 0, "C", True)
-    pdf.cell(25, 10, "Substitutions", 1, 1, "C", True)
+    pdf.cell(50, 10, "Substitutions", 1, 0, "C", True)
+    pdf.cell(50, 10, "Savings", 1, 1, "C", True)
     pdf.set_fill_color(247, 247, 247)
     substitutions = round(results['Number of substitutions']/results['Number_demand']*100, 2)
     savings = round(results['Savings']/results['All new score']*100, 2)
     pdf.cell(50, 10, f"{results['Score']} {results['Unit']}", 1, 0, "C", True)
-    pdf.cell(50, 10, f"{results['All new score']} {results['Unit']}", 1, 0, "C", True)
-    pdf.cell(25, 10, f"{savings}%", 1, 0, "C", True)
-    pdf.cell(25, 10, f"{substitutions}%", 1, 1, "C", True) 
+    pdf.cell(50, 10, f"{substitutions}%", 1, 0, "C", True) 
+    pdf.cell(50, 10, f"{savings}%", 1, 1, "C", True)
     pdf.ln()
 
     #Short text summary
@@ -529,10 +555,12 @@ def generate_pdf_report(results,projectname, filepath):
     pdf.set_font("Times", size=12, style ="")
     summary = f"The '{results['Algorithm']}' algorithm yields the best results, substituting {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {results['Score']} {results['Unit']} is achieved. For comparison, a score of {results['All new score']} {results['Unit']} would have been obtained by employing exclusively new materials. This results in a total saving of {savings}%."
     if transportation_included:
-        summary += f" Note that impacts of transporting the materials to the construction site is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
+        summary += f" Note that transportation is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
     else:
+
         summary += f" Note that impacts of transporting the materials to the construction site is not accounted for. "
     summary += f"Open the CSV-file \"{projectname}_substitutions.csv\" to examine the substitutions."
+
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
 
 
@@ -545,7 +573,7 @@ def generate_pdf_report(results,projectname, filepath):
     pdf.ln(5)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
-    pdf.set_left_margin(30)
+    pdf.set_left_margin(28)
     pdf.cell(50, 10, "Constant", 1, 0, "C", True)
     pdf.cell(50, 10, "Value", 1, 0, "C", True)
     pdf.cell(50, 10, "Unit", 1, 1, "C", True)
@@ -568,7 +596,7 @@ def generate_pdf_report(results,projectname, filepath):
     pdf.multi_cell(160, 7, txt="Information about datasets")
     pdf.set_font("Times", size=10)
     pdf.ln(5)
-    pdf.set_left_margin(30)
+    pdf.set_left_margin(28)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
     pdf.cell(30, 10, "Elements", 1, 0, "C", True)
@@ -594,7 +622,7 @@ def generate_pdf_report(results,projectname, filepath):
         pdf.set_font("Times", size=16, style ="")
         pdf.multi_cell(160, 7, txt="Impact of transportation")
         pdf.set_font("Times", size=10)
-        pdf.set_left_margin(30)
+        pdf.set_left_margin(28)
         pdf.ln(5)
         pdf.set_fill_color(96, 150, 208)
         pdf.set_draw_color(204, 204, 204)
@@ -612,7 +640,7 @@ def generate_pdf_report(results,projectname, filepath):
         pdf.set_y(65)
         pdf.set_font("Times", size=12, style ="")
         summary = f"All calculations in this report accounts for transportation. Transportation accounts for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation score for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
-        summary = f"All calculations in this report take impacts of transportation of the materials to the construction site into consideration. Transportation itself is responsible for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation impact for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
+        summary = f"All calculations in this report take transportation into consideration. Transportation is responsible for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation score for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
         
         pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
         y_information = 100
@@ -622,12 +650,12 @@ def generate_pdf_report(results,projectname, filepath):
     pdf.set_font("Times", size=16, style ="")
     pdf.multi_cell(160, 7, txt="Performance of algorithms")
     pdf.set_font("Times", size=10)
-    pdf.set_left_margin(17)
+    pdf.set_left_margin(28)
     pdf.ln(5)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
     pdf.cell(75, 10, "Name", 1, 0, "C", True)
-    pdf.cell(51, 10, "Total score", 1, 0, "C", True)
+    pdf.cell(25, 10, "Score", 1, 0, "C", True)
     pdf.cell(25, 10, "Substitutions", 1, 0, "C", True)
     pdf.cell(25, 10, "Time", 1, 1, "C", True)
 
@@ -637,9 +665,9 @@ def generate_pdf_report(results,projectname, filepath):
     for i in range(len(performance)):
         y_information += 10
         pdf.cell(75, 10, f"{performance.iloc[i]['Names']}", 1, 0, "C", True)
-        pdf.cell(51, 10, f"{performance.iloc[i]['Score']} {results['Unit']}", 1, 0, "C", True)
+        pdf.cell(25, 10, f"{performance.iloc[i]['Score']}", 1, 0, "C", True)
         pdf.cell(25, 10, f"{performance.iloc[i]['Sub_percent']}%", 1, 0, "C", True)
-        pdf.cell(25, 10, f"{performance.iloc[i]['Time']}s", 1, 0, "C", True)
+        pdf.cell(25, 10, f"{performance.iloc[i]['Time']}", 1, 0, "C", True)
         if len(performance) == 1:
             print_names += performance.iloc[i]['Names']
         elif i != len(performance) - 1:
@@ -713,53 +741,5 @@ def generate_run_string(constants):
 
 def extract_best_solution(result, metric):
     results = extract_results_df(result, column_name = f"{metric}")
-
-def create_graph(supply, demand, target_column, number_of_intervals, save_filename):
-    supply_lengths = supply[target_column].to_numpy()
-    demand_lengths = demand[target_column].to_numpy()
-    max_length = np.ceil(np.max([np.max(supply_lengths), np.max(demand_lengths)]))
-    min_length = np.floor(np.min([np.min(supply_lengths), np.min(demand_lengths)]))
-    interval_size = (max_length - min_length) / number_of_intervals
-    supply_counts = {}
-    demand_counts = {}
-    start = min_length
-    for i in range(number_of_intervals):
-        end = start + interval_size
-        #intervals.append("{:.1f}-{:.1f}".format(start, end))
-        supply_counts["{:.1f}-{:.1f}".format(start, end)] = 0
-        demand_counts["{:.1f}-{:.1f}".format(start, end)] = 0
-        start = end
-
-    for length in supply_lengths:
-        for interval in supply_counts:
-            start, end = map(float, interval.split("-"))
-            if start <= length < end:
-                supply_counts[interval] += 1
-                break
-    for length in supply_lengths:
-        for interval in demand_counts:
-            start, end = map(float, interval.split("-"))
-            if start <= length < end:
-                demand_counts[interval] += 1
-                break
-
-    
-    boxplot,ax=plt.subplots(figsize = (7, 5))
-    label = list(supply_counts.keys())
-    supply_values = supply_counts.values()
-    demand_values = demand_counts.values()
-    x=np.arange(len(label))
-    width=0.25
-    plt.rcParams["font.family"] = "Sans Serif"
-    plt.grid(visible = True, color = "lightgrey", axis = "y")
-    plt.xlabel("Lengths [m]", fontsize = 14)
-    plt.ylabel("Number of elements", fontsize = 14)
-    bar1=ax.bar(x-width,supply_values,width,label="Reuse")
-    bar2=ax.bar(x,demand_values,width,label="Demand")
-    ax.set_facecolor("white")
-    ax.set_xticks(x,label, fontsize = 12)
-    ax.legend()
-    plt.plot()
-    plt.savefig(save_filename, dpi = 300)
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

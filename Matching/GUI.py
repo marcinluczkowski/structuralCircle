@@ -4,6 +4,7 @@ import pandas as pd
 sys.path.append('./Matching')
 import helper_methods as hm
 from matching import run_matching
+
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
@@ -41,10 +42,6 @@ constants = {
     "Supply file location": r"./CSV/pdf_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
-
-def checkalgos():
-    One_or_more_choosen=False
-    possibleAlgos=[greedy_var,greedy_plural_var,bipartite_var,MILP_var,genetic_var,brute_var,bipartite_plural_var,bipartite_multi_plural]
 
     for algo in possibleAlgos:
         if algo.get():

@@ -55,7 +55,8 @@ def plot_materials(supply, demand, fig_title, save_filename):
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
-    plt.savefig(save_filename, dpi=300)
+    save_name = r"./Local_files/GUI_files/Results/Plots" + save_filename
+    plt.savefig(save_name, dpi=300)
 
 
 
@@ -149,7 +150,8 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
-    plt.savefig(save_filename, dpi=300)
+    save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
+    plt.savefig(save_name, dpi=300)
 
 
 
@@ -201,16 +203,17 @@ def create_map_dataframe(df, color, legend_text, save_name):
     #mg.save(r"./Results/map.png")
     # Display the map
     #map.show_in_browser()
-    m.save(r""+f"./Results/{save_name}.html")
+    file_dir = r"./Local_files/GUI_files/Results/Maps"
+    m.save(file_dir+f"{save_name}.html")
     options = webdriver.ChromeOptions()
     options.add_experimental_option("useAutomationExtension", False)
     options.add_experimental_option("excludeSwitches",["enable-automation"])
     options.add_argument("--headless")
     driver = webdriver.Chrome(chrome_options=options)
     #driver.get(r"./Results/map.html")
-    filepath = os.getcwd() + r"" + f"/Results/{save_name}.html"
+    filepath = os.getcwd() + file_dir+f"{save_name}.html"
     driver.get("file:///" + filepath)
     driver.maximize_window()
     time.sleep(5)
-    driver.save_screenshot(r""+ f"./Results/{save_name}.png")
+    driver.save_screenshot(file_dir+f"{save_name}.png")
     driver.quit()

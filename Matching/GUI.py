@@ -128,7 +128,7 @@ def calculate():
         pdf_results = hm.extract_results_df_pdf(result, constants)
         
         projectname=giveFileName()
-        pdf = hm.generate_pdf_report(pdf_results,projectname, filepath = r"./Results/")
+        pdf = hm.generate_pdf_report(pdf_results,projectname, filepath = r"./Local_files/GUI_files/Results/")
         result_label.config(text="Report generated", foreground="green")
         result_label.after(10000, clear_error_message)
         open_report_button.place(relx=0.5,rely=0.93,anchor="center")
@@ -624,7 +624,7 @@ def OpenUrl():
 
 def open_report():
     filename=filename_tk.get()
-    filename="./Results/"+filename
+    filename = r"./Local_files/GUI_files/Results/"+filename
     print("filename",filename)
     filepath=r""+filename
 

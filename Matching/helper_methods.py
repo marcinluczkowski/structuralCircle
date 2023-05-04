@@ -467,7 +467,7 @@ def count_matches(matches, algorithm):
     return matches.pivot_table(index = [algorithm], aggfunc = 'size')
 
 
-def generate_pdf_report(results,projectname, filepath):
+def generate_pdf_report(results, projectname, filepath):
     def new_page():
         # Add a page to the PDF
         pdf.add_page()

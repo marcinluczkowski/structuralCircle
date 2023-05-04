@@ -81,7 +81,7 @@ run_string = hm.generate_run_string(constants)
 result = eval(run_string)
 simple_pairs = hm.extract_pairs_df(result)
 pdf_results = hm.extract_results_df_pdf(result, constants)
-pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
+pdf = hm.generate_pdf_report(pdf_results, projectname = constants["Project name"], filepath = r"./Results/")
 print(hm.extract_pairs_df(result))
 
 

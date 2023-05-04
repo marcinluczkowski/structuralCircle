@@ -90,9 +90,9 @@ def extract_results_df_pdf(dict_list, constants):
         if metric == "GWP":
             used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne")})
         elif metric == "Combined":
-            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne"), "Price of transportation": (constants["PRICE_transportation"], "kr/km/tonne")})
+            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne"), "Price of transportation": (constants["PRICE_TRANSPORTATION"], "kr/km/tonne")})
         elif metric == "Price":
-            used_constants.update({"Price of transportation": (constants["PRICE_transportation"], "kr/km/tonne")})                 
+            used_constants.update({"Price of transportation": (constants["PRICE_TRANSPORTATION"], "kr/km/tonne")})                 
     else:
         results_dict["Transportation included"] = "No"
         results_dict["Transportation percentage"] = 0
@@ -466,7 +466,7 @@ def count_matches(matches, algorithm):
     return matches.pivot_table(index = [algorithm], aggfunc = 'size')
 
 
-def generate_pdf_report(results, filepath):
+def generate_pdf_report(results,projectname, filepath):
     def new_page():
         # Add a page to the PDF
         pdf.add_page()
@@ -486,7 +486,7 @@ def generate_pdf_report(results, filepath):
     # Create a new PDF object
 
     #Add CSV containing results to "Results"-folder
-    export_dataframe_to_csv(results["Pairs"], filepath + "substitutions.csv")
+    export_dataframe_to_csv(results["Pairs"], filepath + (projectname+"_substitutions.csv"))
     if results["Transportation included"] == "No":
         transportation_included = False
     elif results["Transportation included"] == "Yes":
@@ -557,8 +557,10 @@ def generate_pdf_report(results, filepath):
     if transportation_included:
         summary += f" Note that transportation is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
     else:
-        summary += f" Note that transportation is not accounted for. "
-    summary += f"Open the CSV file with the file path '{filepath}substitutions.csv' to examine the substitutions."
+
+        summary += f" Note that impacts of transporting the materials to the construction site is not accounted for. "
+    summary += f"Open the CSV-file \"{projectname}_substitutions.csv\" to examine the substitutions."
+
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
 
 
@@ -683,7 +685,7 @@ def generate_pdf_report(results, filepath):
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
  
     # Save the PDF to a file
-    pdf.output(filepath + "generated_report.pdf")
+    pdf.output(filepath + projectname+"_report.pdf")
 
 
 

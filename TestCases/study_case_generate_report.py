@@ -92,7 +92,7 @@ print(hm.extract_pairs_df(result))
 
 plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
 
-plot.create_map_dataframe(demand, color = "red", legend_text="Manufacturer locations", save_name=r"map_manufacturer_test")
+#plot.create_map_dataframe(demand, color = "red", legend_text="Manufacturer locations", save_name=r"map_manufacturer_test")
 
 
 

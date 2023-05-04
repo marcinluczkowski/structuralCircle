@@ -55,7 +55,7 @@ def plot_materials(supply, demand, fig_title, save_filename):
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
-    save_name = r"./Local_files/GUI_files/Results/Plots" + save_filename
+    save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
     plt.savefig(save_name, dpi=300)
 
 
@@ -203,7 +203,7 @@ def create_map_dataframe(df, color, legend_text, save_name):
     #mg.save(r"./Results/map.png")
     # Display the map
     #map.show_in_browser()
-    file_dir = r"./Local_files/GUI_files/Results/Maps"
+    file_dir = r"./Local_files/GUI_files/Results/Maps/"
     m.save(file_dir+f"{save_name}.html")
     options = webdriver.ChromeOptions()
     options.add_experimental_option("useAutomationExtension", False)

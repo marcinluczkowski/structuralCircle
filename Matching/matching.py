@@ -94,12 +94,57 @@ class Matching():
         """Evaluates the driving distance for supply and demand elements"""
         if "include_transportation=True" in self.score_function_string:
             #Evaluating driving distance of supply elements
-            self.supply["Distance"] = self.supply.apply(lambda row: lca.calculate_driving_distance(row.Latitude,row.Longitude,row.Cite_lat,row.Cite_lon),axis=1)
-            #Evaluating driving distance of demand elements
-            
-            #NOTE: Keep this line. Needed if demand elements comes from different locations - especially if we have different materials
-            self.demand["Distance"] = self.demand.apply(lambda row: lca.calculate_driving_distance(row.Latitude,row.Longitude,row.Cite_lat,row.Cite_lon),axis=1)
 
+            self.supply["Distance"] = 0
+            self.demand["Distance"] = 0
+            coord_dict_supply = {}
+            coord_dict_demand = {}
+
+            #Unique coordinates of supply elements
+            for idx, row in self.supply.iterrows():
+                # create coordinate tuple
+                coord = (row['Latitude'], row['Longitude'])
+                # check if coordinate tuple already exists in dictionary
+                if coord in coord_dict_supply:
+                    # if it does, append index to list
+                    coord_dict_supply[coord].append(idx)
+                else:
+                    # if it doesn't, create new list with index
+                    coord_dict_supply[coord] = [idx]
+
+            #Unique coordinates of demand elements
+            for idx, row in self.demand.iterrows():
+                # create coordinate tuple
+                coord = (row['Latitude'], row['Longitude'])
+                # check if coordinate tuple already exists in dictionary
+                if coord in coord_dict_demand:
+                    # if it does, append index to list
+                    coord_dict_demand[coord].append(idx)
+                else:
+                    # if it doesn't, create new list with index
+                    coord_dict_demand[coord] = [idx]
+            
+            cite_lat = self.supply.iloc[0]["Cite_lat"]
+            cite_lon = self.supply.iloc[0]["Cite_lon"]
+            distances_supply = {key: 0 for key in coord_dict_supply.keys()}
+            distances_demand = {key: 0 for key in coord_dict_demand.keys()}
+
+            #API call for supply elements
+            for key in distances_supply:
+                distances_supply[key] = lca.calculate_driving_distance(key[0], key[1], cite_lat, cite_lon)
+            #API call for demand elements
+            for key in distances_demand:
+                distances_demand[key] = lca.calculate_driving_distance(key[0], key[1], cite_lat, cite_lon)
+            
+            #Add distances to supply column
+            for key, value in coord_dict_supply.items():
+                for idx in value:
+                    self.supply.loc[idx, ["Distance"]] = distances_supply[key]
+            
+            #Add distances to demand column
+            for key, value in coord_dict_demand.items():
+                for idx in value:
+                    self.demand.loc[idx, ["Distance"]] = distances_demand[key]
             #Assumes that all demand elements comes from the same location!!!
             #first_demand = self.demand.iloc[:1]
             #demand_distance = lca.calculate_driving_distance(first_demand["Supply_lat"], first_demand["Supply_lon"], first_demand["Demand_lat"], first_demand["Demand_lon"])
@@ -107,7 +152,7 @@ class Matching():
         else:
             self.supply["Distance"] = np.NaN
             self.demand["Distance"] = np.NaN
-
+        
     def evaluate_incidence(self):
         """Returns incidence matrix with true values where the element fit constraint criteria"""    
         # TODO optimize the evaluation.

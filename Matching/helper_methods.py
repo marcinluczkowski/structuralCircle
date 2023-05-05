@@ -1,20 +1,14 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import rc
 import igraph as ig
 import logging
 import LCA as lca
-import itertools
 import random
 from fpdf import FPDF
 from datetime import date
-import seaborn as sns
-#from reportlab.lib.pagesizes import A4
-#from reportlab.lib.units import cm
-#from reportlab.lib import colors
-#from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
-#from reportlab.pylib.styles import getSampleStyleSheet, ParagraphStyle
+import plotting as plot
+
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 
@@ -71,7 +65,7 @@ def extract_results_df_pdf(dict_list, constants):
     all_new_score = match_object.demand["Score"].sum()
     all_new_transport = match_object.demand["Transportation"].sum()
     results_dict["All new score"] = round(all_new_score, 2)
-
+    
 
     results_dict.update(constants)
     if metric == "GWP":
@@ -97,9 +91,9 @@ def extract_results_df_pdf(dict_list, constants):
         if metric == "GWP":
             used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne")})
         elif metric == "Combined":
-            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne"), "Price of transportation": (constants["PRICE_transportation"], "kr/km/tonne")})
+            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne"), "Price of transportation": (constants["PRICE_TRANSPORTATION"], "kr/km/tonne")})
         elif metric == "Price":
-            used_constants.update({"Price of transportation": (constants["PRICE_transportation"], "kr/km/tonne")})                 
+            used_constants.update({"Price of transportation": (constants["PRICE_TRANSPORTATION"], "kr/km/tonne")})                 
     else:
         results_dict["Transportation included"] = "No"
         results_dict["Transportation percentage"] = 0
@@ -123,6 +117,7 @@ def remove_alternatives(x, y):
 
 def transform_weights(weights):
     """Transform the weight matrix to only contain one column with new elements in stead of one column for each new element
+
     Args:
         DataFrame: weight matrix
 
@@ -134,223 +129,6 @@ def transform_weights(weights):
     weights["N"]=weights[cols].sum(axis=1)
     weights = weights.drop(columns=cols)
     return weights
-
-
-### ADD PLOTS
-
-def plot_histograms(df, save_fig = False, **kwargs):
-    
-    # csfont = {'fontname':'Times New Roman'}
-    # plt.rcParams.update({'font.size': 22}) # must set in top
-    plt.rcParams['font.size'] = 12
-    plt.rcParams["font.family"] = "Times New Roman"
-
-    ### List unique values of width/height:
-    # TODO redo the histogram so that names are displayed, not area.
-    df['Cross-sections'] = df['Width'].astype(str) + "x" + df['Height'].astype(str)
-    
-    ### Plot the histogram of truss elements:
-    df.hist(column=['Length', 'Area'], bins=20)
- 
-    # plt.Axes.set_axisbelow(b=True)
-    plt.title('Area')
-
-    if save_fig:
-        f_name = 'histogram'
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
-
-    plt.show()
-
-
-def plot_scatter(df, **kwargs):
-    ### Scatter plot of all elements width/height:
-    df.plot.scatter(x='Width', y='Height')
-    plt.xlabel('Width')
-    plt.ylabel('Height')
-    plt.show()
-
-
-
-def plot_hexbin(df, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwargs):
-    # Based on https://seaborn.pydata.org/examples/hexbin_marginals.html
-    #plt.figure()    
-    # TODO Sverre, try with section names: sns.jointplot(x=df['Length'], y=df['Section'], kind="hex", color="#4CB391")
-    
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    g = sns.jointplot(x=df['Length'], y=df['Area'], kind="hex", color="#4CB391")
-    
-    #g.set_axis_labels(**kwargs)
-    # sns.jointplot(x=supply['Length'], y=supply['Area'], kind="hex", color="#eb4034")
-        
-    if save_fig:
-        f_name = 'hexbin'
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
-
-    plt.show()
-
-def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwargs):
-    """Plot the Cross Section and length histogram using remapped values"""
-    sns.set_theme(style = style, font_scale = font_scale, height = 20, rc = kwargs) # set styling configuration
-    
-    # get all unique areas
-    cross_secs = ['(36x36)', '(36x48)', '(36x148)', '(36x198)', '(48x148)', '(48x198)', '(61x198)', '(73x198)', '(73x223)']
-     
-    map_dict = {a:cs for a, cs in zip(sorted(unique_values), cross_secs)}
-    map_dict2 = {a:(i+1) for i, a in enumerate(sorted(unique_values))}
-    df['Cross Sections [mm]'] = df.Area.map(map_dict2).astype(int)
-    g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391")
-    g.ax_joint.set_yticks(list(map_dict2.values()))
-    g.ax_joint.set_yticklabels(cross_secs)
-
-    if save_fig:
-        f_name = 'hexbin_mapped'
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
-
-    plt.show()
-
-def barplot_sns(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
-                show_fig = False, **kwargs):
-    """Add docstring""" 
-    if normalize:
-        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
-
-def plot_savings(result_df, type, normalize = True, style = 'ticks', font_scale = 1.1, 
-                 show_fig = True,save_fig = False, **kwargs):
-    #plt.figure()
-    if normalize: # normalize the dataframe according to best score in each row
-        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
-
-    # Setting for the plot    
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    
-    # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
-    plot = sns.lineplot(data=result_df, palette="tab10", dashes = False, markers=True)
-    plot.set(xlabel='Elements (Demand : Supply)', ylabel='(GWP) score savings [%]')
-    plt.xticks(rotation=30)
-    plt.ylim((90, None))
-    legend = plt.legend()
-    # get label texts inside legend and set font size
-    for text in legend.get_texts():
-        text.set_fontsize(kwargs['xtick.labelsize'])    
-    plt.tight_layout()
-    if save_fig:
-        f_name = f"score saved {type}_2"
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
-    if show_fig:
-        plt.show()
-    plt.close()
-def plot_old(result_df, type, normalize = True, style = 'ticks', font_scale = 1.1, 
-             show_fig = True, save_fig = False, **kwargs):
-    
-    if normalize: # normalize the dataframe according to best score in each row
-        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
-
-    plt.figure()
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
-    plot = sns.lineplot(data=result_df, palette="tab10", dashes = False, markers=True)
-    plot.set(xlabel='Elements (Demand : Supply)', ylabel='Substitutions ratio [%]')
-    plt.xticks(rotation=30)
-
-    # adjust font on labels
-    legend = plt.legend()
-    for text in legend.get_texts():
-        text.set_fontsize(kwargs['xtick.labelsize'])  
-    plt.tight_layout()
-    if save_fig:
-        f_name = f'reused elements {type}_2'
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
-    if show_fig:
-        plt.show()
-    plt.close()
-def plot_time(result_df, type, style = 'ticks', font_scale = 1.1, 
-              show_fig = True, save_fig = False, **kwargs):
-    #plt.figure()
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    #palette names = 'tab10'
-    result_df.replace(0, np.nan, inplace = True)
-    plot = sns.lineplot(data=result_df.add(0.001), palette="tab10", dashes = False, markers=True)
-    plot.set(yscale="log", xlabel='Elements (Demand : Supply)', ylabel='Time [s]')
-    plt.xticks(rotation=65)
-    #plt.axhline(1.0, linestyle = ':', color = 'k')
-    plt.vlines(x='1024:10240', ymin=result_df.loc['1024:10240', 'MIP'] - 1800, ymax=result_df.loc['1024:10240', 'MIP'] + 5000, 
-               linewidth = kwargs['lines.linewidth'], colors='k', ls=':', lw=2, label=None)
-    plt.text('1024:10240', result_df.loc['1024:10240', 'MIP'], '*', fontsize = kwargs['xtick.labelsize'])
-    # adjust font on labels
-    legend = plt.legend()
-    for text in legend.get_texts():
-        text.set_fontsize(kwargs['xtick.labelsize'])  
-    plt.tight_layout()
-    if save_fig:
-        f_name = f'time plot {type}2'
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
-    if show_fig:
-        plt.show()
-    plt.close()
-def plot_bubble(demand, supply, **kwargs):
-
-    # if close to one another, don't add but increase size:
-    demand_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
-    tolerance_length = 2.5
-    tolerance_area = 0.002
-    dot_size = 70
-
-    for index, row in demand.iterrows():
-        if demand_chart.empty:
-            # add first bubble
-            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        # check if similiar bubble already present:
-        elif demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].empty:
-            # not, so add new bubble
-            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        else:
-            # already present, so increase the bubble size:
-            ind = demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
-            demand_chart.at[ind,'dot_size'] = demand_chart.at[ind,'dot_size'] +1
-
-    demand_chart['dot_size_scaled'] = dot_size * (demand_chart['dot_size']**0.5)
-
-    supply_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
-    for index, row in supply.iterrows():
-        if supply_chart.empty:
-            # add first bubble
-            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        # check if similiar bubble already present:
-        elif supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].empty:
-            # not, so add new bubble
-            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        else:
-            # already present, so increase the bubble size:
-            ind = supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
-            supply_chart.at[ind,'dot_size'] = supply_chart.at[ind,'dot_size'] +1
-
-    supply_chart['dot_size_scaled'] = dot_size * (supply_chart['dot_size']**0.5)
-
-    plt.scatter(demand_chart.Length, demand_chart.Area, s=list(demand_chart.dot_size_scaled), c='b', alpha=0.5, label='Demand')
-    plt.scatter(supply_chart.Length, supply_chart.Area, s=list(supply_chart.dot_size_scaled), c='g', alpha=0.5, label='Supply')
-
-    lgnd = plt.legend(loc="lower right")
-    lgnd.legendHandles[0]._sizes = [50]
-    lgnd.legendHandles[1]._sizes = [50]
-
-    plt.xlabel("Length", size=16)
-    plt.ylabel("Area", size=16)
-
-    for i, row in demand_chart.iterrows():
-        if row['dot_size'] < 10:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
-        else:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
-    for i, row in supply_chart.iterrows():
-        if row['dot_size'] < 10:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
-        else:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
-
-    plt.show()
-
-
-  
 
 def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new_lon, demand_gwp=lca.TIMBER_GWP,gwp_price=lca.GWP_PRICE,new_price=lca.NEW_ELEMENT_PRICE_TIMBER, length_min = 1, length_max = 15.0, area_min = 0.15, area_max = 0.15):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
@@ -410,12 +188,21 @@ def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,
     return supply.round(4)
 
 def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, area_min, area_max, materials, supply_coords):
+    steel_cs = {"IPE100": (1.03e-3, 1.71e-6),
+                "IPE140": (1.64e-3, 5.41e-6),
+                "IPE160": (2.01e-3, 8.69e-6),
+                "IPE180": (2.39e-3, 13.20e-6),
+                "IPE220": (3.34e-3, 27.7e-6),
+                "IPE270": (4.59e-3, 57.9e-6),
+                "IPE300": (5.38e-3, 83.6e-6)
+    }
+
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     supply = pd.DataFrame()
     supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
-    supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
-    #TODO: Only works for squared sections! Not applicable for steel sections
-    supply['Moment of Inertia'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    supply['Area'] = 0 
+    #TODO: Only works for squared sections! Not applicable for steel sections #
+    supply['Moment of Inertia'] = 0
     supply['Material'] = ""
     supply["Location"]=0
     supply["Latitude"]=0
@@ -423,6 +210,14 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
     
     for row in range(len(supply)):
         material = materials[random.randint(0, len(materials)-1)]
+        if material == "Timber":
+            area = np.random.uniform(area_min, area_max)
+            supply.loc[row, "Area"] = area
+            supply.loc[row, "Moment of Inertia"] = area**2/12
+        elif material == "Steel":
+            cs = random.choice(list(steel_cs.keys()))
+            supply.loc[row, "Area"] = steel_cs[cs][0]
+            supply.loc[row, "Moment of Inertia"] = steel_cs[cs][1]
         supply.loc[row, "Material"] = material
         lokasjon=random.randint(0, len(supply_coords)-1)
         supply.loc[row,"Latitude"]=supply_coords.loc[lokasjon,"Latitude"]
@@ -430,15 +225,23 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
         supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Location"]
     #supply.index = map(lambda text: 'S' + str(text), supply.index) 
 
-    return supply.round(4)
+    return supply
 
 def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, area_min, area_max, materials, demand_coords):
+    steel_cs = {"IPE100": (1.03e-3, 1.71e-6),
+                "IPE140": (1.64e-3, 5.41e-6),
+                "IPE160": (2.01e-3, 8.69e-6),
+                "IPE180": (2.39e-3, 13.20e-6),
+                "IPE220": (3.34e-3, 27.7e-6),
+                "IPE270": (4.59e-3, 57.9e-6),
+                "IPE300": (5.38e-3, 83.6e-6)
+    }
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()
     demand['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = demand_count) + length_min
-    demand['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = demand_count) + area_min
+    demand['Area'] = 0
     #TODO: Only works for squared sections! Not applicable for steel sections
-    demand['Moment of Inertia'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    demand['Moment of Inertia'] = 0
     demand['Material'] = ""
     demand["Manufacturer"]=0
     demand["Latitude"]=0
@@ -446,6 +249,14 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
     
     for row in range(len(demand)):
         material = materials[random.randint(0, len(materials)-1)]
+        if material == "Timber":
+            area = np.random.uniform(area_min, area_max)
+            demand.loc[row, "Area"] = area
+            demand.loc[row, "Moment of Inertia"] = area**2/12
+        elif material == "Steel":
+            cs = random.choice(list(steel_cs.keys()))
+            demand.loc[row, "Area"] = steel_cs[cs][0]
+            demand.loc[row, "Moment of Inertia"] = steel_cs[cs][1]
         demand.loc[row, "Material"] = material
         provider = demand_coords[material]
         demand.loc[row,"Manufacturer"]= provider[0]
@@ -453,7 +264,7 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
         demand.loc[row,"Longitude"]=provider[2]
     #demand.index = map(lambda text: 'D' + str(text), demand.index)
 
-    return demand.round(4)
+    return demand
 
 def extract_brute_possibilities(incidence_matrix):
     """Extracts all matching possibilities based on the incidence matrix.
@@ -656,7 +467,7 @@ def count_matches(matches, algorithm):
     return matches.pivot_table(index = [algorithm], aggfunc = 'size')
 
 
-def generate_pdf_report(results,projectname, filepath):
+def generate_pdf_report(results, projectname,supply,demand, filepath):
     def new_page():
         # Add a page to the PDF
         pdf.add_page()
@@ -666,7 +477,7 @@ def generate_pdf_report(results,projectname, filepath):
         pdf.rect(0, 0, 210, 297, "F")
         
         # Add the image to the PDF
-        pdf.image(r"./Local Files/GUI Files/NTNU-logo.png", x=10, y=10, w=30)
+        pdf.image(r"./Local_files/NTNU-logo.png", x=10, y=10, w=30)
 
         # Add the date to the upper right corner of the PDF
         pdf.set_xy(200, 10)
@@ -751,6 +562,7 @@ def generate_pdf_report(results,projectname, filepath):
     else:
         summary += f" Note that impacts of transporting the materials to the construction site is not accounted for. "
     summary += f"Open the CSV-file \"{projectname}_substitutions.csv\" to examine the substitutions."
+
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
 
 
@@ -829,7 +641,6 @@ def generate_pdf_report(results,projectname, filepath):
         pdf.set_left_margin(15)
         pdf.set_y(65)
         pdf.set_font("Times", size=12, style ="")
-        summary = f"All calculations in this report accounts for transportation. Transportation accounts for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation score for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
         summary = f"All calculations in this report take impacts of transportation of the materials to the construction site into consideration. Transportation itself is responsible for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation impact for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
         
         pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
@@ -876,6 +687,11 @@ def generate_pdf_report(results,projectname, filepath):
  
     # Save the PDF to a file
     pdf.output(filepath + projectname+"_report.pdf")
+
+    #Generate HTML maps of elements
+    plot.create_map_substitutions(supply,results,"supply",color="green",legend_text="Reused elements locations",save_name=r"map_reused_subs")
+    plot.create_map_substitutions(demand,results,"demand",color="red",legend_text="New manufactured elements locations",save_name=r"map_manufactured_subs")
+
 
 
 
@@ -931,53 +747,5 @@ def generate_run_string(constants):
 
 def extract_best_solution(result, metric):
     results = extract_results_df(result, column_name = f"{metric}")
-
-def create_graph(supply, demand, target_column, number_of_intervals, save_filename):
-    supply_lengths = supply[target_column].to_numpy()
-    demand_lengths = demand[target_column].to_numpy()
-    max_length = np.ceil(np.max([np.max(supply_lengths), np.max(demand_lengths)]))
-    min_length = np.floor(np.min([np.min(supply_lengths), np.min(demand_lengths)]))
-    interval_size = (max_length - min_length) / number_of_intervals
-    supply_counts = {}
-    demand_counts = {}
-    start = min_length
-    for i in range(number_of_intervals):
-        end = start + interval_size
-        #intervals.append("{:.1f}-{:.1f}".format(start, end))
-        supply_counts["{:.1f}-{:.1f}".format(start, end)] = 0
-        demand_counts["{:.1f}-{:.1f}".format(start, end)] = 0
-        start = end
-
-    for length in supply_lengths:
-        for interval in supply_counts:
-            start, end = map(float, interval.split("-"))
-            if start <= length < end:
-                supply_counts[interval] += 1
-                break
-    for length in supply_lengths:
-        for interval in demand_counts:
-            start, end = map(float, interval.split("-"))
-            if start <= length < end:
-                demand_counts[interval] += 1
-                break
-
-    
-    boxplot,ax=plt.subplots(figsize = (7, 5))
-    label = list(supply_counts.keys())
-    supply_values = supply_counts.values()
-    demand_values = demand_counts.values()
-    x=np.arange(len(label))
-    width=0.25
-    plt.rcParams["font.family"] = "Sans Serif"
-    plt.grid(visible = True, color = "lightgrey", axis = "y")
-    plt.xlabel("Lengths [m]", fontsize = 14)
-    plt.ylabel("Number of elements", fontsize = 14)
-    bar1=ax.bar(x-width,supply_values,width,label="Reuse")
-    bar2=ax.bar(x,demand_values,width,label="Demand")
-    ax.set_facecolor("white")
-    ax.set_xticks(x,label, fontsize = 12)
-    ax.legend()
-    plt.plot()
-    plt.savefig(save_filename, dpi = 300)
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

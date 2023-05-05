@@ -1,7 +1,5 @@
 {
     "python.analysis.extraPaths": [
         "./Matching"
-    ],
-    "autoDocstring.docstringFormat": "numpy",
-    "autoDocstring.includeName": true
+    ]
 }

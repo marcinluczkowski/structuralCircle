@@ -1,1 +1,0 @@
-"""User interfaces of igraph"""

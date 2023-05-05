@@ -75,6 +75,7 @@ def create_trusses_from_JSON(csv_path):
             trusses.append(new_truss)
     return trusses
 
+
 def elements_from_trusses(trusses):
     es = []
     ts = []
@@ -94,20 +95,18 @@ def elements_from_trusses(trusses):
     return ts
 
 
-def pick_random(n_a, n_b, elements, whole_trusses=True, duplicates=False):
+def pick_random(n_a, n_b, elements, whole_trusses=True):
     
-    #random.seed(2023)  # Preserve the same seed to replicate the results
-    random.seed(4)  # Preserve the same seed to replicate the results
+    random.seed(2023)  # Preserve the same seed to replicate the results
 
     if not whole_trusses:
         elements = [item for sublist in elements for item in sublist]
 
-    if n_a + n_b < len(elements):
-        selected = random.sample(elements, n_a + n_b)
-    else:
-        # more than in the set - allow duplicates
-        selected = random.sample(elements, n_a + n_b, counts=[math.ceil((n_a + n_b)/len(elements))]*len(elements))
+    if n_a + n_b > len(elements):
+        raise Exception("You can't pick more elements than are available in the set!")
 
+    selected = random.sample(elements, n_a + n_b)
+    
     set_a = selected[0:n_a]
     set_b = selected[n_a:len(selected)]
 
@@ -306,22 +305,11 @@ if __name__ == "__main__":
     
     # Generate a set of unique trusses from CSV file:
     PATH = "Data\\CSV files trusses\\truss_all_types_beta_4.csv"
-    save_figs = False
-    save_csv = False
-    #PATH =  "Data\\CSV files trusses\\truss_all_types_beta_second_version.csv" Test with another dataset
     trusses = create_trusses_from_JSON(PATH)
     truss_elements = elements_from_trusses(trusses)
 
     all_elements = [item for sublist in truss_elements for item in sublist]
     all_elem_df = pd.DataFrame(all_elements)
-
-    all_elem_df['Section'] = (round(all_elem_df['Width']*100,2)).map(str) + 'x' + (round(all_elem_df['Height']*100,2)).map(str)
-
-
-    plot_kwargs = {'font.family':'serif','font.serif':['Times New Roman'], 'axes.labelsize' : 15}
-    
-    #hm.plot_hexbin(all_elem_df, font_scale=1)
-    #hm.plot_hexbin_remap(all_elem_df, set(all_elem_df.Area), font_scale=1, save_fig = save_figs, **plot_kwargs)
 
     constraint_dict = {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>='}
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
@@ -332,53 +320,20 @@ if __name__ == "__main__":
     # e.g. N_D, N_S = 100, 50   means ratio 1:0.5 with 100 designed and 50 available elements
     
     amounts = [
-        # test
-        # [15,10],
-        # [25,20],
-        # [25,20],
-        # [35,30],
-        # variable ratios
-        # [985,15],
-        # [970,30],
-        # [941,59],
-        # [889,111],
-        # [800,200],
+        [15,10]
+        # [980,20],
+        # [909,91],
+        # [833,167],
         # [667,333],
         # [500,500],
         # [333,667],
-        # [200,800],
-        # [111,889],
-        # [59,941],
-        # [30,970],
-        # [15,985],
-        # variable count
-        [1,10],
-        [2,20],
-        [4,40],
-        [8,80],
-        [16,160],
-        [32,320],
-        [64,640],
-        [128,1280],
-        [256,2560],        
-        [512,5120],
-        [1024,10240],
-        #only without MIP
-        # [2048,20480],
-        #[4096,40960],
-        ]
-
-    results_score_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "MILP"])
-    results_time_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "MILP"])
-    results_old_df = pd.DataFrame(columns = ["Greedy_single", "Greedy_plural", "Bipartite", "MILP"])
-
-    supply_ass_df_list = []
-    supply_ass_names = []
+        # [167,833],
+        # [91,909],
+        # [20,980]
+        ]    
+    
     for x in amounts:
         N_D, N_S = x
-
-        print(f"DEMAND-SUPPLY: {N_D}:{N_S}")
-
         set_a, set_b = pick_random(N_D, N_S, truss_elements, whole_trusses=False)
         demand = pd.DataFrame(set_a)
         demand.index = ['D' + str(num) for num in demand.index]
@@ -397,68 +352,26 @@ if __name__ == "__main__":
         run_string = hm.generate_run_string(constants)
         result = eval(run_string)
 
-        pairs = hm.extract_pairs_df(result) # get matching pairs
-        supply_assignments_df = hm.get_assignment_df(pairs, supply_ids= supply.index)
-        supply_ass_df_list.append(supply_assignments_df) # append assignments for solution to list. 
-        supply_ass_names.append(f'{N_D}_{N_S}')
-        #supply_assignments_df['Length'] = supply.Length
+        pairs = hm.extract_pairs_df(result)
         # Print results
         # print(pairs)
-
-        new_score_row = {}
-        new_old_row = {}
-        new_time_row = {}
         for res in result:
-            res['Match object'].pairs['Supply_id'].fillna('none', inplace=True)
-            # score saved result:
-            new_score_row[res['Name']] = round(res['Match object'].demand.Score.sum() - res['Match object'].result, 2)
-            new_old_row[res['Name']] = round( 100* res['Match object'].pairs['Supply_id'].map(lambda x: x[0] == 'S').sum() / res['Match object'].pairs.count()[0] , 2)
-            new_time_row[res['Name']] = round(res['Time'], 2)
-            # actual result:
-            # new_row[res['Name']] = round(res['Match object'].result, 3)
+            result_table.append([
+            res['Name'],
+            0.0, #res['PercentNew']
+            round(res['Match object'].result, 2),
+            round(res['Time'], 2)
+            ])
+        
+        print(f"{N_D}x{N_S}")
 
+    result_df = pd.DataFrame(result_table)
 
-        results_score_df.loc[f"{N_D}:{N_S}"] = new_score_row
-        results_old_df.loc[f"{N_D}:{N_S}"] = new_old_row
-        results_time_df.loc[f"{N_D}:{N_S}"] = new_time_row
-    
-    normalised_score_df = results_score_df.apply(lambda row: row / max(row), axis = 1).multiply(100).round(2)
-    normalised_old_df = results_old_df.apply(lambda row: row / max(row), axis = 1).multiply(100).round(2)
+    print(result_df.transpose())
 
-    
-    
-    print(results_score_df)
-    print(results_old_df)
-    print(results_time_df)
-
-
-    # Save to CSV:
-
-    if save_csv:
-        name = "var_amount_10k"
-        #name = 'var_ratio'
-        time = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
-        results_score_df.to_csv(f'Local Files/Results/CSV_Matching/{time}_Result_{name}_score.csv', index=True)
-        results_old_df.to_csv(f'Local Files/Results/CSV_Matching/{time}_Result_{name}_substituted.csv', index=True)
-        results_time_df.to_csv(f'Local Files/Results/CSV_Matching/{time}_Result_{name}_time.csv', index=True)
-
-
-    # print(result_df.transpose())
-
-
-    # --- write supply assignment dfs to Excel
-    time_1 = pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')
-    name_1 = "Assignments"
-    assignment_path = f'Local Files/Results/Supply Assignments var amount/{time_1}_{name_1}_score.xlsx'
-    write_assignments = False
-    if write_assignments:
-        with pd.ExcelWriter(assignment_path) as writer:
-            for i, df_sheet in enumerate(supply_ass_df_list):
-                sum_row = df_sheet.applymap(lambda x : len(x) > 0).sum().to_frame().T
-                sum_row.rename({0: 'Total support els'}, inplace = True)
-                df_sheet = df_sheet.append(sum_row)
-                df_sheet.to_excel(writer, sheet_name = f'Elements {supply_ass_names[i]}')
-    
-
+    # plot_histograms(all_elem_df)
+    # plot_scatter(all_elem_df)
+    # plot_bubble(demand, supply)
+    # plot_hexbin(demand, supply)
 
     pass

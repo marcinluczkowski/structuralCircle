@@ -666,7 +666,7 @@ def generate_pdf_report(results,projectname, filepath):
         pdf.rect(0, 0, 210, 297, "F")
         
         # Add the image to the PDF
-        pdf.image(r"./Results/NTNU-logo.png", x=10, y=10, w=30)
+        pdf.image(r"./Local Files/GUI Files/NTNU-logo.png", x=10, y=10, w=30)
 
         # Add the date to the upper right corner of the PDF
         pdf.set_xy(200, 10)

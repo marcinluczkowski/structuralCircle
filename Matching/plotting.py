@@ -12,7 +12,7 @@ from selenium import webdriver
 import time
 import os
 
-def plot_algorithm(dict, x_values, xlabel, ylabel, title):
+def plot_algorithm(dict, x_values, xlabel, ylabel, title, save_filename):
     plt.rcParams["font.family"] = "Times new roman"
     fig, ax = plt.subplots(figsize = (7, 5))
     for key, items in dict.items():
@@ -30,8 +30,8 @@ def plot_algorithm(dict, x_values, xlabel, ylabel, title):
     ax.tick_params(bottom=False, left=False)
     ax.xaxis.get_major_locator().set_params(integer=True)
     #plt.yscale('log')
-    plt.plot()
-    plt.show()
+    plt.savefig(r"Local_files/GUI_files/Results/Plots/" + save_filename, dpi=300)
+
 
 def create_graph_specific_material(supply, demand, target_column, unit, number_of_intervals, material_string, fig_title, save_filename):
     requested_supply = supply.loc[supply["Material"] == material_string]

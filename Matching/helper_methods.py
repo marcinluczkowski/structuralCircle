@@ -376,8 +376,9 @@ def extract_genetic_solution(weights, best_solution, number_of_demand_elements):
             if len(index) > 1:
                 logging.info("OBS: Multiple supply matched with one demand")
         else:
+            weight_match = weights.loc[f"D{i}"][index[0]]
             match = weight_cols[index[0]]
-            if match == "N":
+            if match == "N" or np.isnan(weight_match): #New element is assigned if match is "N" or if the match is not allowed
                 match = f"N{i}"
         match_column.append(match)
     result["Matches from genetic"] = match_column

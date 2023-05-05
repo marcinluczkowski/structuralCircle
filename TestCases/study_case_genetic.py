@@ -29,7 +29,7 @@ constants = {
     ########################
     "Project name": "Sognsveien 17",
     "Metric": "GWP",
-    "Algorithms": ["genetic"],
+    "Algorithms": ["genetic", "greedy_single"],
     "Include transportation": False,
     "Cite latitude": "59.94161606",
     "Cite longitude": "10.72994518",
@@ -72,7 +72,7 @@ def generate_datasets(d_counts, s_counts):
 var1 = 1
 d_counts = np.linspace(5, 10, num = 4).astype(int)
 s_counts = (d_counts * var1).astype(int)
-internal_runs = 100
+internal_runs = 30
 constraint_dict = constants["constraint_dict"]
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
@@ -122,5 +122,5 @@ test = 2
 #pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
 #pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
 
-plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "")
-plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Score", title = "")
+plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", save_filename="genetic_results_time.png")
+plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Score", title = "", save_filename="genetic_results_score.png")

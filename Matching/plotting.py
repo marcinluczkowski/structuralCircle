@@ -12,6 +12,27 @@ from selenium import webdriver
 import time
 import os
 
+def plot_algorithm(dict, x_values, xlabel, ylabel, title):
+    plt.rcParams["font.family"] = "Times new roman"
+    fig, ax = plt.subplots(figsize = (7, 5))
+    for key, items in dict.items():
+        plt.plot(x_values, items, label = key)
+    plt.legend()
+    plt.title(title, fontsize = 16)
+    plt.xlabel(xlabel, fontsize=14)
+    plt.ylabel(ylabel, fontsize=14)
+    ax.set_facecolor("white")
+    ax.grid(visible=True, color="lightgrey", axis="y", zorder=1)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_color('#DDDDDD')
+    ax.tick_params(bottom=False, left=False)
+    ax.xaxis.get_major_locator().set_params(integer=True)
+    #plt.yscale('log')
+    plt.plot()
+    plt.show()
+
 def create_graph_specific_material(supply, demand, target_column, unit, number_of_intervals, material_string, fig_title, save_filename):
     requested_supply = supply.loc[supply["Material"] == material_string]
     requested_demand = demand.loc[demand["Material"] == material_string]

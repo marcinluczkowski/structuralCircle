@@ -28,7 +28,7 @@ constants = {
     ########################
     "Project name": "Sognsveien 17",
     "Metric": "GWP",
-    "Algorithms": ["bipartite"],
+    "Algorithms": ["bipartite", "greedy_single"],
     "Include transportation": False,
     "Cite latitude": "59.94161606",
     "Cite longitude": "10.72994518",
@@ -73,7 +73,7 @@ def generate_datasets(d_counts, s_counts):
 # ========== SCENARIO 1 ============== 
 var1 = 1
 #d_counts = np.logspace(1, 3, num = 5).astype(int) Use this later when actually testing. Using the below for now to reduce time
-d_counts = np.linspace(10, 250, num = 4).astype(int)
+d_counts = np.linspace(10, 250, num = 2).astype(int)
 s_counts = (d_counts * var1).astype(int)
 
 results = [] #list of results for each iteration

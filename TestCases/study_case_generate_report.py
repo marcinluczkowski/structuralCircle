@@ -5,6 +5,7 @@ sys.path.append('./Matching')
 import helper_methods as hm
 from matching import run_matching
 import LCA as lca
+import plotting as plot
 
 
 #==========USER FILLS IN============#
@@ -73,6 +74,11 @@ demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], 
 
 #hm.create_graph(supply, demand, "Length", number_of_intervals= 2, save_filename = r"C:\Users\sigur\Downloads\test.png")
 
+#plot.create_graph(supply, demand, target_column="Length", unit=r"[m]", number_of_intervals=5, fig_title = "", save_filename=r"testplot2.png")
+#plot.create_graph(supply, demand, target_column="Area", unit=r"[m$^2$]", number_of_intervals=5, fig_title = "", save_filename=r"testplot3.png")
+#plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m$^4$]", number_of_intervals=5, fig_title = "", save_filename=r"testplot4.png")
+
+
 constraint_dict = constants["constraint_dict"]
 #Add necessary columns to run the algorithm
 supply = hm.add_necessary_columns_pdf(supply, constants)
@@ -81,8 +87,14 @@ run_string = hm.generate_run_string(constants)
 result = eval(run_string)
 simple_pairs = hm.extract_pairs_df(result)
 pdf_results = hm.extract_results_df_pdf(result, constants)
-pdf = hm.generate_pdf_report(pdf_results, filepath = r"./Results/")
+pdf = hm.generate_pdf_report(pdf_results, projectname = constants["Project name"], filepath = r"./Local_files/GUI_files/Results/")
 print(hm.extract_pairs_df(result))
+
+plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
+
+
+#Generate map HTML
+plot.create_map_dataframe(demand, color = "red", legend_text="Manufacturer locations", save_name=r"map_manufacturer_test")
 
 
 

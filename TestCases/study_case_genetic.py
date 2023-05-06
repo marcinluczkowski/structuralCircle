@@ -122,5 +122,5 @@ test = 2
 #pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
 #pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
 
-plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", save_filename="genetic_results_time.png")
-plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Score", title = "", save_filename="genetic_results_score.png")
+plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", fix_overlapping=False, save_filename="genetic_results_time.png")
+plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Score", title = "", fix_overlapping=False, save_filename="genetic_results_score.png")

@@ -29,7 +29,7 @@ constants = {
     ########################
     "Project name": "Sognsveien 17",
     "Metric": "GWP",
-    "Algorithms": ["brute", "greedy_single"],
+    "Algorithms": ["greedy_plural", "greedy_single"],
     "Include transportation": False,
     "Cite latitude": "59.94161606",
     "Cite longitude": "10.72994518",
@@ -70,7 +70,7 @@ def generate_datasets(d_counts, s_counts):
 
 # ========== SCENARIO 1 ============== 
 var1 = 1
-d_counts = np.linspace(2, 10, num = 5).astype(int)
+d_counts = np.linspace(2, 3, num = 2).astype(int)
 s_counts = (d_counts * var1).astype(int)
 internal_runs = 5
 constraint_dict = constants["constraint_dict"]
@@ -122,5 +122,5 @@ test = 2
 #pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
 #pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
 
-plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", save_filename="brute_results_time.png")
-plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Score", title = "", save_filename="brute_results_score.png")
+plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", fix_overlapping = True, save_filename="brute_results_time.png")
+plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Score", title = "", fix_overlapping = False, save_filename="brute_results_score.png")

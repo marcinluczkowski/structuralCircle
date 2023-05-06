@@ -18,16 +18,6 @@ def plot_algorithm(alg_dict, x_values, xlabel, ylabel, fix_overlapping, title, s
     values = list(alg_dict.values())
     #Check if the plots are the same:
     min_value = np.min(values)
-    """
-    for i in range(len(values)):
-        for j in range(i+1, len(values)):
-            value1 = list(np.round(values[i], 3))
-            value2 = list(np.round(values[j], 3))
-            if value1 == value2:
-                new_values = np.array(values[j])
-                new_values += 10#0.1*min_value
-                values[j] = new_values
-    """
     if fix_overlapping:
         styles = ["dashdot", "dashed", "dotted"]
     else:
@@ -35,16 +25,6 @@ def plot_algorithm(alg_dict, x_values, xlabel, ylabel, fix_overlapping, title, s
     count = 0
     plotted_items = []
     for key, items in alg_dict.items():
-        """
-        for item in plotted_items:
-            value1 = list(np.round(item, 4))
-            value2 = list(np.round(items, 4))
-            if value1 == value2:
-                new_values = np.array(items)
-                new_values += min_value*0.1
-                items = list(new_values)
-                print("VALUES CHANGED!!!!!!!!!")
-        """
         plt.plot(x_values, items, label = key, linestyle = styles[count])
         count += 1
         if count == len(styles):

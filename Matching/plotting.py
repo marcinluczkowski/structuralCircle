@@ -43,7 +43,7 @@ def plot_algorithm(alg_dict, x_values, xlabel, ylabel, fix_overlapping, title, s
     ax.tick_params(bottom=False, left=False)
     ax.xaxis.get_major_locator().set_params(integer=True)
     #plt.yscale('log')
-    plt.savefig(r"Local_files/GUI_files/Results/Plots/" + save_filename, dpi=300)
+    plt.savefig(r"Local_files/GUI_files/Results/Plots/" + save_filename, dpi=100)
 
 
 def create_graph_specific_material(supply, demand, target_column, unit, number_of_intervals, material_string, fig_title, save_filename):
@@ -75,7 +75,7 @@ def plot_materials(supply, demand, fig_title, save_filename):
     plt.ylabel("Number of elements", fontsize=14)
     plt.title(fig_title)
     ax.yaxis.get_major_locator().set_params(integer=True)
-    width = 0.25
+    width = 0.15
     bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color ="#ef8114")
     bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = "#00509e")
     ax.set_xticks(x, label, fontsize=12)
@@ -90,7 +90,7 @@ def plot_materials(supply, demand, fig_title, save_filename):
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=300)
+    plt.savefig(save_name, dpi=100)
 
 
 
@@ -115,7 +115,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     min_length_pre = np.min([np.min(supply_lengths), np.min(demand_lengths)])
     if min_length_pre < 1:
         num_zeros = count_leading_zeros(min_length_pre)
-        unit_change = num_zeros+1
+        unit_change = int(num_zeros+1)
         unit_pure = unit.replace("[", "").replace("]", "")
         unit_change_pure = r"10$^{-"+ str(unit_change) + r"}$"
         unit = f"x {unit_change_pure} [{unit_pure}]"
@@ -185,7 +185,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=300)
+    plt.savefig(save_name, dpi=100)
 
 
 

@@ -520,7 +520,9 @@ def generate_pdf_report(results, projectname, filepath):
     pdf.set_font("Times", size=12, style = "B")
     pdf.cell(55, 10, f"Construction site located at: ", 0, 0)
     pdf.set_font("Times", size=12, style = "")
-    pdf.cell(0, 10, f"{results['Cite latitude']}, {results['Cite longitude']}", 0, 1)
+    cite_lat = round(float(results['Cite latitude']), 4)
+    cite_lon = round(float(results['Cite longitude']), 4)
+    pdf.cell(0, 10, f"{cite_lat}, {cite_lon}", 0, 1)
 
 
     # Set the font and size for the tables
@@ -528,7 +530,7 @@ def generate_pdf_report(results, projectname, filepath):
     pdf.set_left_margin(15)
     table_x = (pdf.w - 180) / 2
     table_y1 = 75
-    table_y2 = 160
+    table_y2 = 165
 
     #Summary
     ######################
@@ -613,15 +615,41 @@ def generate_pdf_report(results, projectname, filepath):
     pdf.cell(30, 10, f"Demand", 1, 0, "C", True)
     pdf.cell(80, 10, f"{results['Demand file location'].split('/')[-1]}", 1, 0, "C", True)
     pdf.cell(40, 10, f"{results['Number_demand']}", 1, 0, "C", True)
+
+    pdf.set_left_margin(15)
+    pdf.set_y(80)
+    pdf.set_font("Times", size=12, style ="")
+    summary_info = f"The files contains {results['Number_reused']} reuse elements and {results['Number_demand']} demand elements. The graphs below depicts some of the properties of the elements, including length, area, moment of inertia and the material distribution."
+    pdf.multi_cell(pdf.w-2*15,8, summary_info, 0, "L", False)
+
+    #Images, 6 of them
+    plots = ["Plots/material_plot.png", "Plots/length_plot.png", "Plots/area_plot.png", "Plots/inertia_plot.png"]
+    x = 7.5
+    y = 102.5
+    w = 95
+    for i in range (len(plots)):
+        pdf.image(r"" + f"./Local_files/GUI_files/Results/{plots[i]}", x, y, w)
+        print("Included", plots[i])
+        if i % 2 == 1:
+            y += 72.5
+            x = 7.5
+        if i % 2 == 0:
+            x += 100
+    
+    
+
+    #pdf.set_y(110)
+    
     
     #TODO: Add more information about the datasets. Some histograms and graphs!
 
     ##################PAGE 2.5 (Transportation)##################
     new_page()
     y_information = 30
+
     if transportation_included: #Add a page with information about only transportation
         pdf.set_left_margin(15)
-        pdf.set_y(30)
+        pdf.set_y(y_information) #prior 30
         pdf.set_font("Times", size=16, style ="")
         pdf.multi_cell(160, 7, txt="Impact of transportation")
         pdf.set_font("Times", size=10)
@@ -637,15 +665,30 @@ def generate_pdf_report(results, projectname, filepath):
         pdf.cell(50, 10, f"{results['Transportation percentage']}%", 1, 0, "C", True)
         pdf.cell(50, 10, f"{results['Transportation all new']} {results['Unit']}", 1, 1, "C", True)
         pdf.ln()
-
+        y_information += 35
         #Short text summary
         pdf.set_left_margin(15)
-        pdf.set_y(65)
+        pdf.set_y(y_information)
         pdf.set_font("Times", size=12, style ="")
-        summary = f"All calculations in this report take impacts of transportation of the materials to the construction site into consideration. Transportation itself is responsible for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation impact for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
+        summary = f"All calculations in this report take impacts of transportation of the materials to the construction site into consideration. Transportation itself is responsible for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation impact for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}. Two maps are included to show the location of the suggested substitutions of reused elements and the manufacturer locations where new elements can be obtained. The numbers on the maps indicate the number of elements present at each location."
         
         pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
-        y_information = 100
+        
+        pdf.set_y(y_information)
+        maps = ["Maps/map_reuse_subs.png", "Maps/map_manu_subs.png"]
+        x = 7.5
+        y = y_information + 60
+        w = 95
+        for i in range (len(maps)):
+            pdf.image(r"" + f"./Local_files/GUI_files/Results/{maps[i]}", x, y, w)
+            print("Included", maps[i])
+            if i % 2 == 1:
+                y += 75
+                x = 7.5
+            if i % 2 == 0:
+                x += 100
+
+        y_information = 205
 
     pdf.set_left_margin(15)
     pdf.set_y(y_information)

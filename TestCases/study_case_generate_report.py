@@ -71,32 +71,27 @@ materials = ["Timber", "Steel"]
 score_function_string = hm.generate_score_function_string(constants)
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
-
-#hm.create_graph(supply, demand, "Length", number_of_intervals= 2, save_filename = r"C:\Users\sigur\Downloads\test.png")
-
-plot.create_graph(supply, demand, target_column="Length", unit=r"[m]", number_of_intervals=5, fig_title = "", save_filename=r"testplot2.png")
-plot.create_graph(supply, demand, target_column="Area", unit=r"[m$^2$]", number_of_intervals=5, fig_title = "", save_filename=r"testplot3.png")
-plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m$^4$]", number_of_intervals=5, fig_title = "", save_filename=r"testplot4.png")
-
-
-constraint_dict = constants["constraint_dict"]
 #Add necessary columns to run the algorithm
 supply = hm.add_necessary_columns_pdf(supply, constants)
 demand = hm.add_necessary_columns_pdf(demand, constants)
+
+#plot.create_graph(supply, demand, target_column="Length", unit=r"[m]", number_of_intervals=5, fig_title = "", save_filename=r"length_plot.png")
+#plot.create_graph(supply, demand, target_column="Area", unit=r"[m$^2$]", number_of_intervals=5, fig_title = "", save_filename=r"area_plot.png")
+#plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m$^4$]", number_of_intervals=5, fig_title = "", save_filename=r"inertia_plot.png")
+#plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
+
+
+constraint_dict = constants["constraint_dict"]
+
 run_string = hm.generate_run_string(constants)
 result = eval(run_string)
-"""
+
 simple_pairs = hm.extract_pairs_df(result)
 pdf_results = hm.extract_results_df_pdf(result, constants)
+plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Substitution locations", save_name=r"map_reuse_subs")
+plot.create_map_substitutions(demand, pdf_results, "demand", color = "red", legend_text="Manufacturer locations", save_name=r"map_manu_subs")
 pdf = hm.generate_pdf_report(pdf_results, projectname = constants["Project name"], filepath = r"./Local_files/GUI_files/Results/")
 print(hm.extract_pairs_df(result))
-
-plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
-
-#plot.create_map_dataframe(demand, color = "red", legend_text="Manufacturer locations", save_name=r"map_manufacturer_test")
-plot.create_map_substitutions(supply, pdf_results, "supply", color="green", legend_text="Substitutions locations", save_name=r"map_substitutions")
-
-"""
 
 
 

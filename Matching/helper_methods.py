@@ -693,8 +693,6 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     plot.create_map_substitutions(demand,results,"demand",color="red",legend_text="New manufactured elements locations",save_name=r"map_manufactured_subs")
 
 
-
-
 def generate_score_function_string(constants):
     metric = constants["Metric"]
     transportation = constants["Include transportation"]
@@ -705,6 +703,43 @@ def generate_score_function_string(constants):
     elif metric == "Price":
         score_function_string = f"@lca.calculate_price(length=Length, area =Area, include_transportation = {transportation}, distance = Distance, price = Price, density = Density, price_transport= {constants['PRICE_TRANSPORTATION']})"
     return score_function_string
+
+def fill_closest_manufacturer(dataframe,constants):
+    manufacturers_df=pd.read_excel(r"./CSV/manufacturers_locations.xlsx")
+
+    shortest_distance_tree=10**10
+    shortest_distance__steel=10**10
+
+    shortest_tree={
+        "Location": "place",
+        "Latitude": "XX.XXX",
+        "Longitude":"YY.YYY"
+    }
+    shortest_steel={
+        "Location": "place",
+        "Latitude": "XX.XXX",
+        "Longitude":"YY.YYY"
+    }
+    for index,row in manufacturers_df.iterrows():
+        driving_distance=lca.calculate_driving_distance(str(row["Latitude"]),str(row["Longitude"]),constants["Cite latitude"],constants["Cite longitude"])
+
+        if str(row["Material"])=="Tree" and driving_distance<shortest_distance_tree:
+            shortest_distance_tree=driving_distance
+            shortest_tree["Location"]=str(row["Location"])
+            shortest_tree["Latitude"]=str(row["Latitude"])
+            shortest_tree["Longitude"]=str(row["Longitude"])
+
+        elif str(row["Material"])=="Steel" and driving_distance<shortest_distance__steel:
+            shortest_distance__steel=driving_distance
+            shortest_steel["Location"]=str(row["Location"])
+            shortest_steel["Latitude"]=str(row["Latitude"])
+            shortest_steel["Longitude"]=str(row["Longitude"])
+
+    mask_tree=(dataframe["Material"]=="Tree") & (dataframe["Location"].isnull())
+    dataframe.loc[mask_tree,["Location","Latitude","Longitude"]]=[shortest_tree["Location"],shortest_tree["Latitude"],shortest_tree["Longitude"]]
+    mask_steel=(dataframe["Material"]=="Steel") & (dataframe["Location"].isnull())
+    dataframe.loc[mask_steel,["Location","Latitude","Longitude"]]=[shortest_steel["Location"],shortest_steel["Latitude"],shortest_steel["Longitude"]]
+    return dataframe
 
 def add_necessary_columns_pdf(dataframe, constants):
     dataframe = dataframe.copy()
@@ -720,6 +755,10 @@ def add_necessary_columns_pdf(dataframe, constants):
         dataframe["Price"] = 0
     elif metric == "Price":
         dataframe["Price"] = 0
+
+    #If dataframe is demand, fill in the location and corresponding coordinates and to the closet manufacturer.
+    if element_type=="D":
+        dataframe=fill_closest_manufacturer(dataframe,constants)
 
     for row in range(len(dataframe)):
         material = dataframe.iloc[row][dataframe.columns.get_loc("Material")].split()[0] #NOTE: Assumes that material-column has the material name as the first word, e.g. "Timber C14" or "Steel ASTM A992"

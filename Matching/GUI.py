@@ -20,24 +20,26 @@ import os
 constants = {
     "TIMBER_GWP": 28.9,       # based on NEPD-3442-2053-EN
     "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25 based on Eberhardt
-    "TRANSPORT_GWP": 96.0,    # TODO kg/m3/t based on ????
+    "TRANSPORT_GWP": 89.6,    # TODO kg/m3/t based on ????
     "TIMBER_DENSITY": 491.0,  # kg, based on NEPD-3442-2053-EN
     "STEEL_GWP": 800, #Random value
     "STEEL_REUSE_GWP": 4, #Random value
-    "VALUATION_GWP": 0.6, #In kr:Per kg CO2, based on OECD
-    "TIMBER_PRICE": 435, #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
-    "TIMBER_REUSE_PRICE" : 100, #Per m^3, Random value
-    "STEEL_PRICE": 500, #Per m^3, R'andom value'
-    "STEEL_REUSE_PRICE": 200, #Per m^3, Random value
-    "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
+    "VALUATION_GWP": 0.7, #In kr:Per kg CO2, based on OECD
+    "TIMBER_PRICE": 3400, #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
+    "TIMBER_REUSE_PRICE" : 3400, #Per m^3, Random value
+    "STEEL_PRICE": 5000, #Per m^3, R'andom value'
+    "STEEL_REUSE_PRICE": 75000, #Per m^3, Random value
+    "PRICE_TRANSPORTATION": 0.3, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
     "STEEL_DENSITY": 7850,
     ########################
-    "Project name": "Bod nidarosdomen",
+    "Project name": "Project name",
     "Metric": "GWP",
     "Algorithms": ["bipartite", "greedy_plural", "greedy_single", "bipartite_plural"],
     "Include transportation": True,
-    "Cite latitude": "63.4269",
-    "Cite longitude": "10.3969",
+    "Cite latitude": "xx.xxxx",
+    "Cite longitude": "xx.xxxx",
+    #"Cite latitude": "63.4269",
+    #"Cite longitude": "10.3969",
     "Demand file location": r"./CSV/pdf_demand.csv",
     "Supply file location": r"./CSV/pdf_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
@@ -56,7 +58,6 @@ def giveFileName():
     filename=projectname+"_report.pdf"
     filename_tk.set(filename)
     return projectname
-
 
 def checkinputfields():
     One_or_more_missing=False
@@ -701,6 +702,10 @@ def open_map():
 
         ProjectLatitude_entry.delete(0,tk.END)
         ProjectLongitude_entry.delete(0,tk.END)
+        ProjectLatitude_entry.config(text="",fg="black")
+        ProjectLongitude_entry.config(text="",fg="black")
+
+
         ProjectLatitude_entry.insert(0,latcordstring)
         ProjectLongitude_entry.insert(0,loncordstring)
         markedexist=True
@@ -823,9 +828,9 @@ Construction_site_label.place(relx=0.5,rely=0.14,anchor="center")
 #Create projectname label and entry
 Projectname_label = tk.Label(root, text="Project name:")
 Projectname_value_prefilled = tk.StringVar(value=constants["Project name"])
-Projectname_entry = tk.Entry(root,textvariable=Projectname_value_prefilled,fg="grey",widt=16)
-Projectname_label.place(relx=0.315,rely=0.18,anchor="center")
-Projectname_entry.place(relx=0.41,rely=0.18,anchor="center")
+Projectname_entry = tk.Entry(root,textvariable=Projectname_value_prefilled,fg="grey",widt=20)
+Projectname_label.place(relx=0.29,rely=0.18,anchor="center")
+Projectname_entry.place(relx=0.40,rely=0.18,anchor="center")
 Projectname_entry.bind('<FocusIn>', lambda event,entry=Projectname_entry,variabel="Project name":on_general_entry_string_click(event,entry,variabel))
 
 #Create project latitude label and entry
@@ -847,7 +852,7 @@ ProjectLongitude_entry.place(relx=0.665,rely=0.18,anchor="center")
 ProjectLongitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLongitude_entry,variabel="Cite longitude":on_general_entry_string_click(event,entry,variabel))
 
 openmap_button = ttk.Button(root, text="Set from map", command=open_map)
-openmap_button.place(relx=0.61,rely=0.22,anchor="center",relheight=0.05,relwidth=0.10)
+openmap_button.place(relx=0.61,rely=0.22,anchor="center",relheight=0.04,relwidth=0.10)
 
 # Create the Matching metric dropdown menu
 matching_metric_var = tk.StringVar()

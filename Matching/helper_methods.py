@@ -723,7 +723,7 @@ def fill_closest_manufacturer(dataframe,constants):
     for index,row in manufacturers_df.iterrows():
         driving_distance=lca.calculate_driving_distance(str(row["Latitude"]),str(row["Longitude"]),constants["Cite latitude"],constants["Cite longitude"])
 
-        if str(row["Material"])=="Tree" and driving_distance<shortest_distance_tree:
+        if str(row["Material"])=="Timber" and driving_distance<shortest_distance_tree:
             shortest_distance_tree=driving_distance
             shortest_tree["Location"]=str(row["Location"])
             shortest_tree["Latitude"]=str(row["Latitude"])
@@ -735,9 +735,9 @@ def fill_closest_manufacturer(dataframe,constants):
             shortest_steel["Latitude"]=str(row["Latitude"])
             shortest_steel["Longitude"]=str(row["Longitude"])
 
-    mask_tree=(dataframe["Material"]=="Tree") & (dataframe["Location"].isnull())
+    mask_tree=(dataframe["Material"]=="Timber") & (dataframe["Location"] == 0)
     dataframe.loc[mask_tree,["Location","Latitude","Longitude"]]=[shortest_tree["Location"],shortest_tree["Latitude"],shortest_tree["Longitude"]]
-    mask_steel=(dataframe["Material"]=="Steel") & (dataframe["Location"].isnull())
+    mask_steel=(dataframe["Material"]=="Steel") & (dataframe["Location"] == 0)
     dataframe.loc[mask_steel,["Location","Latitude","Longitude"]]=[shortest_steel["Location"],shortest_steel["Latitude"],shortest_steel["Longitude"]]
     return dataframe
 

@@ -227,7 +227,7 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
 
     return supply
 
-def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, area_min, area_max, materials, demand_coords):
+def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, area_min, area_max, materials):
     steel_cs = {"IPE100": (1.03e-3, 1.71e-6),
                 "IPE140": (1.64e-3, 5.41e-6),
                 "IPE160": (2.01e-3, 8.69e-6),
@@ -258,11 +258,6 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
             demand.loc[row, "Area"] = steel_cs[cs][0]
             demand.loc[row, "Moment of Inertia"] = steel_cs[cs][1]
         demand.loc[row, "Material"] = material
-        provider = demand_coords[material]
-        demand.loc[row,"Manufacturer"]= provider[0]
-        demand.loc[row,"Latitude"]=provider[1]
-        demand.loc[row,"Longitude"]=provider[2]
-    #demand.index = map(lambda text: 'D' + str(text), demand.index)
 
     return demand
 
@@ -711,12 +706,12 @@ def fill_closest_manufacturer(dataframe,constants):
     shortest_distance__steel=10**10
 
     shortest_tree={
-        "Location": "place",
+        "Manufacturer": "place",
         "Latitude": "XX.XXX",
         "Longitude":"YY.YYY"
     }
     shortest_steel={
-        "Location": "place",
+        "Manufacturer": "place",
         "Latitude": "XX.XXX",
         "Longitude":"YY.YYY"
     }
@@ -725,20 +720,23 @@ def fill_closest_manufacturer(dataframe,constants):
 
         if str(row["Material"])=="Timber" and driving_distance<shortest_distance_tree:
             shortest_distance_tree=driving_distance
-            shortest_tree["Location"]=str(row["Location"])
-            shortest_tree["Latitude"]=str(row["Latitude"])
-            shortest_tree["Longitude"]=str(row["Longitude"])
+            shortest_tree["Manufacturer"]=str(row["Manufacturer"])
+            shortest_tree["Latitude"]=row["Latitude"]
+            shortest_tree["Longitude"]=row["Longitude"]
 
         elif str(row["Material"])=="Steel" and driving_distance<shortest_distance__steel:
             shortest_distance__steel=driving_distance
-            shortest_steel["Location"]=str(row["Location"])
+            shortest_steel["Manufacturer"]=str(row["Manufacturer"])
             shortest_steel["Latitude"]=str(row["Latitude"])
             shortest_steel["Longitude"]=str(row["Longitude"])
 
-    mask_tree=(dataframe["Material"]=="Timber") & (dataframe["Location"] == 0)
-    dataframe.loc[mask_tree,["Location","Latitude","Longitude"]]=[shortest_tree["Location"],shortest_tree["Latitude"],shortest_tree["Longitude"]]
-    mask_steel=(dataframe["Material"]=="Steel") & (dataframe["Location"] == 0)
-    dataframe.loc[mask_steel,["Location","Latitude","Longitude"]]=[shortest_steel["Location"],shortest_steel["Latitude"],shortest_steel["Longitude"]]
+    mask_tree=(dataframe["Material"]=="Timber") & (dataframe["Manufacturer"] == 0)
+    dataframe.loc[mask_tree,["Manufacturer","Latitude","Longitude"]]=[shortest_tree["Manufacturer"],shortest_tree["Latitude"],shortest_tree["Longitude"]]
+    mask_steel=(dataframe["Material"]=="Steel") & (dataframe["Manufacturer"] == 0)
+    dataframe.loc[mask_steel,["Manufacturer","Latitude","Longitude"]]=[shortest_steel["Manufacturer"],shortest_steel["Latitude"],shortest_steel["Longitude"]]
+    
+    dataframe = dataframe.astype({'Latitude': float, 'Longitude': float})
+
     return dataframe
 
 def add_necessary_columns_pdf(dataframe, constants):
@@ -757,7 +755,7 @@ def add_necessary_columns_pdf(dataframe, constants):
         dataframe["Price"] = 0
 
     #If dataframe is demand, fill in the location and corresponding coordinates and to the closet manufacturer.
-    if element_type=="D":
+    if element_type=="D" and constants["Include transportation"]:
         dataframe=fill_closest_manufacturer(dataframe,constants)
 
     for row in range(len(dataframe)):

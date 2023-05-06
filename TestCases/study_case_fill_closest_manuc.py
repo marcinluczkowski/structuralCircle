@@ -7,7 +7,6 @@ from matching import run_matching
 import LCA as lca
 import plotting as plot
 
-
 #==========USER FILLS IN============#
 
 #Constants
@@ -30,7 +29,7 @@ constants = {
     "Project name": "Sognsveien 17",
     "Metric": "GWP",
     "Algorithms": ["bipartite", "greedy_plural"],
-    "Include transportation": False,
+    "Include transportation": True,
     "Cite latitude": "59.94161606",
     "Cite longitude": "10.72994518",
     #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
@@ -89,9 +88,9 @@ print(hm.extract_pairs_df(result))
 
 
 plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
-
+print("Dooone")
 #Generate map HTML
-plot.create_map_dataframe(demand, color = "red", legend_text="Manufacturer locations", save_name=r"map_manufacturer_test")
+#plot.create_map_dataframe(demand, color = "red", legend_text="Manufacturer locations", save_name=r"map_manufacturer_test")
 
 
 

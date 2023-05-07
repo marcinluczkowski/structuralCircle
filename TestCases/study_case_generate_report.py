@@ -13,22 +13,22 @@ import plotting as plot
 #Constants
 #TODO: FIND ALL DEFAULT VALUES FOR CONSTANTS, especially for price
 constants = {
-    "TIMBER_GWP": 28.9,       # based on NEPD-3442-2053-EN
-    "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25 based on Eberhardt
-    "TRANSPORT_GWP": 96.0,    # TODO kg/m3/t based on ????
-    "TIMBER_DENSITY": 491.0,  # kg, based on NEPD-3442-2053-EN
-    "STEEL_GWP": 800, #Random value
-    "STEEL_REUSE_GWP": 4, #Random value
-    "VALUATION_GWP": 0.6, #In kr:Per kg CO2, based on OECD
-    "TIMBER_PRICE": 435, #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
-    "TIMBER_REUSE_PRICE" : 100, #Per m^3, Random value
-    "STEEL_PRICE": 500, #Per m^2, Random value
-    "STEEL_REUSE_PRICE": 200, #Per m^2, Random value
-    "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
-    "STEEL_DENSITY": 7850,
+    "TIMBER_GWP": 28.9,       #kg CO2 eq per m^3, based on NEPD-3442-2053-EN
+    "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25kg CO2 eq per m^3, based on Eberhardt
+    "TRANSPORT_GWP": 89.6,    #gram per tonne per km, Engedal et. al. 
+    "TIMBER_DENSITY": 491.0,  #kg/m^3, based on NEPD-3442-2053-EN
+    "STEEL_GWP": 9263.0, #kg CO2 eq per m^3, Norsk stål + density of steel
+    "STEEL_REUSE_GWP": 278.0, #kg CO2 eq per m^3, reduction of 97% from new according to Høydahl and Walter
+    "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
+    "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
+    "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
+    "STEEL_PRICE": 67, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 100, #NOK per kg, ENTRA 2021
+    "PRICE_TRANSPORTATION": 0.3, #NOK per km per tonne, Grønland 2022 + Gran 2013
+    "STEEL_DENSITY": 7850, #kg/m^3 EUROCODE
     ########################
     "Project name": "Sognsveien 17",
-    "Metric": "GWP",
+    "Metric": "Price",
     "Algorithms": ["bipartite", "greedy_plural"],
     "Include transportation": True,
     "Cite latitude": "59.94161606",

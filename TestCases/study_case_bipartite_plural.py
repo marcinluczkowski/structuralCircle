@@ -29,7 +29,7 @@ constants = {
     ########################
     "Project name": "Campussamling Hesthagen",
     "Metric": "GWP",
-    "Algorithms": ["bipartite", "bipartite_plural", "bipartite_plural_multiple"],
+    "Algorithms": ["bipartite_plural", "bipartite_plural_multiple"],
     "Include transportation": False,
     "Cite latitude": "63.4154171",
     "Cite longitude": "10.3994672",
@@ -55,6 +55,7 @@ def generate_datasets(d_counts, s_counts):
     supply_coords.loc[len(supply_coords)] = orkanger
     supply_coords.loc[len(supply_coords)] = storlien
     supply_coords.loc[len(supply_coords)] = hell
+    supply_coords.loc[len(supply_coords)] = melhus
     
 
 
@@ -71,9 +72,9 @@ def generate_datasets(d_counts, s_counts):
     demand.index = map(lambda text: "D" + str(text), demand.index)
     return demand, supply
 
-# ========== SCENARIO 1 ============== 
+# ========== Comparing bipartite plural vs bipartite plural multiple ============== 
 var1 = 1
-d_counts = np.linspace(4, 12, num = 5).astype(int)
+d_counts = np.linspace(4, 20, num = 2).astype(int)
 s_counts = (d_counts * var1).astype(int)
 internal_runs = 50
 constraint_dict = constants["constraint_dict"]
@@ -117,5 +118,5 @@ for d, s in zip(d_counts, s_counts):
 #pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
 #pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
 
-plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", fix_overlapping=False, save_filename="brute_results_time.png")
-plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kg CO2 equiv.]", title = "", fix_overlapping=True, save_filename="brute_results_score.png")
+plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", fix_overlapping=False, save_filename="bipartite_results_time.png")
+plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kg CO2 equiv.]", title = "", fix_overlapping=True, save_filename="bipartite_results_score.png")

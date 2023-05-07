@@ -22,10 +22,10 @@ constants = {
     "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
     "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
     "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
-    "STEEL_PRICE": 500, #Per m^2, Random value TODO: ADD REAL VALUE
-    "STEEL_REUSE_PRICE": 200, #Per m^2, Random value TODO: ADD REAL VALUE
+    "STEEL_PRICE": 67, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 100, #NOK per kg, ENTRA 2021
     "PRICE_TRANSPORTATION": 0.3, #NOK per km per tonne, Grønland 2022 + Gran 2013
-    "STEEL_DENSITY": 7850,
+    "STEEL_DENSITY": 7850, #kg/m^3 EUROCODE
     ########################
     "Project name": "Campussamling Hesthagen",
     "Metric": "GWP",
@@ -42,15 +42,20 @@ constants = {
 def generate_datasets(d_counts, s_counts):
     supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
-    tiller = ["Tiller", "63.3604", "10.4008"]
-    gjovik = ["Gjovik", "60.8941", "10.5001"]
+    tiller = ["Tiller", "63.3590272", "10.3751236"]
+    storen = ["Støren", "63.033639", "10.286356"]
     orkanger = ["Orkanger", "63.3000", "9.8468"]
     storlien = ["Storlien", "63.3160", "12.1018"]
+    hell = ["Hell", "63.4452539", "10.8971079"]
+    melhus = ["Melhus", "63.2897753", "10.2934154"]
+
 
     supply_coords.loc[len(supply_coords)] = tiller
-    supply_coords.loc[len(supply_coords)] = gjovik
+    supply_coords.loc[len(supply_coords)] = storen
     supply_coords.loc[len(supply_coords)] = orkanger
     supply_coords.loc[len(supply_coords)] = storlien
+    supply_coords.loc[len(supply_coords)] = hell
+    supply_coords.loc[len(supply_coords)] = melhus
 
 
     demand_coords = {"Steel": ("Norsk Stål Trondheim", "63.4384474", "10.40994"), "Timber": ("XL-BYGG Lade","63.4423683","10.4438836")}

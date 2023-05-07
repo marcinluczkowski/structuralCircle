@@ -772,7 +772,11 @@ def add_necessary_columns_pdf(dataframe, constants):
         if metric == "GWP" or metric == "Combined":
                 dataframe.iloc[row, dataframe.columns.get_loc("Gwp_factor")] = constants[constant_name + "_GWP"]
         if metric == "Price" or metric == "Combined":
-                dataframe.iloc[row, dataframe.columns.get_loc("Price")] = constants[constant_name + "_PRICE"]
+                if material.upper() == "STEEL":
+                    price = constants[constant_name + "_PRICE"] * constants[f"{material.upper()}_DENSITY"]
+                else:
+                    price = constants[constant_name + "_PRICE"]
+                dataframe.iloc[row, dataframe.columns.get_loc("Price")] = price
     return dataframe
 
 def generate_run_string(constants):

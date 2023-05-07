@@ -27,12 +27,13 @@ constants = {
     "STEEL_DENSITY": 7850, #kg/m^3 EUROCODE
     ########################
     "Project name": "Campussamling Hesthagen",
-    "Metric": "GWP",
-    "Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
-    "Include transportation": False,
+    "Metric": "Combined",
+    #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
+    "Algorithms": ["bipartite_plural"],
+    "Include transportation": True,
     "Cite latitude": "63.4154171",
     "Cite longitude": "10.3994672",
-    "Demand file location": r"./CSV/study_case_supply.csv",
+    "Demand file location": r"./CSV/study_case_demand.csv",
     "Supply file location": r"./CSV/study_case_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
@@ -59,10 +60,12 @@ materials = ["Timber", "Steel"]
 
 #GENERATE FILE
 #============
-supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
-hm.export_dataframe_to_csv(supply, r"" + "./CSV/study_case_supply.csv")
-hm.export_dataframe_to_csv(demand, r"" + "./CSV/study_case_demand.csv")
+#supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+#demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
+#hm.export_dataframe_to_csv(supply, r"" + "./CSV/study_case_supply.csv")
+#hm.export_dataframe_to_csv(demand, r"" + "./CSV/study_case_demand.csv")
+#supply.to_excel(r"" + "./CSV/study_case_supply.xlsx")
+#demand.to_excel(r"" + "./CSV/study_case_demand.xlsx")
 #========================================
 
 #PRE-PROSESSING DATA
@@ -77,7 +80,7 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
-
+"""
 ########### STUDY CASE 2: GWP with transportation ###########
 constants["Include transportation"] = True
 score_function_string = hm.generate_score_function_string(constants)
@@ -91,6 +94,6 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
-
+"""
 
 #TODO: Create map with the random supply locations and the cite location

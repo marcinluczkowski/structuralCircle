@@ -28,7 +28,7 @@ constants = {
     "TIMBER_PRICE": 3400, #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
     "TIMBER_REUSE_PRICE" : 3400, #Per m^3, Random value
     "STEEL_PRICE": 5000, #Per m^3, R'andom value'
-    "STEEL_REUSE_PRICE": 75000, #Per m^3, Random value
+    "STEEL_REUSE_PRICE": 7500, #Per m^3, Random value
     "PRICE_TRANSPORTATION": 0.3, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
     "STEEL_DENSITY": 7850,
     ########################
@@ -292,7 +292,7 @@ def on_matching_metric_change(*args):
         GWP_valuation_entry.place(relx=0.505,rely=0.42,anchor="w")
 
         include_transportation_checkbutton.place(relx=0.5,rely=0.48,anchor="center")
-        Transport_GWP_label.place(relx=0.30,rely=0.53,anchor="w")
+        Transport_GWP_label.place(relx=0.29,rely=0.53,anchor="w")
         Transport_GWP_entry.place(relx=0.44,rely=0.53,anchor="w")
         Transport_price_label.place(relx=0.50,rely=0.53,anchor="w")
         Transport_price_entry.place(relx=0.71,rely=0.53,anchor="w")
@@ -366,7 +366,7 @@ def on_matching_metric_change(*args):
         
         #Transport
         include_transportation_checkbutton.place(relx=0.5,rely=0.48,anchor="center")
-        Transport_GWP_label.place(relx=0.41,rely=0.53,anchor="w")
+        Transport_GWP_label.place(relx=0.40,rely=0.53,anchor="w")
         Transport_GWP_entry.place(relx=0.55,rely=0.53,anchor="w")
         
         #ALGORITHMS CHECKBOXES
@@ -552,13 +552,13 @@ def on_matching_metric_change(*args):
 
 def include_transportation_checked():
     if include_transportation_var.get() == 1 and matching_metric_var.get() == "Combined":
-        Transport_GWP_label.place(relx=0.30,rely=0.53,anchor="w")
+        Transport_GWP_label.place(relx=0.29,rely=0.53,anchor="w")
         Transport_GWP_entry.place(relx=0.44,rely=0.53,anchor="w")
         Transport_price_label.place(relx=0.50,rely=0.53,anchor="w")
         Transport_price_entry.place(relx=0.71,rely=0.53,anchor="w")
 
     elif include_transportation_var.get() == 1 and matching_metric_var.get() == "GWP":
-        Transport_GWP_label.place(relx=0.41,rely=0.53,anchor="w")
+        Transport_GWP_label.place(relx=0.40,rely=0.53,anchor="w")
         Transport_GWP_entry.place(relx=0.55,rely=0.53,anchor="w")
         Transport_price_label.place(relx=0.50,rely=0.53,anchor="w")
         Transport_price_entry.place(relx=0.71,rely=0.53,anchor="w")
@@ -566,7 +566,7 @@ def include_transportation_checked():
         Transport_price_entry.place_forget()
 
     elif include_transportation_var.get() == 1 and matching_metric_var.get() == "Price":
-        Transport_GWP_label.place(relx=0.41,rely=0.53,anchor="w")
+        Transport_GWP_label.place(relx=0.40,rely=0.53,anchor="w")
         Transport_GWP_entry.place(relx=0.55,rely=0.53,anchor="w")
         Transport_price_label.place(relx=0.37,rely=0.53,anchor="w")
         Transport_price_entry.place(relx=0.58,rely=0.53,anchor="w")
@@ -907,14 +907,14 @@ Steel_new_gwp_entry.config(validate='key', validatecommand=(root.register(valida
 Steel_new_gwp_entry.bind('<FocusIn>', lambda event,entry=Steel_new_gwp_entry,variabel="STEEL_GWP":on_general_entry_click(event,entry,variabel))
 
 #Create the new steel price input field (not shown before matching metric is choosen)
-Steel_price_label = tk.Label(root, text="New steel price [kr per m^3]:")
+Steel_price_label = tk.Label(root, text="New steel price [kr per kg]:")
 Steel_price_prefilled=tk.DoubleVar(value=constants["STEEL_PRICE"])
 Steel_price_entry = tk.Entry(root,textvariable=Steel_price_prefilled,fg="grey",widt=5)
 Steel_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
 Steel_price_entry.bind('<FocusIn>', lambda event,entry=Steel_price_entry,variabel="STEEL_PRICE":on_general_entry_click(event,entry,variabel))
 
 #Create the reused steel price input field (not shown before matching metric is choosen)
-Steel_reused_price_label = tk.Label(root, text="Reused steel price [kr per m^3]:")
+Steel_reused_price_label = tk.Label(root, text="Reused steel price [kr per kg]:")
 Steel_reused_price_prefilled=tk.DoubleVar(value=constants["STEEL_REUSE_PRICE"])
 Steel_reused_price_entry = tk.Entry(root,textvariable=Steel_reused_price_prefilled,fg="grey",widt=5)
 Steel_reused_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
@@ -933,7 +933,7 @@ include_transportation_var = tk.IntVar()
 include_transportation_checkbutton = tk.Checkbutton(root, text="Include transportation",font=("Montserrat", 12, "bold"), foreground="#000000", variable=include_transportation_var,command=include_transportation_checked)
 
 # Create the TransportGWP label and entry
-Transport_GWP_label = tk.Label(root, text="GWP transportation [factor]:")
+Transport_GWP_label = tk.Label(root, text="GWP transportation factor [g]:")
 Transport_GWP_prefilled=tk.DoubleVar(value=constants["TRANSPORT_GWP"])
 Transport_GWP_entry = tk.Entry(root,textvariable=Transport_GWP_prefilled,fg="grey",widt=5)
 Transport_GWP_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))

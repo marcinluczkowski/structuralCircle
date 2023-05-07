@@ -11,7 +11,6 @@ import plotting as plot
 
 #==========USER FILLS IN============#
 #Constants
-#TODO: FIND ALL DEFAULT VALUES FOR CONSTANTS, especially for price
 constants = {
     "TIMBER_GWP": 28.9,       #kg CO2 eq per m^3, based on NEPD-3442-2053-EN
     "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25kg CO2 eq per m^3, based on Eberhardt

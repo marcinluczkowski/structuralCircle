@@ -11,7 +11,6 @@ import plotting as plot
 
 #==========USER FILLS IN============#
 #Constants
-#TODO: FIND ALL DEFAULT VALUES FOR CONSTANTS, especially for price
 constants = {
     "TIMBER_GWP": 28.9,       #kg CO2 eq per m^3, based on NEPD-3442-2053-EN
     "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25kg CO2 eq per m^3, based on Eberhardt
@@ -22,10 +21,10 @@ constants = {
     "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
     "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
     "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
-    "STEEL_PRICE": 500, #Per m^2, Random value TODO: ADD REAL VALUE
-    "STEEL_REUSE_PRICE": 200, #Per m^2, Random value TODO: ADD REAL VALUE
+    "STEEL_PRICE": 67, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 100, #NOK per kg, ENTRA 2021
     "PRICE_TRANSPORTATION": 0.3, #NOK per km per tonne, Grønland 2022 + Gran 2013
-    "STEEL_DENSITY": 7850,
+    "STEEL_DENSITY": 7850, #kg/m^3 EUROCODE
     ########################
     "Project name": "Campussamling Hesthagen",
     "Metric": "GWP",
@@ -71,9 +70,9 @@ def generate_datasets(d_counts, s_counts):
 
 # ========== Comparing bipartite plural vs bipartite plural multiple ============== 
 var1 = 1
-d_counts = np.linspace(4, 20, num = 2).astype(int)
+d_counts = np.linspace(4, 100, num = 4).astype(int)
 s_counts = (d_counts * var1).astype(int)
-internal_runs = 50
+internal_runs = 20
 constraint_dict = constants["constraint_dict"]
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
@@ -116,4 +115,4 @@ for d, s in zip(d_counts, s_counts):
 #pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
 
 plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", fix_overlapping=False, save_filename="bipartite_results_time.png")
-plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kg CO2 equiv.]", title = "", fix_overlapping=True, save_filename="bipartite_results_score.png")
+plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kg CO2 eq.]", title = "", fix_overlapping=True, save_filename="bipartite_results_score.png")

@@ -1,17 +1,16 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import sys
+import random as rd
+import pandas as pd
 sys.path.append('./Matching')
 import helper_methods as hm
-from matching import run_matching # Matching
+from matching import run_matching
 import LCA as lca
 import plotting as plot
 
 
 #==========USER FILLS IN============#
+
 #Constants
-#TODO: FIND ALL DEFAULT VALUES FOR CONSTANTS, especially for price
 constants = {
     "TIMBER_GWP": 28.9,       #kg CO2 eq per m^3, based on NEPD-3442-2053-EN
     "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25kg CO2 eq per m^3, based on Eberhardt
@@ -22,65 +21,76 @@ constants = {
     "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
     "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
     "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
-    "STEEL_PRICE": 500, #Per m^2, Random value TODO: ADD REAL VALUE
-    "STEEL_REUSE_PRICE": 200, #Per m^2, Random value TODO: ADD REAL VALUE
+    "STEEL_PRICE": 67, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 100, #NOK per kg, ENTRA 2021
     "PRICE_TRANSPORTATION": 0.3, #NOK per km per tonne, Grønland 2022 + Gran 2013
-    "STEEL_DENSITY": 7850,
+    "STEEL_DENSITY": 7850, #kg/m^3 EUROCODE
     ########################
     "Project name": "Campussamling Hesthagen",
     "Metric": "GWP",
-    "Algorithms": ["bipartite", "bipartite_plural", "bipartite_plural_multiple"],
+    "Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Include transportation": False,
     "Cite latitude": "63.4154171",
     "Cite longitude": "10.3994672",
-    "Demand file location": r"./CSV/genetic_demand.csv",
-    "Supply file location": r"./CSV/genetic_supply.csv",
+    "Demand file location": r"./CSV/study_case_supply.csv",
+    "Supply file location": r"./CSV/study_case_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
+#========================#
+#Generating dataset
+#===================
+supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
+tiller = ["Tiller", "63.3590272", "10.3751236"]
+storen = ["Støren", "63.033639", "10.286356"]
+orkanger = ["Orkanger", "63.3000", "9.8468"]
+meraker = ["Meråker", "63.415312", "11.747262"]
+hell = ["Hell", "63.4452539", "10.8971079"]
+melhus = ["Melhus", "63.2897753", "10.2934154"]
 
-def generate_datasets(d_counts, s_counts):
-    supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
+supply_coords.loc[len(supply_coords)] = tiller
+supply_coords.loc[len(supply_coords)] = storen
+supply_coords.loc[len(supply_coords)] = orkanger
+supply_coords.loc[len(supply_coords)] = meraker
+supply_coords.loc[len(supply_coords)] = hell
+supply_coords.loc[len(supply_coords)] = melhus
 
-    tiller = ["Tiller", "63.3590272", "10.3751236"]
-    storen = ["Støren", "63.033639", "10.286356"]
-    orkanger = ["Orkanger", "63.3000", "9.8468"]
-    meraker = ["Meråker", "63.415312", "11.747262"]
-    hell = ["Hell", "63.4452539", "10.8971079"]
-    melhus = ["Melhus", "63.2897753", "10.2934154"]
+materials = ["Timber", "Steel"]
 
+#GENERATE FILE
+#============
+supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
+hm.export_dataframe_to_csv(supply, r"" + "./CSV/study_case_supply.csv")
+hm.export_dataframe_to_csv(demand, r"" + "./CSV/study_case_demand.csv")
+#========================================
 
-
-    supply_coords.loc[len(supply_coords)] = tiller
-    supply_coords.loc[len(supply_coords)] = storen
-    supply_coords.loc[len(supply_coords)] = orkanger
-    supply_coords.loc[len(supply_coords)] = meraker
-    supply_coords.loc[len(supply_coords)] = hell
-    supply_coords.loc[len(supply_coords)] = melhus
-    
-
-
-
-    materials = ["Timber", "Steel"]
-
-    #GENERATE FILE
-    #============
-    supply = hm.create_random_data_supply_pdf_reports(supply_count = s_counts, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
-    supply.index = map(lambda text: "S" + str(text), supply.index)
-    demand.index = map(lambda text: "D" + str(text), demand.index)
-    return demand, supply
-
-# ========== SCENARIO 1 ============== 
-d_counts = 1000
-s_counts = 1000
+#PRE-PROSESSING DATA
+supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
+demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
+supply = hm.add_necessary_columns_pdf(supply, constants)
+demand = hm.add_necessary_columns_pdf(demand, constants)
 constraint_dict = constants["constraint_dict"]
+
+########### STUDY CASE 1: GWP without transportation ###########
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
-results = [] #list of results for each iteration
+result_case1 = eval(run_string)
+pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
 
-hm.print_header("Starting Run")
+########### STUDY CASE 2: GWP with transportation ###########
+constants["Include transportation"] = True
+score_function_string = hm.generate_score_function_string(constants)
+run_string = hm.generate_run_string(constants)
+result_case1 = eval(run_string)
+pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
+
+########### STUDY CASE 3: Combined with transportation ###########
+constants["Metric"] = "Combined"
+score_function_string = hm.generate_score_function_string(constants)
+run_string = hm.generate_run_string(constants)
+result_case1 = eval(run_string)
+pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
 
 
-#pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
-#pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
+#TODO: Create map with the random supply locations and the cite location

@@ -55,6 +55,7 @@ def generate_datasets(d_counts, s_counts):
     supply_coords.loc[len(supply_coords)] = orkanger
     supply_coords.loc[len(supply_coords)] = storlien
     supply_coords.loc[len(supply_coords)] = hell
+    supply_coords.loc[len(supply_coords)] = melhus
     
 
 
@@ -72,10 +73,9 @@ def generate_datasets(d_counts, s_counts):
     return demand, supply
 
 # ========== SCENARIO 1 ============== 
-var1 = 1
-d_counts = np.linspace(4, 12, num = 5).astype(int)
-s_counts = (d_counts * var1).astype(int)
-internal_runs = 50
+d_counts = 1000
+s_counts = 1000
+internal_runs = 1
 constraint_dict = constants["constraint_dict"]
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)

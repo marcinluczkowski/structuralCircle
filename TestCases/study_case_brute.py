@@ -13,28 +13,26 @@ import plotting as plot
 #Constants
 #TODO: FIND ALL DEFAULT VALUES FOR CONSTANTS, especially for price
 constants = {
-    "TIMBER_GWP": 28.9,       # based on NEPD-3442-2053-EN
-    "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25 based on Eberhardt
-    "TRANSPORT_GWP": 96.0,    # TODO kg/m3/t based on ????
-    "TIMBER_DENSITY": 491.0,  # kg, based on NEPD-3442-2053-EN
-    "STEEL_GWP": 800, #Random value
-    "STEEL_REUSE_GWP": 4, #Random value
-    "VALUATION_GWP": 0.6, #In kr:Per kg CO2, based on OECD
-    "TIMBER_PRICE": 435, #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
-    "TIMBER_REUSE_PRICE" : 100, #Per m^3, Random value
-    "STEEL_PRICE": 500, #Per m^2, Random value
-    "STEEL_REUSE_PRICE": 200, #Per m^2, Random value
-    "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
+    "TIMBER_GWP": 28.9,       #kg CO2 eq per m^3, based on NEPD-3442-2053-EN
+    "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25kg CO2 eq per m^3, based on Eberhardt
+    "TRANSPORT_GWP": 89.6,    #gram per tonne per km, Engedal et. al. 
+    "TIMBER_DENSITY": 491.0,  #kg/m^3, based on NEPD-3442-2053-EN
+    "STEEL_GWP": 9263.0, #kg CO2 eq per m^3, Norsk stål + density of steel
+    "STEEL_REUSE_GWP": 278.0, #kg CO2 eq per m^3, reduction of 97% from new according to Høydahl and Walter
+    "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
+    "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
+    "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
+    "STEEL_PRICE": 500, #Per m^2, Random value TODO: ADD REAL VALUE
+    "STEEL_REUSE_PRICE": 200, #Per m^2, Random value TODO: ADD REAL VALUE
+    "PRICE_TRANSPORTATION": 0.3, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850,
     ########################
-    "Project name": "Sognsveien 17",
+    "Project name": "Campussamling Hesthagen",
     "Metric": "GWP",
-    "Algorithms": ["brute", "greedy_single", "bipartite"],
+    "Algorithms": ["greedy_single", "genetic"],
     "Include transportation": False,
-    "Cite latitude": "59.94161606",
-    "Cite longitude": "10.72994518",
-    #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
-    #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
+    "Cite latitude": "63.4154171",
+    "Cite longitude": "10.3994672",
     "Demand file location": r"./CSV/genetic_demand.csv",
     "Supply file location": r"./CSV/genetic_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
@@ -62,17 +60,17 @@ def generate_datasets(d_counts, s_counts):
 
     #GENERATE FILE
     #============
-    supply = hm.create_random_data_supply_pdf_reports(supply_count = s_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
+    supply = hm.create_random_data_supply_pdf_reports(supply_count = s_counts, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, demand_coords = demand_coords)
     supply.index = map(lambda text: "S" + str(text), supply.index)
     demand.index = map(lambda text: "D" + str(text), demand.index)
     return demand, supply
 
 # ========== SCENARIO 1 ============== 
 var1 = 1
-d_counts = np.linspace(2, 6, num = 2).astype(int)
+d_counts = np.linspace(4, 12, num = 5).astype(int)
 s_counts = (d_counts * var1).astype(int)
-internal_runs = 5
+internal_runs = 50
 constraint_dict = constants["constraint_dict"]
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
@@ -98,12 +96,6 @@ for d, s in zip(d_counts, s_counts):
             score_dict = {res[list(res.keys())[0]] : [] for res in result}
             dict_made = True
         for i in range(len(result)):
-            AAAA = result[i]["Match object"].result
-            if np.isnan(AAAA):
-                match_object = result[i]["Match object"]
-                weights = match_object.weights
-                pairs = match_object.pairs
-                test = 4
             temp_times[i].append(result[i]["Match object"].solution_time)
             temp_scores[i].append(result[i]["Match object"].result)
 
@@ -117,10 +109,8 @@ for d, s in zip(d_counts, s_counts):
 
 
 
-test = 2
-
 #pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
 #pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
 
-plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", fix_overlapping = True, save_filename="brute_results_time.png")
-plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Score", title = "", fix_overlapping = True, save_filename="brute_results_score.png")
+plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", fix_overlapping=False, save_filename="brute_results_time.png")
+plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kg CO2 equiv.]", title = "", fix_overlapping=True, save_filename="brute_results_score.png")

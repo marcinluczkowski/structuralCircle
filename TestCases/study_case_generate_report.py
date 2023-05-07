@@ -21,17 +21,17 @@ constants = {
     "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
     "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
     "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
-    "STEEL_PRICE": 67, #NOK per kg, ENTRA 2021
-    "STEEL_REUSE_PRICE": 100, #NOK per kg, ENTRA 2021
+    "STEEL_PRICE": 67.0, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 100.0, #NOK per kg, ENTRA 2021
     "PRICE_TRANSPORTATION": 0.3, #NOK per km per tonne, Grønland 2022 + Gran 2013
-    "STEEL_DENSITY": 7850, #kg/m^3 EUROCODE
+    "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "Sognsveien 17",
-    "Metric": "Price",
-    "Algorithms": ["bipartite", "greedy_plural"],
-    "Include transportation": True,
-    "Cite latitude": "59.94161606",
-    "Cite longitude": "10.72994518",
+    "Project name": "Campus development NTNU",
+    "Metric": "GWP",
+    "Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
+    "Include transportation": False,
+    "Cite latitude": "63.4154171",
+    "Cite longitude": "10.3994672",
     "Demand file location": r"./CSV/study_case_supply.csv",
     "Supply file location": r"./CSV/study_case_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
@@ -43,7 +43,7 @@ supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
 tiller = ["Tiller", "63.3590272", "10.3751236"]
 storen = ["Støren", "63.033639", "10.286356"]
-orkanger = ["Orkanger", "63.3000", "9.8468"]
+orkanger = ["Orkanger", "63.2999621", "9.8463679"]
 meraker = ["Meråker", "63.415312", "11.747262"]
 hell = ["Hell", "63.4452539", "10.8971079"]
 melhus = ["Melhus", "63.2897753", "10.2934154"]
@@ -59,10 +59,12 @@ materials = ["Timber", "Steel"]
 
 #GENERATE FILE
 #============
-supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
-hm.export_dataframe_to_csv(supply, r"" + "./CSV/study_case_supply.csv")
-hm.export_dataframe_to_csv(demand, r"" + "./CSV/study_case_demand.csv")
+#supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+#demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
+#hm.export_dataframe_to_csv(supply, r"" + "./CSV/study_case_supply.csv")
+#hm.export_dataframe_to_csv(demand, r"" + "./CSV/study_case_demand.csv")
+#supply.to_excel(r"" + "./CSV/study_case_supply.xlsx")
+#demand.to_excel(r"" + "./CSV/study_case_demand.xlsx")
 #========================================
 
 score_function_string = hm.generate_score_function_string(constants)

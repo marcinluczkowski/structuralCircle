@@ -199,7 +199,8 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
 
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     supply = pd.DataFrame()
-    supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
+    supply['Length'] = np.round((length_max - length_min) * np.random.random_sample(size = supply_count) + length_min, 2)
+    #supply['Length']
     supply['Area'] = 0 
     #TODO: Only works for squared sections! Not applicable for steel sections #
     supply['Moment of Inertia'] = 0
@@ -238,7 +239,7 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
     }
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()
-    demand['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = demand_count) + length_min
+    demand['Length'] = np.round((length_max - length_min) * np.random.random_sample(size = demand_count) + length_min, 2)
     demand['Area'] = 0
     #TODO: Only works for squared sections! Not applicable for steel sections
     demand['Moment of Inertia'] = 0

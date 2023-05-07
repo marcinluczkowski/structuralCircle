@@ -21,14 +21,14 @@ constants = {
     "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
     "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
     "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
-    "STEEL_PRICE": 67, #NOK per kg, ENTRA 2021
-    "STEEL_REUSE_PRICE": 100, #NOK per kg, ENTRA 2021
+    "STEEL_PRICE": 67.0, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 100.0, #NOK per kg, ENTRA 2021
     "PRICE_TRANSPORTATION": 0.3, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850, #kg/m^3 EUROCODE
     ########################
     "Project name": "Campussamling Hesthagen",
     "Metric": "GWP",
-    "Algorithms": ["greedy_single", "genetic"],
+    "Algorithms": ["greedy_single", "brute"],
     "Include transportation": False,
     "Cite latitude": "63.4154171",
     "Cite longitude": "10.3994672",
@@ -71,9 +71,9 @@ def generate_datasets(d_counts, s_counts):
 
 # ========== SCENARIO 1 ============== 
 var1 = 1
-d_counts = np.linspace(4, 12, num = 5).astype(int)
+d_counts = np.linspace(4, 10, num = 4).astype(int)
 s_counts = (d_counts * var1).astype(int)
-internal_runs = 50
+internal_runs = 20
 constraint_dict = constants["constraint_dict"]
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)

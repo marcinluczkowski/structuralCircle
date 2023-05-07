@@ -683,10 +683,6 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     # Save the PDF to a file
     pdf.output(filepath + projectname+"_report.pdf")
 
-    #Generate HTML maps of elements
-    plot.create_map_substitutions(supply,results,"supply",color="green",legend_text="Reused elements locations",save_name=r"map_reused_subs")
-    plot.create_map_substitutions(demand,results,"demand",color="red",legend_text="New manufactured elements locations",save_name=r"map_manufactured_subs")
-
 
 def generate_score_function_string(constants):
     metric = constants["Metric"]

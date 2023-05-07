@@ -670,7 +670,7 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
         pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
         
         pdf.set_y(y_information)
-        maps = ["Maps/map_reuse_subs.png", "Maps/map_manu_subs.png"]
+        maps = ["Maps/map_reused_subs.png", "Maps/map_manu_subs.png"]
         x = 7.5
         y = y_information + 60
         w = 95

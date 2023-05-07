@@ -79,7 +79,7 @@ run_string = hm.generate_run_string(constants)
 results = [] #list of results for each iteration
 
 hm.print_header("Starting Run")
-demand, supply = generate_datasets(100, 100)
+demand, supply = generate_datasets(500, 500)
 supply = hm.add_necessary_columns_pdf(supply, constants)
 demand = hm.add_necessary_columns_pdf(demand, constants)
 result = eval(run_string)

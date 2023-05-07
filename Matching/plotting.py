@@ -201,8 +201,12 @@ def create_map_substitutions(df, pdf_results, df_type, color, legend_text, save_
     elif df_type == "demand":
         matches = list(pdf_results["Pairs"][pdf_results["Pairs"].str.contains("N")])
         indexes = list(map(lambda x: x.replace("N", "D"), matches))
-    df = df.copy().loc[indexes]
-    create_map_dataframe(df, color, legend_text, save_name)
+    
+    if len(indexes) == 0:
+        create_empty_map(df, color, legend_text, save_name)
+    else:
+        df = df.copy().loc[indexes]
+        create_map_dataframe(df, color, legend_text, save_name)
 
 def create_map_dataframe(df, color, legend_text, save_name):
     df = df.copy()
@@ -254,6 +258,40 @@ def create_map_dataframe(df, color, legend_text, save_name):
     filepath = os.getcwd() + file_dir+f"{save_name}.html"
     driver.get("file:///" + filepath)
     driver.maximize_window()
-    time.sleep(5)
+    time.sleep(3)
+    driver.save_screenshot(file_dir+f"{save_name}.png")
+    driver.quit()
+
+def create_empty_map(df, color, legend_text, save_name):
+    df = df.copy()
+    cite_coords = (df.iloc[0]["Cite_lat"], df.iloc[0]["Cite_lon"])
+    m = folium.Map(location=[cite_coords[0], cite_coords[1]], control_scale=True)
+    folium.Marker([cite_coords[0], cite_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
+    # Create a custom legend with the marker colors and labels
+
+    legend_html = f'''
+        <div style="position: fixed; 
+                    top: 10px; right: 10px; width: 180px; height: 50px; 
+                    border:2px solid grey; z-index:9999; font-size:14px;
+                    background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
+        <i class="fa-solid fa-circle" style="color:{color};font-size=0.5px;"></i> {legend_text}<br>
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location  
+        </div>
+        '''
+
+    # Add the legend to the map
+    m.get_root().html.add_child(folium.Element(legend_html))
+    file_dir = r"./Local_files/GUI_files/Results/Maps/"
+    m.save(file_dir+f"{save_name}.html")
+    options = webdriver.ChromeOptions()
+    options.add_experimental_option("useAutomationExtension", False)
+    options.add_experimental_option("excludeSwitches",["enable-automation"])
+    options.add_argument("--headless")
+    driver = webdriver.Chrome(chrome_options=options)
+    #driver.get(r"./Results/map.html")
+    filepath = os.getcwd() + file_dir+f"{save_name}.html"
+    driver.get("file:///" + filepath)
+    driver.maximize_window()
+    time.sleep(3)
     driver.save_screenshot(file_dir+f"{save_name}.png")
     driver.quit()

@@ -126,7 +126,8 @@ def calculate():
         run_string = hm.generate_run_string(constants)
         
         result = eval(run_string)
-        simple_pairs = hm.extract_pairs_df(result)
+        result_label.config(text="Generating figures for report...", foreground="green")
+        root.update()
         pdf_results = hm.extract_results_df_pdf(result, constants)
 
         #Plotting, relevant for the pdf report
@@ -134,9 +135,14 @@ def calculate():
         plot.create_graph(supply, demand, target_column="Area", unit=r"[m$^2$]", number_of_intervals=5, fig_title = "", save_filename=r"area_plot.png")
         plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m$^4$]", number_of_intervals=5, fig_title = "", save_filename=r"inertia_plot.png")
         plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
-        plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Substitution locations", save_name=r"map_reuse_subs")
-        plot.create_map_substitutions(demand, pdf_results, "demand", color = "red", legend_text="Manufacturer locations", save_name=r"map_manu_subs")
-                
+
+        if constants["Include transportation"]:
+            plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Substitution locations", save_name=r"map_reused_subs")
+            plot.create_map_substitutions(demand, pdf_results, "demand", color = "red", legend_text="Manufacturer locations", save_name=r"map_manu_subs")
+        
+        result_label.config(text="Generating PDF report...", foreground="green")
+        root.update()
+        pdf_results = hm.extract_results_df_pdf(result, constants)        
         projectname=giveFileName()
         pdf = hm.generate_pdf_report(pdf_results,projectname,supply,demand, filepath = r"./Local_files/GUI_files/Results/")
         result_label.config(text="Report generated", foreground="green")
@@ -668,7 +674,7 @@ def open_reused_map():
         subprocess.call(["xdg-open", filepath])
 
 def open_manufactorer_map():
-    filename=r"map_manufactured_subs.html"
+    filename=r"map_manu_subs.html"
     filepath = r"./Local_files/GUI_files/Results/Maps/"+filename
 
     if platform.system()=="Windows":
@@ -720,7 +726,7 @@ def open_map():
         markedexist=True
         cancelbutton.place(relx=0.08,rely=0.1,anchor=tk.CENTER)
         resultmap_label.configure(text="Coordinates set to: " +latcordstring+" , " +loncordstring, foreground="green")
-        result_label.after(5000,clear_error_message_map)
+        result_label.after(3000,clear_error_message_map)
 
     # def left_click_event(coordinates_tuple):
     #     global markedexist

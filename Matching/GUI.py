@@ -16,6 +16,7 @@ import time
 import subprocess
 import platform
 import os
+import plotting as plot
 
 constants = {
     "TIMBER_GWP": 28.9,       # based on NEPD-3442-2053-EN
@@ -127,7 +128,15 @@ def calculate():
         result = eval(run_string)
         simple_pairs = hm.extract_pairs_df(result)
         pdf_results = hm.extract_results_df_pdf(result, constants)
-        
+
+        #Plotting, relevant for the pdf report
+        plot.create_graph(supply, demand, target_column="Length", unit=r"[m]", number_of_intervals=5, fig_title = "", save_filename=r"length_plot.png")
+        plot.create_graph(supply, demand, target_column="Area", unit=r"[m$^2$]", number_of_intervals=5, fig_title = "", save_filename=r"area_plot.png")
+        plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m$^4$]", number_of_intervals=5, fig_title = "", save_filename=r"inertia_plot.png")
+        plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
+        plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Substitution locations", save_name=r"map_reuse_subs")
+        plot.create_map_substitutions(demand, pdf_results, "demand", color = "red", legend_text="Manufacturer locations", save_name=r"map_manu_subs")
+                
         projectname=giveFileName()
         pdf = hm.generate_pdf_report(pdf_results,projectname,supply,demand, filepath = r"./Local_files/GUI_files/Results/")
         result_label.config(text="Report generated", foreground="green")

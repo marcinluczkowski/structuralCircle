@@ -29,7 +29,7 @@ constants = {
     ########################
     "Project name": "Campussamling Hesthagen",
     "Metric": "GWP",
-    "Algorithms": ["greedy_single", "genetic"],
+    "Algorithms": ["bipartite", "bipartite_plural", "bipartite_plural_multiple"],
     "Include transportation": False,
     "Cite latitude": "63.4154171",
     "Cite longitude": "10.3994672",
@@ -56,6 +56,7 @@ def generate_datasets(d_counts, s_counts):
     supply_coords.loc[len(supply_coords)] = storlien
     supply_coords.loc[len(supply_coords)] = hell
     supply_coords.loc[len(supply_coords)] = melhus
+    
 
 
     demand_coords = {"Steel": ("Norsk Stål Trondheim", "63.4384474", "10.40994"), "Timber": ("XL-BYGG Lade","63.4423683","10.4438836")}
@@ -72,10 +73,8 @@ def generate_datasets(d_counts, s_counts):
     return demand, supply
 
 # ========== SCENARIO 1 ============== 
-var1 = 1
-d_counts = np.linspace(4, 5, num = 2).astype(int)
-s_counts = (d_counts * var1).astype(int)
-internal_runs = 50
+d_counts = 1000
+s_counts = 1000
 constraint_dict = constants["constraint_dict"]
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
@@ -83,39 +82,6 @@ results = [] #list of results for each iteration
 
 hm.print_header("Starting Run")
 
-dict_made = False
-x_values = []
-for d, s in zip(d_counts, s_counts):
-    x_values.append(d+s)
-    #create data
-    temp_times = [[] for _ in range(len(constants["Algorithms"]))]
-    temp_scores = [[] for _ in range(len(constants["Algorithms"]))]
-    for i in range(internal_runs):
-        demand, supply = generate_datasets(d, s)
-        #Add necessary columns to run the algorithm
-        supply = hm.add_necessary_columns_pdf(supply, constants)
-        demand = hm.add_necessary_columns_pdf(demand, constants)
-        result = eval(run_string)
-        if dict_made == False:
-            time_dict = {res[list(res.keys())[0]] : [] for res in result}
-            score_dict = {res[list(res.keys())[0]] : [] for res in result}
-            dict_made = True
-        for i in range(len(result)):
-            temp_times[i].append(result[i]["Match object"].solution_time)
-            temp_scores[i].append(result[i]["Match object"].result)
-
-    mean_time = np.mean(temp_times, axis = 1)
-    mean_score = np.mean(temp_scores, axis = 1)
-    for i in range(len(list(time_dict.keys()))):
-        key = list(time_dict.keys())[i]
-        time_dict[key].append(mean_time[i])
-        score_dict[key].append(mean_score[i])
-
-
-
 
 #pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
 #pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
-
-plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", fix_overlapping=False, save_filename="genetic_results_time.png")
-plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kg CO2 equiv.]", title = "", fix_overlapping=False, save_filename="genetic_results_score.png")

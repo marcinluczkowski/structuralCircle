@@ -28,7 +28,7 @@ constants = {
     ########################
     "Project name": "Sognsveien 17",
     "Metric": "GWP",
-    "Algorithms": ["bipartite", "greedy_plural", "bipartite_plural", "bipartite_plural_multiple"],
+    "Algorithms": ["bipartite", "greedy_single"],
     "Include transportation": False,
     "Cite latitude": "59.94161606",
     "Cite longitude": "10.72994518",
@@ -67,13 +67,13 @@ def generate_datasets(d_counts, s_counts):
     demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
     supply.index = map(lambda text: "S" + str(text), supply.index)
     demand.index = map(lambda text: "D" + str(text), demand.index)
-    return supply, demand
+    return demand, supply
 
 
 # ========== SCENARIO 1 ============== 
 var1 = 1
 #d_counts = np.logspace(1, 3, num = 5).astype(int) Use this later when actually testing. Using the below for now to reduce time
-d_counts = np.linspace(10, 250, num = 4).astype(int)
+d_counts = np.linspace(10, 250, num = 2).astype(int)
 s_counts = (d_counts * var1).astype(int)
 
 results = [] #list of results for each iteration

@@ -94,12 +94,57 @@ class Matching():
         """Evaluates the driving distance for supply and demand elements"""
         if "include_transportation=True" in self.score_function_string:
             #Evaluating driving distance of supply elements
-            self.supply["Distance"] = self.supply.apply(lambda row: lca.calculate_driving_distance(row.Latitude,row.Longitude,row.Cite_lat,row.Cite_lon),axis=1)
-            #Evaluating driving distance of demand elements
-            
-            #NOTE: Keep this line. Needed if demand elements comes from different locations - especially if we have different materials
-            self.demand["Distance"] = self.demand.apply(lambda row: lca.calculate_driving_distance(row.Latitude,row.Longitude,row.Cite_lat,row.Cite_lon),axis=1)
 
+            self.supply["Distance"] = 0
+            self.demand["Distance"] = 0
+            coord_dict_supply = {}
+            coord_dict_demand = {}
+
+            #Unique coordinates of supply elements
+            for idx, row in self.supply.iterrows():
+                # create coordinate tuple
+                coord = (row['Latitude'], row['Longitude'])
+                # check if coordinate tuple already exists in dictionary
+                if coord in coord_dict_supply:
+                    # if it does, append index to list
+                    coord_dict_supply[coord].append(idx)
+                else:
+                    # if it doesn't, create new list with index
+                    coord_dict_supply[coord] = [idx]
+
+            #Unique coordinates of demand elements
+            for idx, row in self.demand.iterrows():
+                # create coordinate tuple
+                coord = (row['Latitude'], row['Longitude'])
+                # check if coordinate tuple already exists in dictionary
+                if coord in coord_dict_demand:
+                    # if it does, append index to list
+                    coord_dict_demand[coord].append(idx)
+                else:
+                    # if it doesn't, create new list with index
+                    coord_dict_demand[coord] = [idx]
+            
+            cite_lat = self.supply.iloc[0]["Cite_lat"]
+            cite_lon = self.supply.iloc[0]["Cite_lon"]
+            distances_supply = {key: 0 for key in coord_dict_supply.keys()}
+            distances_demand = {key: 0 for key in coord_dict_demand.keys()}
+
+            #API call for supply elements
+            for key in distances_supply:
+                distances_supply[key] = lca.calculate_driving_distance(key[0], key[1], cite_lat, cite_lon)
+            #API call for demand elements
+            for key in distances_demand:
+                distances_demand[key] = lca.calculate_driving_distance(key[0], key[1], cite_lat, cite_lon)
+            
+            #Add distances to supply column
+            for key, value in coord_dict_supply.items():
+                for idx in value:
+                    self.supply.loc[idx, ["Distance"]] = distances_supply[key]
+            
+            #Add distances to demand column
+            for key, value in coord_dict_demand.items():
+                for idx in value:
+                    self.demand.loc[idx, ["Distance"]] = distances_demand[key]
             #Assumes that all demand elements comes from the same location!!!
             #first_demand = self.demand.iloc[:1]
             #demand_distance = lca.calculate_driving_distance(first_demand["Supply_lat"], first_demand["Supply_lon"], first_demand["Demand_lat"], first_demand["Demand_lon"])
@@ -107,7 +152,7 @@ class Matching():
         else:
             self.supply["Distance"] = np.NaN
             self.demand["Distance"] = np.NaN
-
+        
     def evaluate_incidence(self):
         """Returns incidence matrix with true values where the element fit constraint criteria"""    
         # TODO optimize the evaluation.
@@ -604,49 +649,7 @@ class Matching():
             elif reward != 0:
                 fitness += 100/reward
             return fitness
-        
-        def fitness_func_matrix(solution, solution_idx):
-            #This fitness function is NOT any faster than the original version! 
-            #What takes so long time with genetic is the fact that the fitness-function is called extremely many times
-            """_summary_
-
-            Args:
-                solution (list): a list of integers representing the solution of the matching
-                solution_idx (int): the index of the solution
-
-            Returns:
-                float: the fitness of the solution
-            """
-            fitness = 0
-            reward = 0
-            penalty = -max_weight
-            solutions = np.array_split(solution, number_of_demand_elements)
-            product = np.multiply(solutions, weights_matrix_negative) 
-
-            #Checking how many supply elements that are assigned multiple times
-            duplicates = np.sum(solutions, axis = 0)[:-1] #Removing the last item since new elements can be assigned to several demand elements
-            num_supply_match_duplicates = np.count_nonzero(duplicates > 1)
-            if num_supply_match_duplicates > 1:
-                end = time.time()
-                print("Matrix time:", round(end-start, 10))
-                return -10e10
-            
-            #Checking how many NaN-matches are in the oslution
-            number_nan_match = np.count_nonzero(product == -1.0) #Number of matches that are not allowed 
-            fitness += number_nan_match * penalty
-
-            #Checking how many supply elements that are matched with each demand element
-            num_supply_matches_demand = np.sum(solutions, axis = 1)
-            num_no_supply_matches_demand = np.count_nonzero(num_supply_matches_demand < 1)
-            num_supply_matches_demand_above_one = np.count_nonzero(num_supply_matches_demand > 1)
-            fitness += num_no_supply_matches_demand * penalty + 10 * num_supply_matches_demand_above_one * penalty
-
-            #Adding rewards for matching reclaimed elements
-            reward += np.sum(product) + number_nan_match #Must add number_nan_match to get the sum of weights for possible matches
-            if reward != 0:
-                fitness += 100/reward
-            return fitness
-            
+           
         #Using pygad-module
         """Parameters are set by use of trial and error. These parameters have given a satisfactory solution"""
         ga_instance = pygad.GA(

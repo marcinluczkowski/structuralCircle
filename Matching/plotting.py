@@ -12,6 +12,46 @@ from selenium import webdriver
 import time
 import os
 
+color_palette = ["#EF8114", "#00509E", "#2E933C", "#CC2936", "#56203D"] #Orange, Blue, Green, Red, Purple 
+
+def plot_algorithm(alg_dict, x_values, xlabel, ylabel, fix_overlapping, title, save_filename):
+    plt.rcParams["font.family"] = "Times new roman"
+    fig, ax = plt.subplots(figsize = (7, 5))
+    values = list(alg_dict.values())
+    #Check if the plots are the same:
+    min_value = np.min(values)
+    if fix_overlapping:
+        styles = ["dashdot", "dashed", "dotted"]
+    else:
+        styles = ["solid"]
+    count = 0
+    color_count = 0
+    plotted_items = []
+    for key, items in alg_dict.items():
+        plt.plot(x_values, items, label = key, linestyle = styles[count], color = color_palette[color_count])
+        count += 1
+        color_count += 1
+        if count == len(styles):
+            count = 0
+        if color_count == len(color_palette):
+            color_count = 0
+        plotted_items.append(list(items))
+    plt.legend()
+    plt.title(title, fontsize = 16)
+    plt.xlabel(xlabel, fontsize=14)
+    plt.ylabel(ylabel, fontsize=14)
+    ax.set_facecolor("white")
+    ax.grid(visible=True, color="lightgrey", axis="y", zorder=1)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_color('#DDDDDD')
+    ax.tick_params(bottom=False, left=False)
+    ax.xaxis.get_major_locator().set_params(integer=True)
+    #plt.yscale('log')
+    plt.savefig(r"Local_files/Plots_overleaf/" + save_filename, dpi=300)
+
+
 def create_graph_specific_material(supply, demand, target_column, unit, number_of_intervals, material_string, fig_title, save_filename):
     requested_supply = supply.loc[supply["Material"] == material_string]
     requested_demand = demand.loc[demand["Material"] == material_string]
@@ -41,9 +81,9 @@ def plot_materials(supply, demand, fig_title, save_filename):
     plt.ylabel("Number of elements", fontsize=14)
     plt.title(fig_title)
     ax.yaxis.get_major_locator().set_params(integer=True)
-    width = 0.25
-    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color ="#ef8114")
-    bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = "#00509e")
+    width = 0.15
+    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color = color_palette[0])
+    bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = color_palette[1])
     ax.set_xticks(x, label, fontsize=12)
     ax.legend()
     ax.set_facecolor("white")
@@ -56,7 +96,7 @@ def plot_materials(supply, demand, fig_title, save_filename):
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=300)
+    plt.savefig(save_name, dpi=100)
 
 
 
@@ -81,7 +121,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     min_length_pre = np.min([np.min(supply_lengths), np.min(demand_lengths)])
     if min_length_pre < 1:
         num_zeros = count_leading_zeros(min_length_pre)
-        unit_change = num_zeros+1
+        unit_change = int(num_zeros+1)
         unit_pure = unit.replace("[", "").replace("]", "")
         unit_change_pure = r"10$^{-"+ str(unit_change) + r"}$"
         unit = f"x {unit_change_pure} [{unit_pure}]"
@@ -137,8 +177,8 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     plt.title(fig_title)
     ax.yaxis.get_major_locator().set_params(integer=True)
     width = 0.25
-    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color ="#ef8114")
-    bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = "#00509e")
+    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color = color_palette[0])
+    bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = color_palette[1])
     ax.set_xticks(x, label, fontsize=12)
     ax.legend()
     ax.set_facecolor("white")
@@ -151,7 +191,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=300)
+    plt.savefig(save_name, dpi=100)
 
 
 

@@ -56,7 +56,6 @@ def generate_datasets(d_counts, s_counts):
     supply_coords.loc[len(supply_coords)] = storlien
 
 
-    demand_coords = {"Steel": ("Norsk Stål Trondheim", "63.4384474", "10.40994"), "Timber": ("XL-BYGG Lade","63.4423683","10.4438836")}
 
 
     materials = ["Timber", "Steel"]
@@ -64,7 +63,7 @@ def generate_datasets(d_counts, s_counts):
     #GENERATE FILE
     #============
     supply = hm.create_random_data_supply_pdf_reports(supply_count = s_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
+    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials)
     supply.index = map(lambda text: "S" + str(text), supply.index)
     demand.index = map(lambda text: "D" + str(text), demand.index)
     return demand, supply

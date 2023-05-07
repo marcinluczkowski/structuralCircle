@@ -45,21 +45,18 @@ def generate_datasets(d_counts, s_counts):
     tiller = ["Tiller", "63.3590272", "10.3751236"]
     storen = ["Støren", "63.033639", "10.286356"]
     orkanger = ["Orkanger", "63.3000", "9.8468"]
-    storlien = ["Storlien", "63.3160", "12.1018"]
+    meraker = ["Meråker", "63.415312", "11.747262"]
     hell = ["Hell", "63.4452539", "10.8971079"]
     melhus = ["Melhus", "63.2897753", "10.2934154"]
+
 
 
     supply_coords.loc[len(supply_coords)] = tiller
     supply_coords.loc[len(supply_coords)] = storen
     supply_coords.loc[len(supply_coords)] = orkanger
-    supply_coords.loc[len(supply_coords)] = storlien
+    supply_coords.loc[len(supply_coords)] = meraker
     supply_coords.loc[len(supply_coords)] = hell
     supply_coords.loc[len(supply_coords)] = melhus
-    
-
-
-    demand_coords = {"Steel": ("Norsk Stål Trondheim", "63.4384474", "10.40994"), "Timber": ("XL-BYGG Lade","63.4423683","10.4438836")}
 
 
     materials = ["Timber", "Steel"]
@@ -67,7 +64,7 @@ def generate_datasets(d_counts, s_counts):
     #GENERATE FILE
     #============
     supply = hm.create_random_data_supply_pdf_reports(supply_count = s_counts, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, demand_coords = demand_coords)
+    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
     supply.index = map(lambda text: "S" + str(text), supply.index)
     demand.index = map(lambda text: "D" + str(text), demand.index)
     return demand, supply

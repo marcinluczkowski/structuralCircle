@@ -29,7 +29,7 @@ constants = {
     "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
     "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
     "STEEL_PRICE": 67.0, #NOK per kg, ENTRA 2021
-    "STEEL_REUSE_PRICE": 100.0, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 67.0, #NOK per kg, ENTRA 2021
     "PRICE_TRANSPORTATION": 0.3, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
@@ -147,10 +147,13 @@ def calculate():
         pdf = hm.generate_pdf_report(pdf_results,projectname,supply,demand, filepath = r"./Local_files/GUI_files/Results/")
         result_label.config(text="Report generated", foreground="green")
         result_label.after(10000, clear_error_message)
-        open_report_button.place(relx=0.5,rely=0.93,anchor="center")
+        open_report_button.place(relx=0.5,rely=0.90,anchor="center")
+        open_matching_button.place(relx=0.5,rely=0.94,anchor="center")
+
+
         if include_transportation_var.get() == 1:
-            open_reused_map_button.place(relx=0.37,rely=0.95,anchor="center")
-            open_manufactorer_map_button.place(relx=0.65,rely=0.95,anchor="center")
+            open_reused_map_button.place(relx=0.37,rely=0.94,anchor="center")
+            open_manufactorer_map_button.place(relx=0.65,rely=0.94,anchor="center")
 
 def updateconstants():
     constants["TIMBER_GWP"]=float(Timber_new_gwp_entry.get())
@@ -659,6 +662,21 @@ def open_report():
     else:
         subprocess.call(["xdg-open", filepath])
 
+def open_matching():
+    filename=filename_tk.get()
+    filename = r"./Local_files/GUI_files/Results/"+filename
+    print("filename",filename)
+    filepath=r""+filename
+
+    if platform.system()=="Windows":
+        current_directory = os.getcwd()
+        file = current_directory + filepath
+        os.startfile(file)
+    elif platform.system() == "Darwin":
+        subprocess.call(["open", filepath])
+    else:
+        subprocess.call(["xdg-open", filepath])
+
 def open_reused_map():
 
     filename=r"map_reused_subs.html"
@@ -709,8 +727,8 @@ def open_map():
         if markedexist:
             marker.delete()
         marker = map_widget.set_marker(coords[0], coords[1], text="Construction cite")
-        latcordstring=str(round(coords[0],4))
-        loncordstring=str(round(coords[1],4))
+        latcordstring=str(round(coords[0],5))
+        loncordstring=str(round(coords[1],5))
 
         latitude_coordinate.set(latcordstring)
         longitude_coordinate.set(loncordstring)
@@ -1000,6 +1018,8 @@ result_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
 calculate_button = ttk.Button(root, text="Calculate", command=calculate)
 calculate_button.place(relx=0.5,rely=0.8,anchor="center",relheight=0.05,relwidth=0.10)
 open_report_button = ttk.Button(root, text="Open report",style='Bold.TButton', command=open_report)
+open_matching_button = ttk.Button(root, text="Open matching",command=open_matching)
+
 open_reused_map_button = ttk.Button(root, text="Open reuse elements map", command=open_reused_map)
 open_manufactorer_map_button = ttk.Button(root, text="Open manufacturer elements map", command=open_manufactorer_map)
 
@@ -1008,5 +1028,5 @@ bold_style.configure('Bold.TButton', font=('TkDefaultFont', 12, 'bold'))
 
 
 result_label = ttk.Label(root, text="")
-result_label.place(relx=0.5,rely=0.88,anchor="center")
+result_label.place(relx=0.5,rely=0.86,anchor="center")
 root.mainloop()

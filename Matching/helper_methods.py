@@ -407,6 +407,16 @@ def print_genetic_solution(weights, best_solution, number_of_demand_elements):
     result["Matches from genetic"] = match_column
     return result
 
+
+def export_dataframe_to_xlsx(dataframe, file_location):
+    """Exports a dataframe to a csv file
+
+    Args:
+        dataframe (DataFrame): dataframe
+        file_location (string): location of the new file
+    """
+    dataframe.to_excel(file_location)
+
 def export_dataframe_to_csv(dataframe, file_location):
     """Exports a dataframe to a csv file
 
@@ -484,7 +494,7 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     # Create a new PDF object
 
     #Add CSV containing results to "Results"-folder
-    export_dataframe_to_csv(results["Pairs"], filepath + (projectname+"_substitutions.csv"))
+    export_dataframe_to_xlsx(results["Pairs"], filepath + (projectname+"_substitutions.xlsx"))
     if results["Transportation included"] == "No":
         transportation_included = False
     elif results["Transportation included"] == "Yes":

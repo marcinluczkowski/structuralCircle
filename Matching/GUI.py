@@ -57,6 +57,7 @@ def giveFileName():
     projectname=Projectname_entry.get()
     projectname=projectname.replace(" ","_")
     filename=projectname+"_report.pdf"
+    projectname_tk.set(projectname)
     filename_tk.set(filename)
     return projectname
 
@@ -650,9 +651,7 @@ def OpenUrl():
 def open_report():
     filename=filename_tk.get()
     filename = r"./Local_files/GUI_files/Results/"+filename
-    print("filename",filename)
     filepath=r""+filename
-
     if platform.system()=="Windows":
         current_directory = os.getcwd()
         file = current_directory + filepath
@@ -663,9 +662,10 @@ def open_report():
         subprocess.call(["xdg-open", filepath])
 
 def open_matching():
-    filename=filename_tk.get()
+    projectname=projectname_tk.get()
+    #TODO change to xlsx
+    filename=projectname+"_substitutions.csv"
     filename = r"./Local_files/GUI_files/Results/"+filename
-    print("filename",filename)
     filepath=r""+filename
 
     if platform.system()=="Windows":
@@ -834,6 +834,7 @@ supply_filepath_string=tk.StringVar()
 demand_filepath_string=tk.StringVar()
 matching_metric_var_constant=tk.StringVar()
 filename_tk=tk.StringVar()
+projectname_tk=tk.StringVar()
 latitude_coordinate=tk.StringVar()
 longitude_coordinate=tk.StringVar()
 
@@ -845,7 +846,7 @@ supply_file_label.place(relx=0.18, rely=0.21,anchor="center")
 supply_file_button = ttk.Button(root, text="Browse Supply File", command=browse_supply_file)
 supply_file_button.place(relx=0.18, rely=0.18,anchor="center")
 num_supply_label=tk.Label(root)
-num_supply_label.place(relx=0.18, rely=0.235,anchor="center")
+num_supply_label.place(relx=0.18, rely=0.245,anchor="center")
 
 #Create Demand file label browse button
 demand_file_label = tk.Label(root, text="No demand file selected",foreground="red")
@@ -853,7 +854,7 @@ demand_file_label.place(relx=0.80, rely=0.21,anchor="center")
 demand_file_button = ttk.Button(root, text="Browse Demand File", command=browse_demand_file)
 demand_file_button.place(relx=0.80, rely=0.18,anchor="center")
 num_demand_label=tk.Label(root)
-num_demand_label.place(relx=0.80, rely=0.235,anchor="center")
+num_demand_label.place(relx=0.80, rely=0.245,anchor="center")
 #Create construction_site detalils label
 Construction_site_label = tk.Label(root, text="Construction site details:",font=("Montserrat",12,"bold"),foreground="#000000")
 Construction_site_label.place(relx=0.5,rely=0.14,anchor="center")

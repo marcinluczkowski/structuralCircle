@@ -258,7 +258,7 @@ def create_map_dataframe(df, color, legend_text, save_name):
     filepath = os.getcwd() + file_dir+f"{save_name}.html"
     driver.get("file:///" + filepath)
     driver.maximize_window()
-    time.sleep(3)
+    time.sleep(5)
     driver.save_screenshot(file_dir+f"{save_name}.png")
     driver.quit()
 
@@ -292,6 +292,6 @@ def create_empty_map(df, color, legend_text, save_name):
     filepath = os.getcwd() + file_dir+f"{save_name}.html"
     driver.get("file:///" + filepath)
     driver.maximize_window()
-    time.sleep(3)
+    time.sleep(5)
     driver.save_screenshot(file_dir+f"{save_name}.png")
     driver.quit()

@@ -42,30 +42,33 @@ constants = {
 #===================
 supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
-tiller = ["Tiller", "63.3590272", "10.3751236"]
+#tiller = ["Tiller", "63.3590272", "10.3751236"]
+steinkjer = ["Steinkjer", "64.024861", "11.4891085"]
 storen = ["Støren", "63.033639", "10.286356"]
 orkanger = ["Orkanger", "63.3000", "9.8468"]
 meraker = ["Meråker", "63.415312", "11.747262"]
-hell = ["Hell", "63.4452539", "10.8971079"]
+oppdal = ["Oppdal", "62.5995283", "9.6884582"]
+
+#hell = ["Hell", "63.4452539", "10.8971079"]
 melhus = ["Melhus", "63.2897753", "10.2934154"]
 
-supply_coords.loc[len(supply_coords)] = tiller
+supply_coords.loc[len(supply_coords)] = steinkjer
 supply_coords.loc[len(supply_coords)] = storen
 supply_coords.loc[len(supply_coords)] = orkanger
 supply_coords.loc[len(supply_coords)] = meraker
-supply_coords.loc[len(supply_coords)] = hell
+supply_coords.loc[len(supply_coords)] = oppdal
 supply_coords.loc[len(supply_coords)] = melhus
 
 materials = ["Timber", "Steel"]
 
-#GENERATE FILE
-#============
-#supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-#demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
-#hm.export_dataframe_to_csv(supply, r"" + "./CSV/study_case_supply.csv")
-#hm.export_dataframe_to_csv(demand, r"" + "./CSV/study_case_demand.csv")
-#supply.to_excel(r"" + "./CSV/study_case_supply.xlsx")
-#demand.to_excel(r"" + "./CSV/study_case_demand.xlsx")
+# GENERATE FILE
+# ============
+supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
+hm.export_dataframe_to_csv(supply, r"" + "./CSV/study_case_supply_1000.csv")
+hm.export_dataframe_to_csv(demand, r"" + "./CSV/study_case_demand_1000.csv")
+supply.to_excel(r"" + "./CSV/study_case_supply_1000.xlsx")
+demand.to_excel(r"" + "./CSV/study_case_demand_1000.xlsx")
 #========================================
 
 #PRE-PROSESSING DATA

@@ -474,6 +474,29 @@ def count_matches(matches, algorithm):
     return matches.pivot_table(index = [algorithm], aggfunc = 'size')
 
 
+def format_float(num):
+    """
+    Formats a float into a string with comma-separated thousands.
+    Args:
+        num (float): The number to format.
+    Returns:
+        str: The formatted string.
+    """
+    if isinstance(num, float):
+        num = str(int(num)) if num.is_integer() else str(num)
+    else:
+        num = str(num)
+    if len(num) <= 3:
+        return num
+    result = []
+    for i, char in enumerate(reversed(num)):
+        if i % 3 == 0 and i != 0:
+            result.append(' ')
+        result.append(char)
+    return ''.join(reversed(result))
+
+
+
 def generate_pdf_report(results, projectname,supply,demand, filepath):
     def new_page():
         # Add a page to the PDF
@@ -556,7 +579,8 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     substitutions = round(results['Number of substitutions']/results['Number_demand']*100, 2)
     savings = round(results['Savings']/results['All new score']*100, 2)
     pdf.cell(50, 10, f"{results['Score']} {results['Unit']}", 1, 0, "C", True)
-    pdf.cell(50, 10, f"{results['All new score']} {results['Unit']}", 1, 0, "C", True)
+    #TODO check this line: better? change from kr to NOK?
+    pdf.cell(50, 10, f"{format_float(round(results['All new score'],0))} {results['Unit']}", 1, 0, "C", True)
     pdf.cell(25, 10, f"{savings}%", 1, 0, "C", True)
     pdf.cell(25, 10, f"{substitutions}%", 1, 1, "C", True) 
     pdf.ln()

@@ -19,6 +19,8 @@ import sys
 demand_json = sys.argv[1] # path to json demand file
 supply_json= sys.argv[2] # path to json supply file
 result_path = sys.argv[3] # path to write result file to
+constraints = sys.argv[4] # constraint string to use for the matching object
+method = sys.argv[5] # method to use for the matching object
 
 
 

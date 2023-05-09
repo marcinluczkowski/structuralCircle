@@ -3,16 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+
 using Grasshopper;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Special;
 using Grasshopper.Kernel.Types;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Serilog;
@@ -179,7 +175,7 @@ namespace FirstPythonComponent
             var errors = "";
             var results = "";
 
-            using (var process = Process.Start(psi))
+            using (Process process = Process.Start(psi))
             {
                 try
                 {

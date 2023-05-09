@@ -108,7 +108,7 @@ namespace FirstPythonComponent
                 .CreateLogger();
             Log.Information("The global logger has been configured");
 
-            var watch = new System.Diagnostics.Stopwatch();// Initiate a stopwatch
+            var watch = new Stopwatch();// Initiate a stopwatch
 
 
             // deserialize json and write to file

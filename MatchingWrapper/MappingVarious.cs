@@ -108,7 +108,7 @@ namespace FirstPythonComponent
                 Directory.SetCurrentDirectory(fileDir);
             }
             string inputDemandName = "demand_input.json"; string inputSupplyName = "supply_input.json"; string resultName = "output.json";
-            string pythonName = "mapping_beta.py";
+            string pythonName = "matching.py";
 
             // create logger
             var logPath = fileDir + "\\log.txt";

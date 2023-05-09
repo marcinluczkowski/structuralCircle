@@ -151,7 +151,7 @@ namespace FirstPythonComponent
             var psi = new ProcessStartInfo();
             //psi.FileName = @"C:\Users\sverremh\AppData\Local\Programs\Python\Python39\python.exe"; // OBS: This will only work for me. Should be more general
             var username = Environment.UserName;
-            psi.FileName = String.Format(@"C:\Users\{0}\AppData\Local\Programs\Python\Python39\python.exe", username);
+            psi.FileName = String.Format(@"C:\Users\{0}\AppData\Local\Programs\Python\Python39\python.exe", username); // Location of python.exe
             // 2) Provide script and arguments
             var script = fullPythonPath;
             var demandJson = Path.Combine(filePath, "Files", demandName);
@@ -192,6 +192,17 @@ namespace FirstPythonComponent
             }
             return new Tuple<string, string>(errors, results);
         }
+
+        public static string ExecutePython3(string filePath, string PythonPath, int methodNumber, string demandPath, string supplyPath)
+        {
+            // 1) create the process start info
+            var psi = new ProcessStartInfo();
+
+            // 2) 
+
+            return "Sucess";
+        }
+
 
         public static List<int?> DeserializeJson(string path)
         {

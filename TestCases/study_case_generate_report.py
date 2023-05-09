@@ -28,7 +28,7 @@ constants = {
     ########################
     "Project name": "Testing PDF",
     "Metric": "GWP",
-    "Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
+    "Algorithms": ["greedy_single"],
     "Include transportation": True,
     "Cite latitude": "63.4154171",
     "Cite longitude": "10.3994672",
@@ -59,8 +59,8 @@ materials = ["Timber", "Steel"]
 
 #GENERATE FILE
 #============
-supply = hm.create_random_data_supply_pdf_reports(supply_count = 100, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-demand = hm.create_random_data_demand_pdf_reports(demand_count = 100, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
+supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
 hm.export_dataframe_to_csv(supply, r"" + "./CSV/testing_pdf_supply.csv")
 hm.export_dataframe_to_csv(demand, r"" + "./CSV/testing_pdf_demand.csv")
 #supply.to_excel(r"" + "./CSV/study_case_supply.xlsx")
@@ -85,9 +85,9 @@ plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m$^
 plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
 
 if constants["Include transportation"]:
-    plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Substitution locations", save_name=r"map_reused_subs")
+    plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Substitution locations", save_name=r"map_reused_test_subs")
     plot.create_map_substitutions(demand, pdf_results, "demand", color = "red", legend_text="Manufacturer locations", save_name=r"map_manu_subs")
-hm.generate_pdf_report(pdf_results, constants["Project name"],supply,demand, filepath = r"./Local_files/GUI_files/Results/")
+#hm.generate_pdf_report(pdf_results, constants["Project name"],supply,demand, filepath = r"./Local_files/GUI_files/Results/")
 
 
 #TODO: Create map with the random supply locations and the cite location
@@ -108,6 +108,5 @@ hm.generate_pdf_report(pdf_results, constants["Project name"],supply,demand, fil
 #plot.create_map_substitutions(demand, pdf_results, "demand", color = "red", legend_text="Manufacturer locations", save_name=r"map_manu_subs")
 #pdf = hm.generate_pdf_report(pdf_results, projectname = constants["Project name"], filepath = r"./Local_files/GUI_files/Results/")
 #print(hm.extract_pairs_df(result))
-
 
 

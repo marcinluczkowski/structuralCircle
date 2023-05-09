@@ -81,11 +81,13 @@ def plot_materials(supply, demand, fig_title, save_filename):
     plt.ylabel("Number of elements", fontsize=14)
     plt.title(fig_title)
     ax.yaxis.get_major_locator().set_params(integer=True)
-    width = 0.15
+    width = 0.25
+    ax.set_xlim([x[0]-0.60, x[-1]+0.60])
     bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color = color_palette[0])
     bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = color_palette[1])
-    ax.set_xticks(x, label, fontsize=12)
-    ax.legend()
+    ax.set_xticks(x)
+    ax.set_xticklabels(label, fontsize=12)
+    ax.legend(loc = "upper right", bbox_to_anchor=(1.10, 1.12))
     ax.set_facecolor("white")
     ax.grid(visible=True, color="lightgrey", axis="y", zorder=1)
     #for position in ['top', 'bottom', 'left', 'right']:
@@ -95,6 +97,7 @@ def plot_materials(supply, demand, fig_title, save_filename):
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
+    # set x-axis limits to reduce space between groups of bars
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
     plt.savefig(save_name, dpi=100)
 
@@ -180,7 +183,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color = color_palette[0])
     bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = color_palette[1])
     ax.set_xticks(x, label, fontsize=12)
-    ax.legend()
+    ax.legend(loc = "upper right", bbox_to_anchor=(1.10, 1.12))
     ax.set_facecolor("white")
     ax.grid(visible=True, color="lightgrey", axis="y", zorder=1)
     #for position in ['top', 'bottom', 'left', 'right']:
@@ -222,7 +225,7 @@ def create_map_dataframe(df, color, legend_text, save_name):
         fit_view_coordinates.append(coord)
         marker_number = coordinates_dict[coord]
         location = [coord[0],coord[1]]
-        icon_html = f'<div style="font-size: 12px; font-weight: bold; color: white; background-color: {color}; border-radius: 50%; padding: 5px 5px; height: 25px; width: 25px; text-align: center; line-height: 1.5;">{marker_number}</div>'
+        icon_html = f'<div style="font-size: 12px; font-weight: bold; color: white; background-color: {color}; border-radius: 50%; padding: 10px 5px; height: 35px; width: 35px; text-align: center; line-height: 1.5;">{marker_number}</div>'
         folium.Marker(
         location=location,
         icon=folium.DivIcon(

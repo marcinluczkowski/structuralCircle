@@ -11,6 +11,7 @@ import folium
 from selenium import webdriver
 import time
 import os
+import platform
 
 color_palette = ["#EF8114", "#00509E", "#2E933C", "#CC2936", "#56203D"] #Orange, Blue, Green, Red, Purple 
 
@@ -249,18 +250,41 @@ def create_map_dataframe(df, color, legend_text, save_name):
     #map.show_in_browser()
     file_dir = r"./Local_files/GUI_files/Results/Maps/"
     m.save(file_dir+f"{save_name}.html")
-    options = webdriver.ChromeOptions()
-    options.add_experimental_option("useAutomationExtension", False)
-    options.add_experimental_option("excludeSwitches",["enable-automation"])
-    options.add_argument("--headless")
-    driver = webdriver.Chrome(chrome_options=options)
-    #driver.get(r"./Results/map.html")
-    filepath = os.getcwd() + file_dir+f"{save_name}.html"
-    driver.get("file:///" + filepath)
-    driver.maximize_window()
-    time.sleep(3)
-    driver.save_screenshot(file_dir+f"{save_name}.png")
-    driver.quit()
+    if platform.system()=="Windows":
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        driver = webdriver.Chrome(chrome_options=options)
+        #driver.get(r"./Results/map.html")
+        filepath = os.getcwd() + file_dir+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+    else:
+        print("Mac")
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        #options.add_experimental_option('detach', True)
+        driver = webdriver.Chrome(chrome_options=options)
+        filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(1)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+
+    #options.add_argument('--disable-gpu')
+    #options.add_argument('--window-size=1280,800')
+    #options.add_argument('--disable-dev-shm-usage')
 
 def create_empty_map(df, color, legend_text, save_name):
     df = df.copy()

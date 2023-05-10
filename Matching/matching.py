@@ -429,7 +429,6 @@ class Matching():
         weights_rows = list(self.weights.index)
         score_index = list(self.supply.columns).index("Score")
         any_cutoff_found = False
-
         #Iterate through matches
         for match_edge in bipartite_matching.edges():
             demand_name = match_edge.source_vertex["label"]
@@ -438,7 +437,7 @@ class Matching():
                 continue
             demand_index = weights_rows.index(demand_name)
             supply_index = weights_columns.index(supply_name)
-
+            
             new_score = supply_np[supply_index][score_index] - weights_np[demand_index][supply_index]
             if new_score > 0:
                 any_cutoff_found = True
@@ -469,7 +468,6 @@ class Matching():
             self.incidence = pd.DataFrame(incidence_np, index = weights_rows, columns = weights_columns)
             self.supply = pd.DataFrame(supply_np, index = weights_columns, columns = list(self.supply.columns))
             #Evaluate new possible matches and run Maximum Bipartite Matching once more
-
             self.add_graph()
             bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
 
@@ -519,7 +517,6 @@ class Matching():
         any_cutoff_found = True
         iteration = 0
         while any_cutoff_found:
-            #print(iteration)
             any_cutoff_found = False
             
             #Iterate through matches
@@ -568,7 +565,6 @@ class Matching():
                 bipartite_matching = ig.Graph.maximum_bipartite_matching(self.graph, weights=self.graph.es["label"])
             
             iteration += 1
-
         #Reset the dataframes to the originals without any cutoff
         self.supply = original_supply
         self.demand = original_demand

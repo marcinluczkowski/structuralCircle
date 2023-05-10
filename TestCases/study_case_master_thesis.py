@@ -27,14 +27,14 @@ constants = {
     "STEEL_DENSITY": 7850, #kg/m^3 EUROCODE
     ########################
     "Project name": "Campussamling Hesthagen",
-    "Metric": "Combined",
+    "Metric": "GWP",
     #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
-    "Algorithms": ["bipartite_plural"],
-    "Include transportation": True,
+    "Algorithms": ["greedy_single", "bipartite_plural"],
+    "Include transportation": False,
     "Cite latitude": "63.4154171",
     "Cite longitude": "10.3994672",
-    "Demand file location": r"./CSV/study_case_demand.csv",
-    "Supply file location": r"./CSV/study_case_supply.csv",
+    "Demand file location": r"./CSV/study_case_demand_1000.csv",
+    "Supply file location": r"./CSV/study_case_supply_1000.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -81,14 +81,14 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
-"""
+
 ########### STUDY CASE 2: GWP with transportation ###########
 constants["Include transportation"] = True
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
-
+"""
 ########### STUDY CASE 3: Combined with transportation ###########
 constants["Metric"] = "Combined"
 score_function_string = hm.generate_score_function_string(constants)

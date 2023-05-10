@@ -1,10 +1,15 @@
-﻿::===============================================================
+﻿@echo off 
+::===============================================================
 :: The below batch file runs the matching script from the terminal. 
 :: It also installs a new local virtual environmen for the folder we need
 :: and activates this
 ::===============================================================
 @echo off 
 
+:: Set the "PythonFiles" as the working directory.
+(echo "Current dir" & echo %cd% & echo ----)
+cd PythonFiles
+(echo"Dir after changing:" & echo %cd% & echo ------)
 :: Start the script by creating a virutal environment if it does not already exist.
 
 echo "This is running"
@@ -25,14 +30,13 @@ if not exist "matching_env" (
 	call matching_env\Scripts\activate.bat :: need to use call keyword 
 	
     echo "Installing necessary packages."
-	deactivate
 )
 
 	
 :: create a csv file with coordinates
-echo "Create a csv file with coordinates"
+(echo "======" & echo "Create a csv file with coordinates" & echo "======")
+echo %cd%
 python from_batch.py %1 %2
-
 
 
 

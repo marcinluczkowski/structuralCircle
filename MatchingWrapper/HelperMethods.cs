@@ -12,6 +12,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Serilog;
+using System.Reflection;
 
 namespace FirstPythonComponent
 {
@@ -148,8 +149,9 @@ namespace FirstPythonComponent
         public static Tuple<string, string> ExecutePython2(string filePath, string fullPythonPath, string methodName, string demandName, string supplyName, string resultName, string constraints)
         {
             // 1) Create Process Info
-            var psi = new ProcessStartInfo();
-            //psi.FileName = @"C:\Users\sverremh\AppData\Local\Programs\Python\Python39\python.exe"; // OBS: This will only work for me. Should be more general
+            ProcessStartInfo psi = new ProcessStartInfo();
+            
+            // create the arguments
             var username = Environment.UserName;
             psi.FileName = String.Format(@"C:\Users\{0}\AppData\Local\Programs\Python\Python39\python.exe", username); // Location of python.exe
             // 2) Provide script and arguments
@@ -193,14 +195,68 @@ namespace FirstPythonComponent
             return new Tuple<string, string>(errors, results);
         }
 
-        public static string ExecutePython3(string filePath, string PythonPath, int methodNumber, string demandPath, string supplyPath)
+        public static string ExecutePython3(string filePath = "", string PythonPath = "", int methodNumber = 0, string demandPath = "", string supplyPath  = "")
         {
             // 1) create the process start info
-            var psi = new ProcessStartInfo();
+            int exitCode;
+            var processInfo = new ProcessStartInfo();
 
-            // 2) 
+            var username = Environment.UserName; // Get the username of the current user.
+            var batchFileLocation = String.Format(@"C:\Users\{0}\AppData\Roaming\Grasshopper\Libraries\MatchingWrapper\PythonFiles\test.bat", username); // location to runfile
+            var localBatchLoc = "test.bat";
 
-            return "Sucess";
+            //processInfo.FileName = batchFileLocation; // Needed? Give the full script path to the process
+
+            // 2) Provide script and arguments
+
+            // create command line command
+            string argString = $"/c";
+            var args = new List<string> { batchFileLocation, "4", "3" };
+            foreach (string arg in args)
+            {
+                argString += (" " + arg + " ");
+            }
+
+            // 3) Process configuration
+            processInfo.FileName = "cmd.exe";
+            processInfo.Arguments = argString;
+                        
+            processInfo.UseShellExecute = false;
+            processInfo.CreateNoWindow = false;
+            processInfo.RedirectStandardError = true;
+            processInfo.RedirectStandardOutput = true;
+            // 4) Execute process and get output
+
+            // 4) Execute process and get output
+            var errors = "";
+            var results = "";
+
+            using (Process process = Process.Start(processInfo))
+            {
+                try
+                {
+                    var w = new System.Diagnostics.Stopwatch();
+                    Log.Information("Reading results from shell:"); w.Start();
+                    errors = process.StandardError.ReadToEnd();
+                    results = process.StandardOutput.ReadToEnd();
+                    exitCode = process.ExitCode;
+                    Log.Debug("Time used to read results from console: {time} ms", w.ElapsedMilliseconds); w.Reset();
+                }
+                catch (Exception e)
+                {
+                    exitCode = 1;
+                }
+            }
+            string msg;
+            if (exitCode == 0)
+            {
+                return results;
+            }
+            else
+            {
+                return results;
+            }
+            
         }
 
 

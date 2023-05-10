@@ -11,10 +11,12 @@
   </PropertyGroup>
 	
   <ItemGroup>
+    <None Remove="Resources\beta_wrap.png" />
     <None Remove="Resources\matching_logo.png" />
   </ItemGroup>
 	
   <ItemGroup>
+    <EmbeddedResource Include="Resources\beta_wrap.png" />
     <EmbeddedResource Include="Resources\matching_logo.png" />
   </ItemGroup>
   
@@ -27,13 +29,22 @@
   </ItemGroup>
   
   <ItemGroup>
-    <None Update="DevelopPythonFiles\mapping_beta.py">
+    <None Update="PythonFiles\firstPython.py">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="PythonFiles\from_batch.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="DevelopPythonFiles\mapping_graph.py">
+    <None Update="PythonFiles\mapping_beta.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="DevelopPythonFiles\python_json.py">
+    <None Update="PythonFiles\mapping_graph.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="PythonFiles\python_json.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="PythonFiles\test.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Properties\Settings.settings">
@@ -71,6 +82,7 @@
     <StartProgram>C:\Program Files\Rhino 7\System\Rhino.exe</StartProgram>
     <StartArguments></StartArguments>
     <StartAction>Program</StartAction>
+	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
 </Project>

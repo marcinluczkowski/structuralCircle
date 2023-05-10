@@ -31,8 +31,8 @@ namespace MatchingWrapper
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddTextParameter("DemandData", "demand", "DataTree with demand elements. First branch should be column names", GH_ParamAccess.tree); // 0
-            pManager.AddTextParameter("SupplyData", "supply", "DataTree with demand elements. First branch should be column names", GH_ParamAccess.tree); // 1
+            pManager.AddGenericParameter("DemandData", "demand", "DataTree with demand elements. First branch should be column names", GH_ParamAccess.tree); // 0
+            pManager.AddGenericParameter("SupplyData", "supply", "DataTree with demand elements. First branch should be column names", GH_ParamAccess.tree); // 1
             pManager.AddIntegerParameter("Method", "method", "Select the method to be used. Right click to see options", GH_ParamAccess.item, 1); //2
             pManager.AddTextParameter("MatchingConstraints", "constraints", "Specify constraints to use during mapping", GH_ParamAccess.list); // 3
             pManager.AddTextParameter("FixedElements", "fixEls", "", GH_ParamAccess.list); //4
@@ -42,6 +42,9 @@ namespace MatchingWrapper
             methodParam.AddNamedValue("GreedyP", 1);
             methodParam.AddNamedValue("Bipartite", 2);
             methodParam.AddNamedValue("MIP", 3);
+
+
+            pManager[4].Optional = true;
         }
 
         /// <summary>
@@ -87,14 +90,14 @@ namespace MatchingWrapper
             // set the file path for demand and supply
             string projectName = Assembly.GetCallingAssembly().GetName().Name;
             string username = Environment.UserName;
-            string existingDir = String.Format(@"C:\Users\{0}\AppData\Roaming\Grasshopper\Libraries\{1}", projectName, username);
-            var fileDir = Path.Combine(existingDir, "TempFiles"); // look for a folder with TempFiles. If not found, create it. 
+            string existingDir = String.Format(@"C:\Users\{0}\AppData\Roaming\Grasshopper\Libraries\MatchingWrapper", username);
+            var fileDir = Path.Combine(existingDir, "PythonFiles"); // look for a folder with TempFiles. If not found, create it. 
             if (!Directory.Exists(fileDir))
             {
-                var dir = Directory.CreateDirectory(fileDir);
-                Directory.SetCurrentDirectory(fileDir);
+                var dir = Directory.CreateDirectory(fileDir);                
             }
-
+            Directory.SetCurrentDirectory(fileDir);
+            
             string demandPath = "demand.json";
             string supplyPath = "supply.json";
             
@@ -104,10 +107,13 @@ namespace MatchingWrapper
             HelperMethods.JsonFromList(supplyList, fileDir, supplyPath);
 
             // Exectute matching.py script from terminal. This will probably only work as long as the user has all the methods available. Need to build a package?
-            
-            
-            HelperMethods.ExecutePython2()
 
+
+            string status = HelperMethods.ExecutePython3();
+            AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, status); // add the status about results
+            
+
+            // read the csv file created in batch/python
 
 
 
@@ -130,7 +136,7 @@ namespace MatchingWrapper
             get
             {
                 //You can add image files to your project resources and access them like this:
-                return Properties.Resources.matching_logo;
+                return Properties.Resources.beta_wrap;
                 
 
             }

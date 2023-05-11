@@ -495,9 +495,17 @@ def format_float(num):
         result.append(char)
     return ''.join(reversed(result))
 
+def generate_plots_pdf_report(supply, demand, pdf_results, transportation_included):
+    plot.create_graph(supply, demand, target_column="Length", unit=r"[m]", number_of_intervals=5, fig_title = "", save_filename=r"length_plot.png")
+    plot.create_graph(supply, demand, target_column="Area", unit=r"[m$^2$]", number_of_intervals=5, fig_title = "", save_filename=r"area_plot.png")
+    plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m$^4$]", number_of_intervals=5, fig_title = "", save_filename=r"inertia_plot.png")
+    plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
 
+    if transportation_included:
+        plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Substitution locations", save_name=r"map_reused_subs")
+        plot.create_map_substitutions(demand, pdf_results, "demand", color = "red", legend_text="Manufacturer locations", save_name=r"map_manu_subs")
 
-def generate_pdf_report(results, projectname,supply,demand, filepath):
+def generate_pdf_report(results, projectname, supply, demand, filepath):
     def new_page():
         # Add a page to the PDF
         pdf.add_page()
@@ -515,13 +523,15 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
         pdf.cell(0, 10, str(date.today().strftime("%B %d, %Y")), 0, 1, "R")
     # Create a new PDF object
     # Create a new PDF object
-
     #Add CSV containing results to "Results"-folder
     export_dataframe_to_xlsx(results["Pairs"], filepath + (projectname+"_substitutions.xlsx"))
     if results["Transportation included"] == "No":
         transportation_included = False
     elif results["Transportation included"] == "Yes":
         transportation_included = True
+
+    #Add relevant plots
+    generate_plots_pdf_report(supply, demand, results, transportation_included)
     pdf = FPDF()
     new_page()
     ##################PAGE 1##################

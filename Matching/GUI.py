@@ -131,16 +131,7 @@ def calculate():
         root.update()
         pdf_results = hm.extract_results_df_pdf(result, constants)
 
-        #Plotting, relevant for the pdf report
-        plot.create_graph(supply, demand, target_column="Length", unit=r"[m]", number_of_intervals=5, fig_title = "", save_filename=r"length_plot.png")
-        plot.create_graph(supply, demand, target_column="Area", unit=r"[m$^2$]", number_of_intervals=5, fig_title = "", save_filename=r"area_plot.png")
-        plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m$^4$]", number_of_intervals=5, fig_title = "", save_filename=r"inertia_plot.png")
-        plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
-
-        if constants["Include transportation"]:
-            plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Substitution locations", save_name=r"map_reused_subs")
-            plot.create_map_substitutions(demand, pdf_results, "demand", color = "red", legend_text="Manufacturer locations", save_name=r"map_manu_subs")
-        
+                
         result_label.config(text="Generating PDF report...", foreground="green")
         root.update()
         pdf_results = hm.extract_results_df_pdf(result, constants)        

@@ -41,20 +41,18 @@ constants = {
 def generate_datasets(d_counts, s_counts):
     supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
-    tiller = ["Tiller", "63.3590272", "10.3751236"]
+    steinkjer = ["Steinkjer", "64.024861", "11.4891085"]
     storen = ["Støren", "63.033639", "10.286356"]
     orkanger = ["Orkanger", "63.3000", "9.8468"]
     meraker = ["Meråker", "63.415312", "11.747262"]
-    hell = ["Hell", "63.4452539", "10.8971079"]
+    berkak = ["Berkåk", "62.8238946","9.9934341"]
     melhus = ["Melhus", "63.2897753", "10.2934154"]
 
-
-
-    supply_coords.loc[len(supply_coords)] = tiller
+    supply_coords.loc[len(supply_coords)] = steinkjer
     supply_coords.loc[len(supply_coords)] = storen
     supply_coords.loc[len(supply_coords)] = orkanger
     supply_coords.loc[len(supply_coords)] = meraker
-    supply_coords.loc[len(supply_coords)] = hell
+    supply_coords.loc[len(supply_coords)] = berkak
     supply_coords.loc[len(supply_coords)] = melhus
 
 

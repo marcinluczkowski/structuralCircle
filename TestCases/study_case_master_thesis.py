@@ -21,20 +21,20 @@ constants = {
     "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
     "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
     "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
-    "STEEL_PRICE": 67, #NOK per kg, ENTRA 2021
-    "STEEL_REUSE_PRICE": 100, #NOK per kg, ENTRA 2021
+    "STEEL_PRICE": 67.0, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 100.0, #NOK per kg, ENTRA 2021
     "PRICE_TRANSPORTATION": 0.3, #NOK per km per tonne, Grønland 2022 + Gran 2013
-    "STEEL_DENSITY": 7850, #kg/m^3 EUROCODE
+    "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
     "Project name": "Campussamling Hesthagen",
     "Metric": "GWP",
     #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
-    "Algorithms": ["greedy_single", "bipartite_plural"],
+    "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural", "milp"],
     "Include transportation": False,
     "Site latitude": "63.4154171",
     "Site longitude": "10.3994672",
-    "Demand file location": r"./CSV/study_case_demand_1000.csv",
-    "Supply file location": r"./CSV/study_case_supply_1000.csv",
+    "Demand file location": r"./CSV/master_thesis_study_case_demand.csv",
+    "Supply file location": r"./CSV/master_thesis_study_case_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -56,19 +56,19 @@ supply_coords.loc[len(supply_coords)] = meraker
 supply_coords.loc[len(supply_coords)] = berkak
 supply_coords.loc[len(supply_coords)] = melhus
 
-plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")
+
 materials = ["Timber", "Steel"]
-"""
+
 # GENERATE FILE
 # ============
 #supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
 #demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
-#hm.export_dataframe_to_csv(supply, r"" + "./CSV/study_case_supply_1000.csv")
-#hm.export_dataframe_to_csv(demand, r"" + "./CSV/study_case_demand_1000.csv")
-#supply.to_excel(r"" + "./CSV/study_case_supply_1000.xlsx")
-#demand.to_excel(r"" + "./CSV/study_case_demand_1000.xlsx")
+#hm.export_dataframe_to_csv(supply, r"" + "./CSV/master_thesis_study_case_supply.csv")
+#hm.export_dataframe_to_csv(demand, r"" + "./CSV/master_thesis_study_case_demand.csv")
+#supply.to_excel(r"" + "./CSV/master_thesis_study_case_supply.xlsx")
+#demand.to_excel(r"" + "./CSV/master_thesis_study_case_demand.xlsx")
 #========================================
-
+"""
 #PRE-PROSESSING DATA
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
@@ -81,21 +81,27 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
-
+hm.generate_pdf_report(pdf_results_case1, "Study Case 1", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+"""
+"""
 ########### STUDY CASE 2: GWP with transportation ###########
 constants["Include transportation"] = True
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
-result_case1 = eval(run_string)
-pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
+result_case2 = eval(run_string)
+pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
+hm.generate_pdf_report(pdf_results_case2, "Study Case 2", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
 ########### STUDY CASE 3: Combined with transportation ###########
 constants["Metric"] = "Combined"
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
-result_case1 = eval(run_string)
-pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
+result_case3 = eval(run_string)
+pdf_results_case3 = hm.extract_results_df_pdf(result_case3, constants)
+hm.generate_pdf_report(pdf_results_case3, "Study Case 3", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
 
-#TODO: Create map with the random supply locations and the cite location
 """
+
+#PLOTS FOR OVERLEAF
+#plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")

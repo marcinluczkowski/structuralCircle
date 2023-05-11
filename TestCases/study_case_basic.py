@@ -30,8 +30,8 @@ constants = {
     "Metric": "GWP",
     "Algorithms": ["bipartite", "greedy_plural", "bipartite_plural", "bipartite_plural_multiple"],
     "Include transportation": False,
-    "Cite latitude": "59.94161606",
-    "Cite longitude": "10.72994518",
+    "Site latitude": "59.94161606",
+    "Site longitude": "10.72994518",
     #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
     #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
     "Demand file location": r"./CSV/basic_study_demand.csv",
@@ -54,7 +54,6 @@ supply_coords.loc[len(supply_coords)] = orkanger
 supply_coords.loc[len(supply_coords)] = storlien
 
 
-demand_coords = {"Steel": ("Norsk Stål Trondheim", "63.4384474", "10.40994"), "Timber": ("XL-BYGG Lade","63.4423683","10.4438836")}
 
 
 materials = ["Timber", "Steel"]
@@ -62,7 +61,7 @@ materials = ["Timber", "Steel"]
 #GENERATE FILE
 #============
 supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
+demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials)
 hm.export_dataframe_to_csv(supply, r"" + "./CSV/basic_study_supply.csv")
 hm.export_dataframe_to_csv(demand, r"" + "./CSV/basic_study_demand.csv")
 #========================================

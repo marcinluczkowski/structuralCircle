@@ -69,15 +69,15 @@ def extract_results_df_pdf(dict_list, constants):
 
     results_dict.update(constants)
     if metric == "GWP":
-        results_dict["Unit"] = "kg CO2 equivalents"
-        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kg C02 equivalents"), "GWP reused timber": (constants["TIMBER_REUSE_GWP"], "kg C02 equivalents"), "GWP new steel": (constants["STEEL_GWP"], "kg C02 equivalents"), "GWP reused steel": (constants["STEEL_REUSE_GWP"], "kg C02 equivalents")})
+        results_dict["Unit"] = "kgCO2eq"
+        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq"), "GWP reused timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq"), "GWP reused steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq")})
     elif metric == "Price":
-        results_dict["Unit"] = "kr"
-        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "kr/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "kr/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "kr/m^3"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "kr/m^3")})
+        results_dict["Unit"] = "NOK"
+        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "NOK/m^3"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "NOK/m^3")})
     elif metric == "Combined":
-        results_dict["Unit"] = "kr"
-        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kg C02 equivalents"), "GWP reused timber": (constants["TIMBER_REUSE_GWP"], "kg C02 equivalents"), "GWP new steel": (constants["STEEL_GWP"], "kg C02 equivalents"), "GWP reused steel": (constants["STEEL_REUSE_GWP"], "kg C02 equivalents"), "Valuation of GWP": (constants["VALUATION_GWP"], "kr/kg C02 equivalents")})
-        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "kr/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "kr/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "kr/m^3"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "kr/m^3")})
+        results_dict["Unit"] = "NOK"
+        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq"), "GWP reused timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq"), "GWP reused steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq"), "Valuation of GWP": (constants["VALUATION_GWP"], "NOK/kgCO2eq")}) 
+        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "NOK/m^3"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "NOK/m^3")})
     results_dict["Savings"] =  round(results_dict["All new score"] - results_dict["Score"], 2)
     results_dict["Number_reused"] = len(match_object.supply) - len(match_object.demand)
     results_dict["Number_demand"] = len(match_object.demand)
@@ -89,11 +89,11 @@ def extract_results_df_pdf(dict_list, constants):
         results_dict["Transportation percentage"] = round(match_object.result_transport/results_dict["Score"]*100, 2)
         results_dict["Transportation all new"] = round(all_new_transport, 2)
         if metric == "GWP":
-            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne")})
+            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"g/tonne/km")})
         elif metric == "Combined":
-            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"kg/m^3 per tonne"), "Price of transportation": (constants["PRICE_TRANSPORTATION"], "kr/km/tonne")})
+            used_constants.update({"GWP transportation": (constants["TRANSPORT_GWP"],"g/tonne/km"), "Price of transportation": (constants["PRICE_TRANSPORTATION"], "NOK/tonne/km")})
         elif metric == "Price":
-            used_constants.update({"Price of transportation": (constants["PRICE_TRANSPORTATION"], "kr/km/tonne")})                 
+            used_constants.update({"Price of transportation": (constants["PRICE_TRANSPORTATION"], "NOK/tonne/km")})                 
     else:
         results_dict["Transportation included"] = "No"
         results_dict["Transportation percentage"] = 0
@@ -199,7 +199,8 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
 
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     supply = pd.DataFrame()
-    supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
+    supply['Length'] = np.round((length_max - length_min) * np.random.random_sample(size = supply_count) + length_min, 2)
+    #supply['Length']
     supply['Area'] = 0 
     #TODO: Only works for squared sections! Not applicable for steel sections #
     supply['Moment of Inertia'] = 0
@@ -227,7 +228,7 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
 
     return supply
 
-def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, area_min, area_max, materials, demand_coords):
+def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, area_min, area_max, materials):
     steel_cs = {"IPE100": (1.03e-3, 1.71e-6),
                 "IPE140": (1.64e-3, 5.41e-6),
                 "IPE160": (2.01e-3, 8.69e-6),
@@ -238,7 +239,7 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
     }
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()
-    demand['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = demand_count) + length_min
+    demand['Length'] = np.round((length_max - length_min) * np.random.random_sample(size = demand_count) + length_min, 2)
     demand['Area'] = 0
     #TODO: Only works for squared sections! Not applicable for steel sections
     demand['Moment of Inertia'] = 0
@@ -258,11 +259,6 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
             demand.loc[row, "Area"] = steel_cs[cs][0]
             demand.loc[row, "Moment of Inertia"] = steel_cs[cs][1]
         demand.loc[row, "Material"] = material
-        provider = demand_coords[material]
-        demand.loc[row,"Manufacturer"]= provider[0]
-        demand.loc[row,"Latitude"]=provider[1]
-        demand.loc[row,"Longitude"]=provider[2]
-    #demand.index = map(lambda text: 'D' + str(text), demand.index)
 
     return demand
 
@@ -376,8 +372,9 @@ def extract_genetic_solution(weights, best_solution, number_of_demand_elements):
             if len(index) > 1:
                 logging.info("OBS: Multiple supply matched with one demand")
         else:
+            weight_match = weights.loc[f"D{i}"][index[0]]
             match = weight_cols[index[0]]
-            if match == "N":
+            if match == "N" or np.isnan(weight_match): #New element is assigned if match is "N" or if the match is not allowed
                 match = f"N{i}"
         match_column.append(match)
     result["Matches from genetic"] = match_column
@@ -410,6 +407,16 @@ def print_genetic_solution(weights, best_solution, number_of_demand_elements):
     result["Matches from genetic"] = match_column
     return result
 
+
+def export_dataframe_to_xlsx(dataframe, file_location):
+    """Exports a dataframe to a csv file
+
+    Args:
+        dataframe (DataFrame): dataframe
+        file_location (string): location of the new file
+    """
+    dataframe.to_excel(file_location)
+
 def export_dataframe_to_csv(dataframe, file_location):
     """Exports a dataframe to a csv file
 
@@ -426,6 +433,8 @@ def import_dataframe_from_file(file_location, index_replacer):
         dataframe = pd.read_csv(file_location)
     if "Column1" in list(dataframe.columns):
         dataframe.drop(columns=["Column1"], inplace = True)
+    if "Unnamed: 0" in list(dataframe.columns):
+        dataframe.drop(columns=["Unnamed: 0"], inplace = True)
     dataframe.index = map(lambda text: index_replacer + str(text), dataframe.index)
     new_columns = {col: col.split('[')[0].strip() for col in dataframe.columns}
     dataframe = dataframe.rename(columns = new_columns)
@@ -467,7 +476,38 @@ def count_matches(matches, algorithm):
     return matches.pivot_table(index = [algorithm], aggfunc = 'size')
 
 
-def generate_pdf_report(results, projectname,supply,demand, filepath):
+def format_float(num):
+    """
+    Formats a float into a string with comma-separated thousands.
+    Args:
+        num (float): The number to format.
+    Returns:
+        str: The formatted string.
+    """
+    if isinstance(num, float):
+        num = str(int(num)) if num.is_integer() else str(num)
+    else:
+        num = str(num)
+    if len(num) <= 3:
+        return num
+    result = []
+    for i, char in enumerate(reversed(num)):
+        if i % 3 == 0 and i != 0:
+            result.append(' ')
+        result.append(char)
+    return ''.join(reversed(result))
+
+def generate_plots_pdf_report(supply, demand, pdf_results, transportation_included):
+    plot.create_graph(supply, demand, target_column="Length", unit=r"[m]", number_of_intervals=5, fig_title = "", save_filename=r"length_plot.png")
+    plot.create_graph(supply, demand, target_column="Area", unit=r"[m$^2$]", number_of_intervals=5, fig_title = "", save_filename=r"area_plot.png")
+    plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m$^4$]", number_of_intervals=5, fig_title = "", save_filename=r"inertia_plot.png")
+    plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
+
+    if transportation_included:
+        plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Substitution locations", save_name=r"map_reused_subs")
+        plot.create_map_substitutions(demand, pdf_results, "demand", color = "red", legend_text="Manufacturer locations", save_name=r"map_manu_subs")
+
+def generate_pdf_report(results, projectname, supply, demand, filepath):
     def new_page():
         # Add a page to the PDF
         pdf.add_page()
@@ -485,13 +525,15 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
         pdf.cell(0, 10, str(date.today().strftime("%B %d, %Y")), 0, 1, "R")
     # Create a new PDF object
     # Create a new PDF object
-
     #Add CSV containing results to "Results"-folder
-    export_dataframe_to_csv(results["Pairs"], filepath + (projectname+"_substitutions.csv"))
+    export_dataframe_to_xlsx(results["Pairs"], filepath + (projectname+"_substitutions.xlsx"))
     if results["Transportation included"] == "No":
         transportation_included = False
     elif results["Transportation included"] == "Yes":
         transportation_included = True
+
+    #Add relevant plots
+    generate_plots_pdf_report(supply, demand, results, transportation_included)
     pdf = FPDF()
     new_page()
     ##################PAGE 1##################
@@ -519,7 +561,9 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     pdf.set_font("Times", size=12, style = "B")
     pdf.cell(55, 10, f"Construction site located at: ", 0, 0)
     pdf.set_font("Times", size=12, style = "")
-    pdf.cell(0, 10, f"{results['Cite latitude']}, {results['Cite longitude']}", 0, 1)
+    site_lat = round(float(results['Site latitude']), 4)
+    site_lon = round(float(results['Site longitude']), 4)
+    pdf.cell(0, 10, f"{site_lat}, {site_lon}", 0, 1)
 
 
     # Set the font and size for the tables
@@ -527,7 +571,7 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     pdf.set_left_margin(15)
     table_x = (pdf.w - 180) / 2
     table_y1 = 75
-    table_y2 = 160
+    table_y2 = 165
 
     #Summary
     ######################
@@ -544,10 +588,13 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     pdf.cell(25, 10, "Savings", 1, 0, "C", True)
     pdf.cell(25, 10, "Substitutions", 1, 1, "C", True)
     pdf.set_fill_color(247, 247, 247)
+    score = format_float(round(results['Score'],0))
+    new_score = format_float(round(results['All new score'],0))
     substitutions = round(results['Number of substitutions']/results['Number_demand']*100, 2)
     savings = round(results['Savings']/results['All new score']*100, 2)
-    pdf.cell(50, 10, f"{results['Score']} {results['Unit']}", 1, 0, "C", True)
-    pdf.cell(50, 10, f"{results['All new score']} {results['Unit']}", 1, 0, "C", True)
+    pdf.cell(50, 10, f"{score} {results['Unit']}", 1, 0, "C", True)
+    #TODO check this line: better? change from kr to NOK?
+    pdf.cell(50, 10, f"{new_score} {results['Unit']}", 1, 0, "C", True)
     pdf.cell(25, 10, f"{savings}%", 1, 0, "C", True)
     pdf.cell(25, 10, f"{substitutions}%", 1, 1, "C", True) 
     pdf.ln()
@@ -556,7 +603,7 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     pdf.set_left_margin(15)
     pdf.set_y(110)
     pdf.set_font("Times", size=12, style ="")
-    summary = f"The '{results['Algorithm']}' algorithm yields the best results, substituting {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {results['Score']} {results['Unit']} is achieved. For comparison, a score of {results['All new score']} {results['Unit']} would have been obtained by employing exclusively new materials. This results in a total saving of {savings}%."
+    summary = f"The '{results['Algorithm']}' algorithm yields the best results, substituting {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {score} {results['Unit']} is achieved. For comparison, a score of {new_score} {results['Unit']} would have been obtained by employing exclusively new materials. This results in a total saving of {savings}%."
     if transportation_included:
         summary += f" Note that impacts of transporting the materials to the construction site is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
     else:
@@ -612,15 +659,41 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     pdf.cell(30, 10, f"Demand", 1, 0, "C", True)
     pdf.cell(80, 10, f"{results['Demand file location'].split('/')[-1]}", 1, 0, "C", True)
     pdf.cell(40, 10, f"{results['Number_demand']}", 1, 0, "C", True)
+
+    pdf.set_left_margin(15)
+    pdf.set_y(80)
+    pdf.set_font("Times", size=12, style ="")
+    summary_info = f"The files contains {results['Number_reused']} reuse elements and {results['Number_demand']} demand elements. The graphs below depicts some of the properties of the elements, including length, area, moment of inertia and the material distribution."
+    pdf.multi_cell(pdf.w-2*15,8, summary_info, 0, "L", False)
+
+    #Images, 6 of them
+    plots = ["Plots/material_plot.png", "Plots/length_plot.png", "Plots/area_plot.png", "Plots/inertia_plot.png"]
+    x = 7.5
+    y = 102.5
+    w = 95
+    for i in range (len(plots)):
+        pdf.image(r"" + f"./Local_files/GUI_files/Results/{plots[i]}", x, y, w)
+        print("Included", plots[i])
+        if i % 2 == 1:
+            y += 72.5
+            x = 7.5
+        if i % 2 == 0:
+            x += 100
+    
+    
+
+    #pdf.set_y(110)
+    
     
     #TODO: Add more information about the datasets. Some histograms and graphs!
 
     ##################PAGE 2.5 (Transportation)##################
     new_page()
     y_information = 30
+
     if transportation_included: #Add a page with information about only transportation
         pdf.set_left_margin(15)
-        pdf.set_y(30)
+        pdf.set_y(y_information) #prior 30
         pdf.set_font("Times", size=16, style ="")
         pdf.multi_cell(160, 7, txt="Impact of transportation")
         pdf.set_font("Times", size=10)
@@ -632,20 +705,37 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
         pdf.cell(50, 10, "Percentage of total score", 1, 0, "C", True)
         pdf.cell(50, 10, "Transportation all new", 1, 1, "C", True)
         pdf.set_fill_color(247, 247, 247)
-        pdf.cell(50, 10, f"{results['Transportation score']} {results['Unit']}", 1, 0, "C", True)
+        transportation_score = format_float(round(results['Transportation score'], 0))
+        new_transportation_score = format_float(round(results['Transportation all new'], 0))
+        pdf.cell(50, 10, f"{transportation_score} {results['Unit']}", 1, 0, "C", True)
         pdf.cell(50, 10, f"{results['Transportation percentage']}%", 1, 0, "C", True)
-        pdf.cell(50, 10, f"{results['Transportation all new']} {results['Unit']}", 1, 1, "C", True)
+        pdf.cell(50, 10, f"{new_transportation_score} {results['Unit']}", 1, 1, "C", True)
         pdf.ln()
-
+        y_information += 35
         #Short text summary
         pdf.set_left_margin(15)
-        pdf.set_y(65)
+        pdf.set_y(y_information)
         pdf.set_font("Times", size=12, style ="")
-        summary = f"All calculations in this report take impacts of transportation of the materials to the construction site into consideration. Transportation itself is responsible for {results['Transportation score']} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {results['Score']} {results['Unit']}. For comparison, the transportation impact for exclusively using new materials would have been {results['Transportation all new']} {results['Unit']}."
+        summary = f"All calculations in this report take impacts of transportation of the materials to the construction site into consideration. Transportation itself is responsible for {transportation_score} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {score} {results['Unit']}. For comparison, the transportation impact for exclusively using new materials would have been {new_transportation_score} {results['Unit']}. Two maps are included to show the location of the suggested substitutions of reused elements and the manufacturer locations where new elements can be obtained. The numbers on the maps indicate the number of elements present at each location."
         
         pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
-        y_information = 100
+        
+        pdf.set_y(y_information)
+        maps = ["Maps/map_reused_subs.png", "Maps/map_manu_subs.png"]
+        x = 7.5
+        y = y_information + 60
+        w = 95
+        for i in range (len(maps)):
+            pdf.image(r"" + f"./Local_files/GUI_files/Results/{maps[i]}", x, y, w)
+            print("Included", maps[i])
+            if i % 2 == 1:
+                y += 75
+                x = 7.5
+            if i % 2 == 0:
+                x += 100
 
+        new_page() #Create a new page for the performance
+    y_information = 30
     pdf.set_left_margin(15)
     pdf.set_y(y_information)
     pdf.set_font("Times", size=16, style ="")
@@ -665,8 +755,9 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     print_names = ""
     for i in range(len(performance)):
         y_information += 10
+        performance_score = format_float(round(performance.iloc[i]['Score'], 0)) 
         pdf.cell(75, 10, f"{performance.iloc[i]['Names']}", 1, 0, "C", True)
-        pdf.cell(51, 10, f"{performance.iloc[i]['Score']} {results['Unit']}", 1, 0, "C", True)
+        pdf.cell(51, 10, f"{performance_score} {results['Unit']}", 1, 0, "C", True)
         pdf.cell(25, 10, f"{performance.iloc[i]['Sub_percent']}%", 1, 0, "C", True)
         pdf.cell(25, 10, f"{performance.iloc[i]['Time']}s", 1, 0, "C", True)
         if len(performance) == 1:
@@ -688,12 +779,6 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     # Save the PDF to a file
     pdf.output(filepath + projectname+"_report.pdf")
 
-    #Generate HTML maps of elements
-    plot.create_map_substitutions(supply,results,"supply",color="green",legend_text="Reused elements locations",save_name=r"map_reused_subs")
-    plot.create_map_substitutions(demand,results,"demand",color="red",legend_text="New manufactured elements locations",save_name=r"map_manufactured_subs")
-
-
-
 
 def generate_score_function_string(constants):
     metric = constants["Metric"]
@@ -706,13 +791,53 @@ def generate_score_function_string(constants):
         score_function_string = f"@lca.calculate_price(length=Length, area =Area, include_transportation = {transportation}, distance = Distance, price = Price, density = Density, price_transport= {constants['PRICE_TRANSPORTATION']})"
     return score_function_string
 
+def fill_closest_manufacturer(dataframe,constants):
+    manufacturers_df=pd.read_excel(r"./CSV/manufacturers_locations.xlsx")
+
+    shortest_distance_tree=10**10
+    shortest_distance__steel=10**10
+
+    shortest_tree={
+        "Manufacturer": "place",
+        "Latitude": "XX.XXX",
+        "Longitude":"YY.YYY"
+    }
+    shortest_steel={
+        "Manufacturer": "place",
+        "Latitude": "XX.XXX",
+        "Longitude":"YY.YYY"
+    }
+    for index,row in manufacturers_df.iterrows():
+        driving_distance=lca.calculate_driving_distance(str(row["Latitude"]),str(row["Longitude"]),constants["Site latitude"],constants["Site longitude"])
+
+        if str(row["Material"])=="Timber" and driving_distance<shortest_distance_tree:
+            shortest_distance_tree=driving_distance
+            shortest_tree["Manufacturer"]=str(row["Manufacturer"])
+            shortest_tree["Latitude"]=row["Latitude"]
+            shortest_tree["Longitude"]=row["Longitude"]
+
+        elif str(row["Material"])=="Steel" and driving_distance<shortest_distance__steel:
+            shortest_distance__steel=driving_distance
+            shortest_steel["Manufacturer"]=str(row["Manufacturer"])
+            shortest_steel["Latitude"]=str(row["Latitude"])
+            shortest_steel["Longitude"]=str(row["Longitude"])
+
+    mask_tree=(dataframe["Material"]=="Timber") & (dataframe["Manufacturer"] == 0)
+    dataframe.loc[mask_tree,["Manufacturer","Latitude","Longitude"]]=[shortest_tree["Manufacturer"],shortest_tree["Latitude"],shortest_tree["Longitude"]]
+    mask_steel=(dataframe["Material"]=="Steel") & (dataframe["Manufacturer"] == 0)
+    dataframe.loc[mask_steel,["Manufacturer","Latitude","Longitude"]]=[shortest_steel["Manufacturer"],shortest_steel["Latitude"],shortest_steel["Longitude"]]
+    
+    dataframe = dataframe.astype({'Latitude': float, 'Longitude': float})
+
+    return dataframe
+
 def add_necessary_columns_pdf(dataframe, constants):
     dataframe = dataframe.copy()
     metric = constants["Metric"]
     element_type = list(dataframe.index)[0][:1]
     dataframe["Density"] = 0
-    dataframe["Cite_lat"] = constants["Cite latitude"]
-    dataframe["Cite_lon"] = constants["Cite longitude"]
+    dataframe["Site_lat"] = constants["Site latitude"]
+    dataframe["Site_lon"] = constants["Site longitude"]
     if metric == "GWP":
         dataframe["Gwp_factor"] = 0 
     elif metric == "Combined":
@@ -720,6 +845,10 @@ def add_necessary_columns_pdf(dataframe, constants):
         dataframe["Price"] = 0
     elif metric == "Price":
         dataframe["Price"] = 0
+
+    #If dataframe is demand, fill in the location and corresponding coordinates and to the closet manufacturer.
+    if element_type=="D" and constants["Include transportation"]:
+        dataframe=fill_closest_manufacturer(dataframe,constants)
 
     for row in range(len(dataframe)):
         material = dataframe.iloc[row][dataframe.columns.get_loc("Material")].split()[0] #NOTE: Assumes that material-column has the material name as the first word, e.g. "Timber C14" or "Steel ASTM A992"
@@ -733,7 +862,11 @@ def add_necessary_columns_pdf(dataframe, constants):
         if metric == "GWP" or metric == "Combined":
                 dataframe.iloc[row, dataframe.columns.get_loc("Gwp_factor")] = constants[constant_name + "_GWP"]
         if metric == "Price" or metric == "Combined":
-                dataframe.iloc[row, dataframe.columns.get_loc("Price")] = constants[constant_name + "_PRICE"]
+                if material.upper() == "STEEL":
+                    price = constants[constant_name + "_PRICE"] * constants[f"{material.upper()}_DENSITY"]
+                else:
+                    price = constants[constant_name + "_PRICE"]
+                dataframe.iloc[row, dataframe.columns.get_loc("Price")] = price
     return dataframe
 
 def generate_run_string(constants):

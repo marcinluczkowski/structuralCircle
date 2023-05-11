@@ -28,10 +28,10 @@ constants = {
     ########################
     "Project name": "Sognsveien 17",
     "Metric": "GWP",
-    "Algorithms": ["bipartite", "greedy_plural", "bipartite_plural", "bipartite_plural_multiple"],
+    "Algorithms": ["bipartite", "greedy_single"],
     "Include transportation": False,
-    "Cite latitude": "59.94161606",
-    "Cite longitude": "10.72994518",
+    "Site latitude": "59.94161606",
+    "Site longitude": "10.72994518",
     #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
     #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
     "Demand file location": r"./CSV/bipartite_plural_demand.csv",
@@ -56,7 +56,6 @@ def generate_datasets(d_counts, s_counts):
     supply_coords.loc[len(supply_coords)] = storlien
 
 
-    demand_coords = {"Steel": ("Norsk Stål Trondheim", "63.4384474", "10.40994"), "Timber": ("XL-BYGG Lade","63.4423683","10.4438836")}
 
 
     materials = ["Timber", "Steel"]
@@ -64,16 +63,16 @@ def generate_datasets(d_counts, s_counts):
     #GENERATE FILE
     #============
     supply = hm.create_random_data_supply_pdf_reports(supply_count = s_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, demand_coords = demand_coords)
+    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials)
     supply.index = map(lambda text: "S" + str(text), supply.index)
     demand.index = map(lambda text: "D" + str(text), demand.index)
-    return supply, demand
+    return demand, supply
 
 
 # ========== SCENARIO 1 ============== 
 var1 = 1
 #d_counts = np.logspace(1, 3, num = 5).astype(int) Use this later when actually testing. Using the below for now to reduce time
-d_counts = np.linspace(10, 250, num = 4).astype(int)
+d_counts = np.linspace(10, 250, num = 2).astype(int)
 s_counts = (d_counts * var1).astype(int)
 
 results = [] #list of results for each iteration

@@ -26,14 +26,15 @@ constants = {
     "PRICE_TRANSPORTATION": 0.3, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "Testing PDF",
+    "Project name": "Campussamling Hesthagen",
     "Metric": "GWP",
-    "Algorithms": ["greedy_single"],
+    #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
+    "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
     "Include transportation": True,
     "Site latitude": "63.4154171",
     "Site longitude": "10.3994672",
-    "Demand file location": r"./CSV/testing_pdf_demand.csv",
-    "Supply file location": r"./CSV/testing_pdf_supply.csv",
+    "Demand file location": r"./CSV/master_thesis_study_case_demand.csv",
+    "Supply file location": r"./CSV/master_thesis_study_case_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -55,49 +56,34 @@ supply_coords.loc[len(supply_coords)] = meraker
 supply_coords.loc[len(supply_coords)] = berkak
 supply_coords.loc[len(supply_coords)] = melhus
 
+
 materials = ["Timber", "Steel"]
 
-#GENERATE FILE
-#============
-supply = hm.create_random_data_supply_pdf_reports(supply_count = 100, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-demand = hm.create_random_data_demand_pdf_reports(demand_count = 100, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
-hm.export_dataframe_to_csv(supply, r"" + "./CSV/testing_pdf_supply.csv")
-hm.export_dataframe_to_csv(demand, r"" + "./CSV/testing_pdf_demand.csv")
-#supply.to_excel(r"" + "./CSV/study_case_supply.xlsx")
-#demand.to_excel(r"" + "./CSV/study_case_demand.xlsx")
+# GENERATE FILE
+# ============
+#supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+#demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
+#hm.export_dataframe_to_csv(supply, r"" + "./CSV/master_thesis_study_case_supply.csv")
+#hm.export_dataframe_to_csv(demand, r"" + "./CSV/master_thesis_study_case_demand.csv")
+#supply.to_excel(r"" + "./CSV/master_thesis_study_case_supply.xlsx")
+#demand.to_excel(r"" + "./CSV/master_thesis_study_case_demand.xlsx")
 #========================================
 
-score_function_string = hm.generate_score_function_string(constants)
+#PRE-PROSESSING DATA
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
-#Add necessary columns to run the algorithm
 supply = hm.add_necessary_columns_pdf(supply, constants)
 demand = hm.add_necessary_columns_pdf(demand, constants)
 constraint_dict = constants["constraint_dict"]
-#Run matching
+
+########### STUDY CASE 2: GWP with transportation ###########
+score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
-result = eval(run_string)
-pdf_results = hm.extract_results_df_pdf(result, constants)
-hm.generate_pdf_report(pdf_results, "Test", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
-
-
-#TODO: Create map with the random supply locations and the cite location
-
-#Case 1: GWP UTEN TRANSPORT
-#CASE 2: GWP Med t
-#CASE 3: Combined med transport
+result_case2 = eval(run_string)
+pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
+hm.generate_pdf_report(pdf_results_case2, constants["Project name"] + " Study Case 2", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
 
 
-#plot.create_graph(supply, demand, target_column="Length", unit=r"[m]", number_of_intervals=5, fig_title = "", save_filename=r"length_plot.png")
-#plot.create_graph(supply, demand, target_column="Area", unit=r"[m$^2$]", number_of_intervals=5, fig_title = "", save_filename=r"area_plot.png")
-#plot.create_graph(supply, demand, target_column="Moment of Inertia", unit=r"[m$^4$]", number_of_intervals=5, fig_title = "", save_filename=r"inertia_plot.png")
-#plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
-
-
-#plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Substitution locations", save_name=r"map_reuse_subs")
-#plot.create_map_substitutions(demand, pdf_results, "demand", color = "red", legend_text="Manufacturer locations", save_name=r"map_manu_subs")
-#pdf = hm.generate_pdf_report(pdf_results, projectname = constants["Project name"], filepath = r"./Local_files/GUI_files/Results/")
-#print(hm.extract_pairs_df(result))
-
-
+#PLOTS FOR OVERLEAF
+#plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")

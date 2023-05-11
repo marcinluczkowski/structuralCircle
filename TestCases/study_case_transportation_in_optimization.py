@@ -74,7 +74,7 @@ constraint_dict = constants["constraint_dict"]
 supply = hm.add_necessary_columns_pdf(supply, constants)
 demand = hm.add_necessary_columns_pdf(demand, constants)
 run_string = hm.generate_run_string(constants)
-result_wo_transportation = eval(run_string)
+result_wo_transportation = eval(run_string) #TODO Consider security when using eval. 
 
 simple_pairs_wo_transportation = hm.extract_pairs_df(result_wo_transportation)
 simple_results_wo_transportation = hm.extract_results_df(result_wo_transportation, column_name = "LCA")

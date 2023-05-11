@@ -56,7 +56,7 @@ supply_coords.loc[len(supply_coords)] = meraker
 supply_coords.loc[len(supply_coords)] = berkak
 supply_coords.loc[len(supply_coords)] = melhus
 
-plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations_test")
+plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")
 materials = ["Timber", "Steel"]
 """
 # GENERATE FILE

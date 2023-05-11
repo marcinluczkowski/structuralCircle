@@ -70,9 +70,9 @@ def generate_datasets(d_counts, s_counts):
 
 # ========== SCENARIO 1 ============== 
 var1 = 1
-d_counts = np.linspace(4, 5, num = 2).astype(int)
+d_counts = np.linspace(4, 20, num = 10).astype(int)
 s_counts = (d_counts * var1).astype(int)
-internal_runs = 50
+internal_runs = 100
 constraint_dict = constants["constraint_dict"]
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
@@ -114,5 +114,5 @@ for d, s in zip(d_counts, s_counts):
 #pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
 #pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
 
-plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Running time [s]", title = "", fix_overlapping=False, save_filename="genetic_results_time.png")
-plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kg CO2 equiv.]", title = "", fix_overlapping=False, save_filename="genetic_results_score.png")
+plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Runtime [s]", title = "", fix_overlapping=False, save_filename="genetic_results_time.png")
+plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kgCO2eq]", title = "", fix_overlapping=False, save_filename="genetic_results_score.png")

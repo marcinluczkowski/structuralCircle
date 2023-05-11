@@ -215,13 +215,13 @@ def create_map_substitutions(df, pdf_results, df_type, color, legend_text, save_
 def create_map_dataframe(df, color, legend_text, save_name):
     df = df.copy()
     df_locations = df[["Latitude", "Longitude"]]
-    cite_coords = (df.iloc[0]["Cite_lat"], df.iloc[0]["Cite_lon"])
+    site_coords = (df.iloc[0]["Site_lat"], df.iloc[0]["Site_lon"])
     coordinates_count = df_locations.groupby(['Latitude', 'Longitude']).size().reset_index(name='Count')
     coordinates_dict = dict(zip(coordinates_count[['Latitude', 'Longitude']].apply(tuple, axis=1), coordinates_count['Count']))
     m = folium.Map(location=[df_locations.Latitude.mean(), df_locations.Longitude.mean()], control_scale=True)
-    folium.Marker([cite_coords[0], cite_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
+    folium.Marker([site_coords[0], site_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
     # Create a custom legend with the marker colors and labels
-    fit_view_coordinates = [cite_coords]
+    fit_view_coordinates = [site_coords]
     for coord, count in coordinates_dict.items():
         fit_view_coordinates.append(coord)
         marker_number = coordinates_dict[coord]
@@ -241,16 +241,12 @@ def create_map_dataframe(df, color, legend_text, save_name):
                     border:2px solid grey; z-index:9999; font-size:14px;
                     background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
         <i class="fa-solid fa-circle" style="color:{color};font-size=0.5px;"></i> {legend_text}<br>
-        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location  
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Site location  
         </div>
         '''
 
     # Add the legend to the map
     m.get_root().html.add_child(folium.Element(legend_html))
-    #img = map._to_png(5)
-    #mg.save(r"./Results/map.png")
-    # Display the map
-    #map.show_in_browser()
     file_dir = r"./Local_files/GUI_files/Results/Maps/"
     m.save(file_dir+f"{save_name}.html")
     if platform.system()=="Windows":
@@ -269,7 +265,6 @@ def create_map_dataframe(df, color, legend_text, save_name):
         driver.save_screenshot(file_dir+f"{save_name}.png")
         driver.quit
     else:
-        print("Mac")
         file_dir = r"./Local_files/GUI_files/Results/Maps/"
         m.save(file_dir+f"{save_name}.html")
         options = webdriver.ChromeOptions()
@@ -281,7 +276,7 @@ def create_map_dataframe(df, color, legend_text, save_name):
         filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
         driver.get("file:///" + filepath)
         driver.maximize_window()
-        time.sleep(1)
+        time.sleep(3)
         driver.save_screenshot(file_dir+f"{save_name}.png")
         driver.quit
 
@@ -291,9 +286,9 @@ def create_map_dataframe(df, color, legend_text, save_name):
 
 def create_empty_map(df, color, legend_text, save_name):
     df = df.copy()
-    cite_coords = (df.iloc[0]["Cite_lat"], df.iloc[0]["Cite_lon"])
-    m = folium.Map(location=[cite_coords[0], cite_coords[1]], control_scale=True)
-    folium.Marker([cite_coords[0], cite_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
+    site_coords = (df.iloc[0]["Site_lat"], df.iloc[0]["Site_lon"])
+    m = folium.Map(location=[site_coords[0], site_coords[1]], control_scale=True)
+    folium.Marker([site_coords[0], site_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
     # Create a custom legend with the marker colors and labels
 
     legend_html = f'''
@@ -302,7 +297,7 @@ def create_empty_map(df, color, legend_text, save_name):
                     border:2px solid grey; z-index:9999; font-size:14px;
                     background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
         <i class="fa-solid fa-circle" style="color:{color};font-size=0.5px;"></i> {legend_text}<br>
-        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location  
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Site location  
         </div>
         '''
 
@@ -310,15 +305,92 @@ def create_empty_map(df, color, legend_text, save_name):
     m.get_root().html.add_child(folium.Element(legend_html))
     file_dir = r"./Local_files/GUI_files/Results/Maps/"
     m.save(file_dir+f"{save_name}.html")
-    options = webdriver.ChromeOptions()
-    options.add_experimental_option("useAutomationExtension", False)
-    options.add_experimental_option("excludeSwitches",["enable-automation"])
-    options.add_argument("--headless")
-    driver = webdriver.Chrome(chrome_options=options)
-    #driver.get(r"./Results/map.html")
-    filepath = os.getcwd() + file_dir+f"{save_name}.html"
-    driver.get("file:///" + filepath)
-    driver.maximize_window()
-    time.sleep(3)
-    driver.save_screenshot(file_dir+f"{save_name}.png")
-    driver.quit()
+    if platform.system()=="Windows":
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        driver = webdriver.Chrome(chrome_options=options)
+        #driver.get(r"./Results/map.html")
+        filepath = os.getcwd() + file_dir+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+    else:
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        #options.add_experimental_option('detach', True)
+        driver = webdriver.Chrome(chrome_options=options)
+        filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+
+def create_map_supply_locations(supply_cords_df, site_lat, site_lon, save_name):
+    df = supply_cords_df.copy()
+    m = folium.Map(location=[site_lat, site_lon], control_scale=True) 
+    folium.Marker([site_lat, site_lon], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m) #Marker for site location
+
+    fit_view_coordinates = [(site_lat, site_lon)]
+    for index, row in df.iterrows():
+        coord = (row["Latitude"], row["Longitude"])
+        fit_view_coordinates.append(coord)
+        location = [coord[0],coord[1]]
+        folium.Marker([coord[0], coord[1]], icon=folium.Icon(prefix="fa", icon="fa-circle", color="green")).add_to(m) #Marker for reused locations
+
+    m.fit_bounds(fit_view_coordinates)
+
+    legend_html = f'''
+    <div style="position: fixed; 
+                top: 10px; right: 10px; width: 180px; height: 50px; 
+                border:2px solid grey; z-index:9999; font-size:14px;
+                background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
+    <i class="fa-solid fa-location-dot" style="color:#6BA524;"></i> Reused locations <br>
+    <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Site location  
+    </div>
+    '''
+    # Add the legend to the map
+    m.get_root().html.add_child(folium.Element(legend_html))
+    file_dir = r"./Local_files/GUI_files/Results/Maps/"
+    m.save(file_dir+f"{save_name}.html")
+
+    if platform.system()=="Windows":
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        driver = webdriver.Chrome(chrome_options=options)
+        #driver.get(r"./Results/map.html")
+        filepath = os.getcwd() + file_dir+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+    else:
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        #options.add_experimental_option('detach', True)
+        driver = webdriver.Chrome(chrome_options=options)
+        filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit

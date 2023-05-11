@@ -31,8 +31,8 @@ constants = {
     #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Algorithms": ["greedy_single", "bipartite_plural"],
     "Include transportation": False,
-    "Cite latitude": "63.4154171",
-    "Cite longitude": "10.3994672",
+    "Site latitude": "63.4154171",
+    "Site longitude": "10.3994672",
     "Demand file location": r"./CSV/study_case_demand_1000.csv",
     "Supply file location": r"./CSV/study_case_supply_1000.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
@@ -56,17 +56,17 @@ supply_coords.loc[len(supply_coords)] = meraker
 supply_coords.loc[len(supply_coords)] = berkak
 supply_coords.loc[len(supply_coords)] = melhus
 
-
+plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations_test")
 materials = ["Timber", "Steel"]
-
+"""
 # GENERATE FILE
 # ============
-supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
-hm.export_dataframe_to_csv(supply, r"" + "./CSV/study_case_supply_1000.csv")
-hm.export_dataframe_to_csv(demand, r"" + "./CSV/study_case_demand_1000.csv")
-supply.to_excel(r"" + "./CSV/study_case_supply_1000.xlsx")
-demand.to_excel(r"" + "./CSV/study_case_demand_1000.xlsx")
+#supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+#demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
+#hm.export_dataframe_to_csv(supply, r"" + "./CSV/study_case_supply_1000.csv")
+#hm.export_dataframe_to_csv(demand, r"" + "./CSV/study_case_demand_1000.csv")
+#supply.to_excel(r"" + "./CSV/study_case_supply_1000.xlsx")
+#demand.to_excel(r"" + "./CSV/study_case_demand_1000.xlsx")
 #========================================
 
 #PRE-PROSESSING DATA
@@ -88,13 +88,14 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
-"""
+
 ########### STUDY CASE 3: Combined with transportation ###########
 constants["Metric"] = "Combined"
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
-"""
+
 
 #TODO: Create map with the random supply locations and the cite location
+"""

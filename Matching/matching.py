@@ -124,17 +124,17 @@ class Matching():
                     # if it doesn't, create new list with index
                     coord_dict_demand[coord] = [idx]
             
-            cite_lat = self.supply.iloc[0]["Cite_lat"]
-            cite_lon = self.supply.iloc[0]["Cite_lon"]
+            site_lat = self.supply.iloc[0]["Site_lat"]
+            site_lon = self.supply.iloc[0]["Site_lon"]
             distances_supply = {key: 0 for key in coord_dict_supply.keys()}
             distances_demand = {key: 0 for key in coord_dict_demand.keys()}
 
             #API call for supply elements
             for key in distances_supply:
-                distances_supply[key] = lca.calculate_driving_distance(key[0], key[1], cite_lat, cite_lon)
+                distances_supply[key] = lca.calculate_driving_distance(key[0], key[1], site_lat, site_lon)
             #API call for demand elements
             for key in distances_demand:
-                distances_demand[key] = lca.calculate_driving_distance(key[0], key[1], cite_lat, cite_lon)
+                distances_demand[key] = lca.calculate_driving_distance(key[0], key[1], site_lat, site_lon)
             
             #Add distances to supply column
             for key, value in coord_dict_supply.items():

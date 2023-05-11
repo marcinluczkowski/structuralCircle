@@ -37,10 +37,10 @@ constants = {
     "Metric": "GWP",
     "Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Include transportation": False,
-    "Cite latitude": "63.4154171",
-    "Cite longitude": "10.3994672",
-    #"Cite latitude": "XX.XXXX",
-    #"Cite longitude": "XX.XXXX",
+    "Site latitude": "63.4154171",
+    "Site longitude": "10.3994672",
+    #"Site latitude": "XX.XXXX",
+    #"Site longitude": "XX.XXXX",
     "Demand file location": r"./CSV/study_case_supply.csv",
     "Supply file location": r"./CSV/study_case_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
@@ -172,8 +172,8 @@ def updateconstants():
     constants["Metric"]=matching_metric_var_constant.get()
     constants["Algorithms"]=get_list_algos()
     constants["Include transportation"]=getIncludeTranportYesNo()
-    constants["Cite latitude"]=latitude_coordinate.get()
-    constants["Cite longitude"]=longitude_coordinate.get()
+    constants["Site latitude"]=latitude_coordinate.get()
+    constants["Site longitude"]=longitude_coordinate.get()
     constants["Demand file location"]=r""+demand_filepath_string.get()
     constants["Supply file location"]=r""+supply_filepath_string.get()
 
@@ -726,7 +726,7 @@ def open_map():
         #print("Add marker:", coords)
         if markedexist:
             marker.delete()
-        marker = map_widget.set_marker(coords[0], coords[1], text="Construction cite")
+        marker = map_widget.set_marker(coords[0], coords[1], text="Construction site")
         latcordstring=str(round(coords[0],5))
         loncordstring=str(round(coords[1],5))
 
@@ -752,7 +752,7 @@ def open_map():
     #     if markedexist:
     #         marker.delete()
     #     print("Left click event with coordinates:", coordinates_tuple)
-    #     marker = map_widget.set_marker(coordinates_tuple[0], coordinates_tuple[1], text="Construction cite")
+    #     marker = map_widget.set_marker(coordinates_tuple[0], coordinates_tuple[1], text="Construction site")
     #     markedexist=True
 
     global marker
@@ -763,9 +763,9 @@ def open_map():
     screen_width_05 = int(root.winfo_screenwidth()*0.8)
     screen_height_05 = int(root.winfo_screenheight()*0.8)
     root_tk.geometry(f"{screen_width_05}x{screen_height_05}")
-    root_tk.title("Set construction cite")
+    root_tk.title("Set construction site")
   
-    description_label = tk.Label(root_tk, text="Find your desired construction cite on the map. Then right click and \"set construction cite\" to set a marker.",font=("Montserrat", 12, "bold"), foreground="#00509e")
+    description_label = tk.Label(root_tk, text="Find your desired construction site on the map. Then right click and \"set construction site\" to set a marker.",font=("Montserrat", 12, "bold"), foreground="#00509e")
     description_label.place(relx=0.5,rely=0.05,anchor="center")
 
     # create map widget
@@ -774,7 +774,7 @@ def open_map():
     # set current widget position and zoom
     map_widget.set_position(63.4269, 10.3969) #Nidarosdomen
     map_widget.set_zoom(5)
-    map_widget.add_right_click_menu_command(label="Set construction cite", command=add_marker_event,pass_coords=True)
+    map_widget.add_right_click_menu_command(label="Set construction site", command=add_marker_event,pass_coords=True)
     #map_widget.add_left_click_map_command(left_click_event)
     map_widget.place(relx=0.98, rely=0.98, anchor=tk.SE)
 
@@ -869,21 +869,21 @@ Projectname_entry.bind('<FocusIn>', lambda event,entry=Projectname_entry,variabe
 
 #Create project latitude label and entry
 ProjectLatitude_label = tk.Label(root, text="Latitude:")
-ProjectLatitude_value_prefilled = tk.StringVar(value=constants["Cite latitude"])
-latitude_coordinate.set(constants["Cite latitude"])
+ProjectLatitude_value_prefilled = tk.StringVar(value=constants["Site latitude"])
+latitude_coordinate.set(constants["Site latitude"])
 ProjectLatitude_entry = tk.Entry(root,textvariable=ProjectLatitude_value_prefilled,fg="grey",width=7)
 ProjectLatitude_label.place(relx=0.50,rely=0.18,anchor="center")
 ProjectLatitude_entry.place(relx=0.55,rely=0.18,anchor="center")
-ProjectLatitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLatitude_entry,variabel="Cite latitude":on_general_entry_string_click(event,entry,variabel))
+ProjectLatitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLatitude_entry,variabel="Site latitude":on_general_entry_string_click(event,entry,variabel))
 
 #Create project longitude label and entry
 ProjectLongitude_label = tk.Label(root, text="Longitude:")
-ProjectLongitude_value_prefilled = tk.StringVar(value=constants["Cite longitude"])
-longitude_coordinate.set(constants["Cite longitude"])
+ProjectLongitude_value_prefilled = tk.StringVar(value=constants["Site longitude"])
+longitude_coordinate.set(constants["Site longitude"])
 ProjectLongitude_entry = tk.Entry(root,textvariable=ProjectLongitude_value_prefilled,fg="grey",width=7)
 ProjectLongitude_label.place(relx=0.61,rely=0.18,anchor="center")
 ProjectLongitude_entry.place(relx=0.665,rely=0.18,anchor="center")
-ProjectLongitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLongitude_entry,variabel="Cite longitude":on_general_entry_string_click(event,entry,variabel))
+ProjectLongitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLongitude_entry,variabel="Site longitude":on_general_entry_string_click(event,entry,variabel))
 
 openmap_button = ttk.Button(root, text="Set from map", command=open_map)
 openmap_button.place(relx=0.61,rely=0.22,anchor="center",relheight=0.04,relwidth=0.10)

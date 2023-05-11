@@ -30,8 +30,8 @@ constants = {
     "Metric": "GWP",
     "Algorithms": ["bipartite_plural", "bipartite_plural_multiple"],
     "Include transportation": False,
-    "Cite latitude": "63.4154171",
-    "Cite longitude": "10.3994672",
+    "Site latitude": "63.4154171",
+    "Site longitude": "10.3994672",
     "Demand file location": r"./CSV/genetic_demand.csv",
     "Supply file location": r"./CSV/genetic_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}

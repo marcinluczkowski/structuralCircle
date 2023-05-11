@@ -549,9 +549,9 @@ def generate_pdf_report(results, projectname,supply,demand, filepath):
     pdf.set_font("Times", size=12, style = "B")
     pdf.cell(55, 10, f"Construction site located at: ", 0, 0)
     pdf.set_font("Times", size=12, style = "")
-    cite_lat = round(float(results['Cite latitude']), 4)
-    cite_lon = round(float(results['Cite longitude']), 4)
-    pdf.cell(0, 10, f"{cite_lat}, {cite_lon}", 0, 1)
+    site_lat = round(float(results['Site latitude']), 4)
+    site_lon = round(float(results['Site longitude']), 4)
+    pdf.cell(0, 10, f"{site_lat}, {site_lon}", 0, 1)
 
 
     # Set the font and size for the tables
@@ -791,7 +791,7 @@ def fill_closest_manufacturer(dataframe,constants):
         "Longitude":"YY.YYY"
     }
     for index,row in manufacturers_df.iterrows():
-        driving_distance=lca.calculate_driving_distance(str(row["Latitude"]),str(row["Longitude"]),constants["Cite latitude"],constants["Cite longitude"])
+        driving_distance=lca.calculate_driving_distance(str(row["Latitude"]),str(row["Longitude"]),constants["Site latitude"],constants["Site longitude"])
 
         if str(row["Material"])=="Timber" and driving_distance<shortest_distance_tree:
             shortest_distance_tree=driving_distance
@@ -819,8 +819,8 @@ def add_necessary_columns_pdf(dataframe, constants):
     metric = constants["Metric"]
     element_type = list(dataframe.index)[0][:1]
     dataframe["Density"] = 0
-    dataframe["Cite_lat"] = constants["Cite latitude"]
-    dataframe["Cite_lon"] = constants["Cite longitude"]
+    dataframe["Site_lat"] = constants["Site latitude"]
+    dataframe["Site_lon"] = constants["Site longitude"]
     if metric == "GWP":
         dataframe["Gwp_factor"] = 0 
     elif metric == "Combined":

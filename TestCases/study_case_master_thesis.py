@@ -27,10 +27,10 @@ constants = {
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
     "Project name": "Campussamling Hesthagen",
-    "Metric": "GWP",
+    "Metric": "Combined",
     #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
-    "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural", "milp"],
-    "Include transportation": False,
+    "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
+    "Include transportation": True,
     "Site latitude": "63.4154171",
     "Site longitude": "10.3994672",
     "Demand file location": r"./CSV/master_thesis_study_case_demand.csv",
@@ -68,7 +68,7 @@ materials = ["Timber", "Steel"]
 #supply.to_excel(r"" + "./CSV/master_thesis_study_case_supply.xlsx")
 #demand.to_excel(r"" + "./CSV/master_thesis_study_case_demand.xlsx")
 #========================================
-"""
+
 #PRE-PROSESSING DATA
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
@@ -77,20 +77,21 @@ demand = hm.add_necessary_columns_pdf(demand, constants)
 constraint_dict = constants["constraint_dict"]
 
 ########### STUDY CASE 1: GWP without transportation ###########
+constants["Include transportation"] = False
+constants["Metric"] = "GWP"
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
-hm.generate_pdf_report(pdf_results_case1, "Study Case 1", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
-"""
-"""
+hm.generate_pdf_report(pdf_results_case1, constants["Project name"] + " Study Case 1", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+
 ########### STUDY CASE 2: GWP with transportation ###########
 constants["Include transportation"] = True
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case2 = eval(run_string)
 pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
-hm.generate_pdf_report(pdf_results_case2, "Study Case 2", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+hm.generate_pdf_report(pdf_results_case2, constants["Project name"] + " Study Case 2", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
 ########### STUDY CASE 3: Combined with transportation ###########
 constants["Metric"] = "Combined"
@@ -98,10 +99,8 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case3 = eval(run_string)
 pdf_results_case3 = hm.extract_results_df_pdf(result_case3, constants)
-hm.generate_pdf_report(pdf_results_case3, "Study Case 3", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+hm.generate_pdf_report(pdf_results_case3, constants["Project name"] +" Study Case 3", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
-
-"""
 
 #PLOTS FOR OVERLEAF
 #plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")

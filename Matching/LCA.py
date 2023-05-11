@@ -97,10 +97,10 @@ def calculate_transportation_LCA(volume, density, distance, factor):
 def calcultate_price_transport(volume, density, distance, price):
     """
     distance in km
+    price per tonn per km in NOK
     """
     density = density / 1000 #convert kg/m^3 to tonne/m^3
     tonn=density*volume
-    #price=3.78 #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
     return price*tonn*distance
 
 

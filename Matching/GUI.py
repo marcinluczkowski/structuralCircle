@@ -16,30 +16,33 @@ import time
 import subprocess
 import platform
 import os
+import plotting as plot
 
 constants = {
-    "TIMBER_GWP": 28.9,       # based on NEPD-3442-2053-EN
-    "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25 based on Eberhardt
-    "TRANSPORT_GWP": 96.0,    # TODO kg/m3/t based on ????
-    "TIMBER_DENSITY": 491.0,  # kg, based on NEPD-3442-2053-EN
-    "STEEL_GWP": 800, #Random value
-    "STEEL_REUSE_GWP": 4, #Random value
-    "VALUATION_GWP": 0.6, #In kr:Per kg CO2, based on OECD
-    "TIMBER_PRICE": 435, #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
-    "TIMBER_REUSE_PRICE" : 100, #Per m^3, Random value
-    "STEEL_PRICE": 500, #Per m^3, R'andom value'
-    "STEEL_REUSE_PRICE": 200, #Per m^3, Random value
-    "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
-    "STEEL_DENSITY": 7850,
+    "TIMBER_GWP": 28.9,       #kg CO2 eq per m^3, based on NEPD-3442-2053-EN
+    "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25kg CO2 eq per m^3, based on Eberhardt
+    "TRANSPORT_GWP": 89.6,    #gram per tonne per km, Engedal et. al. 
+    "TIMBER_DENSITY": 491.0,  #kg/m^3, based on NEPD-3442-2053-EN
+    "STEEL_GWP": 9263.0, #kg CO2 eq per m^3, Norsk stål + density of steel
+    "STEEL_REUSE_GWP": 278.0, #kg CO2 eq per m^3, reduction of 97% from new according to Høydahl and Walter
+    "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
+    "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
+    "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
+    "STEEL_PRICE": 67.0, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 67.0, #NOK per kg, ENTRA 2021
+    "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne. Rough estimate from Grønland 2022 
+    "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "Bod nidarosdomen",
+    "Project name": "Campus development NTNU",
     "Metric": "GWP",
-    "Algorithms": ["bipartite", "greedy_plural", "greedy_single", "bipartite_plural"],
-    "Include transportation": True,
-    "Cite latitude": "63.4269",
-    "Cite longitude": "10.3969",
-    "Demand file location": r"./CSV/pdf_demand.csv",
-    "Supply file location": r"./CSV/pdf_supply.csv",
+    "Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
+    "Include transportation": False,
+    "Site latitude": "63.4154171",
+    "Site longitude": "10.3994672",
+    #"Site latitude": "XX.XXXX",
+    #"Site longitude": "XX.XXXX",
+    "Demand file location": r"./CSV/study_case_supply.csv",
+    "Supply file location": r"./CSV/study_case_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 def checkalgos():
@@ -54,9 +57,9 @@ def giveFileName():
     projectname=Projectname_entry.get()
     projectname=projectname.replace(" ","_")
     filename=projectname+"_report.pdf"
+    projectname_tk.set(projectname)
     filename_tk.set(filename)
     return projectname
-
 
 def checkinputfields():
     One_or_more_missing=False
@@ -124,17 +127,25 @@ def calculate():
         run_string = hm.generate_run_string(constants)
         
         result = eval(run_string)
-        simple_pairs = hm.extract_pairs_df(result)
+        result_label.config(text="Generating figures for report...", foreground="green")
+        root.update()
         pdf_results = hm.extract_results_df_pdf(result, constants)
-        
+
+                
+        result_label.config(text="Generating PDF report...", foreground="green")
+        root.update()
+        pdf_results = hm.extract_results_df_pdf(result, constants)        
         projectname=giveFileName()
         pdf = hm.generate_pdf_report(pdf_results,projectname,supply,demand, filepath = r"./Local_files/GUI_files/Results/")
         result_label.config(text="Report generated", foreground="green")
         result_label.after(10000, clear_error_message)
-        open_report_button.place(relx=0.5,rely=0.93,anchor="center")
+        open_report_button.place(relx=0.5,rely=0.90,anchor="center")
+        open_matching_button.place(relx=0.5,rely=0.94,anchor="center")
+
+
         if include_transportation_var.get() == 1:
-            open_reused_map_button.place(relx=0.37,rely=0.95,anchor="center")
-            open_manufactorer_map_button.place(relx=0.65,rely=0.95,anchor="center")
+            open_reused_map_button.place(relx=0.37,rely=0.94,anchor="center")
+            open_manufactorer_map_button.place(relx=0.65,rely=0.94,anchor="center")
 
 def updateconstants():
     constants["TIMBER_GWP"]=float(Timber_new_gwp_entry.get())
@@ -152,8 +163,8 @@ def updateconstants():
     constants["Metric"]=matching_metric_var_constant.get()
     constants["Algorithms"]=get_list_algos()
     constants["Include transportation"]=getIncludeTranportYesNo()
-    constants["Cite latitude"]=latitude_coordinate.get()
-    constants["Cite longitude"]=longitude_coordinate.get()
+    constants["Site latitude"]=latitude_coordinate.get()
+    constants["Site longitude"]=longitude_coordinate.get()
     constants["Demand file location"]=r""+demand_filepath_string.get()
     constants["Supply file location"]=r""+supply_filepath_string.get()
 
@@ -291,7 +302,7 @@ def on_matching_metric_change(*args):
         GWP_valuation_entry.place(relx=0.505,rely=0.42,anchor="w")
 
         include_transportation_checkbutton.place(relx=0.5,rely=0.48,anchor="center")
-        Transport_GWP_label.place(relx=0.30,rely=0.53,anchor="w")
+        Transport_GWP_label.place(relx=0.29,rely=0.53,anchor="w")
         Transport_GWP_entry.place(relx=0.44,rely=0.53,anchor="w")
         Transport_price_label.place(relx=0.50,rely=0.53,anchor="w")
         Transport_price_entry.place(relx=0.71,rely=0.53,anchor="w")
@@ -365,7 +376,7 @@ def on_matching_metric_change(*args):
         
         #Transport
         include_transportation_checkbutton.place(relx=0.5,rely=0.48,anchor="center")
-        Transport_GWP_label.place(relx=0.41,rely=0.53,anchor="w")
+        Transport_GWP_label.place(relx=0.40,rely=0.53,anchor="w")
         Transport_GWP_entry.place(relx=0.55,rely=0.53,anchor="w")
         
         #ALGORITHMS CHECKBOXES
@@ -551,13 +562,13 @@ def on_matching_metric_change(*args):
 
 def include_transportation_checked():
     if include_transportation_var.get() == 1 and matching_metric_var.get() == "Combined":
-        Transport_GWP_label.place(relx=0.30,rely=0.53,anchor="w")
+        Transport_GWP_label.place(relx=0.29,rely=0.53,anchor="w")
         Transport_GWP_entry.place(relx=0.44,rely=0.53,anchor="w")
         Transport_price_label.place(relx=0.50,rely=0.53,anchor="w")
         Transport_price_entry.place(relx=0.71,rely=0.53,anchor="w")
 
     elif include_transportation_var.get() == 1 and matching_metric_var.get() == "GWP":
-        Transport_GWP_label.place(relx=0.41,rely=0.53,anchor="w")
+        Transport_GWP_label.place(relx=0.40,rely=0.53,anchor="w")
         Transport_GWP_entry.place(relx=0.55,rely=0.53,anchor="w")
         Transport_price_label.place(relx=0.50,rely=0.53,anchor="w")
         Transport_price_entry.place(relx=0.71,rely=0.53,anchor="w")
@@ -565,7 +576,7 @@ def include_transportation_checked():
         Transport_price_entry.place_forget()
 
     elif include_transportation_var.get() == 1 and matching_metric_var.get() == "Price":
-        Transport_GWP_label.place(relx=0.41,rely=0.53,anchor="w")
+        Transport_GWP_label.place(relx=0.40,rely=0.53,anchor="w")
         Transport_GWP_entry.place(relx=0.55,rely=0.53,anchor="w")
         Transport_price_label.place(relx=0.37,rely=0.53,anchor="w")
         Transport_price_entry.place(relx=0.58,rely=0.53,anchor="w")
@@ -631,7 +642,21 @@ def OpenUrl():
 def open_report():
     filename=filename_tk.get()
     filename = r"./Local_files/GUI_files/Results/"+filename
-    print("filename",filename)
+    filepath=r""+filename
+    if platform.system()=="Windows":
+        current_directory = os.getcwd()
+        file = current_directory + filepath
+        os.startfile(file)
+    elif platform.system() == "Darwin":
+        subprocess.call(["open", filepath])
+    else:
+        subprocess.call(["xdg-open", filepath])
+
+def open_matching():
+    projectname=projectname_tk.get()
+    #TODO change to xlsx
+    filename=projectname+"_substitutions.xlsx"
+    filename = r"./Local_files/GUI_files/Results/"+filename
     filepath=r""+filename
 
     if platform.system()=="Windows":
@@ -658,7 +683,7 @@ def open_reused_map():
         subprocess.call(["xdg-open", filepath])
 
 def open_manufactorer_map():
-    filename=r"map_manufactured_subs.html"
+    filename=r"map_manu_subs.html"
     filepath = r"./Local_files/GUI_files/Results/Maps/"+filename
 
     if platform.system()=="Windows":
@@ -692,21 +717,25 @@ def open_map():
         #print("Add marker:", coords)
         if markedexist:
             marker.delete()
-        marker = map_widget.set_marker(coords[0], coords[1], text="Construction cite")
-        latcordstring=str(round(coords[0],4))
-        loncordstring=str(round(coords[1],4))
+        marker = map_widget.set_marker(coords[0], coords[1], text="Construction site")
+        latcordstring=str(round(coords[0],5))
+        loncordstring=str(round(coords[1],5))
 
         latitude_coordinate.set(latcordstring)
         longitude_coordinate.set(loncordstring)
 
         ProjectLatitude_entry.delete(0,tk.END)
         ProjectLongitude_entry.delete(0,tk.END)
+        ProjectLatitude_entry.config(text="",fg="black")
+        ProjectLongitude_entry.config(text="",fg="black")
+
+
         ProjectLatitude_entry.insert(0,latcordstring)
         ProjectLongitude_entry.insert(0,loncordstring)
         markedexist=True
         cancelbutton.place(relx=0.08,rely=0.1,anchor=tk.CENTER)
         resultmap_label.configure(text="Coordinates set to: " +latcordstring+" , " +loncordstring, foreground="green")
-        result_label.after(5000,clear_error_message_map)
+        result_label.after(3000,clear_error_message_map)
 
     # def left_click_event(coordinates_tuple):
     #     global markedexist
@@ -714,7 +743,7 @@ def open_map():
     #     if markedexist:
     #         marker.delete()
     #     print("Left click event with coordinates:", coordinates_tuple)
-    #     marker = map_widget.set_marker(coordinates_tuple[0], coordinates_tuple[1], text="Construction cite")
+    #     marker = map_widget.set_marker(coordinates_tuple[0], coordinates_tuple[1], text="Construction site")
     #     markedexist=True
 
     global marker
@@ -725,9 +754,9 @@ def open_map():
     screen_width_05 = int(root.winfo_screenwidth()*0.8)
     screen_height_05 = int(root.winfo_screenheight()*0.8)
     root_tk.geometry(f"{screen_width_05}x{screen_height_05}")
-    root_tk.title("Set construction cite")
+    root_tk.title("Set construction site")
   
-    description_label = tk.Label(root_tk, text="Find your desired construction cite on the map. Then right click and \"set construction cite\" to set a marker.",font=("Montserrat", 12, "bold"), foreground="#00509e")
+    description_label = tk.Label(root_tk, text="Find your desired construction site on the map. Then right click and \"set construction site\" to set a marker.",font=("Montserrat", 12, "bold"), foreground="#00509e")
     description_label.place(relx=0.5,rely=0.05,anchor="center")
 
     # create map widget
@@ -736,7 +765,7 @@ def open_map():
     # set current widget position and zoom
     map_widget.set_position(63.4269, 10.3969) #Nidarosdomen
     map_widget.set_zoom(5)
-    map_widget.add_right_click_menu_command(label="Set construction cite", command=add_marker_event,pass_coords=True)
+    map_widget.add_right_click_menu_command(label="Set construction site", command=add_marker_event,pass_coords=True)
     #map_widget.add_left_click_map_command(left_click_event)
     map_widget.place(relx=0.98, rely=0.98, anchor=tk.SE)
 
@@ -796,6 +825,7 @@ supply_filepath_string=tk.StringVar()
 demand_filepath_string=tk.StringVar()
 matching_metric_var_constant=tk.StringVar()
 filename_tk=tk.StringVar()
+projectname_tk=tk.StringVar()
 latitude_coordinate=tk.StringVar()
 longitude_coordinate=tk.StringVar()
 
@@ -807,7 +837,7 @@ supply_file_label.place(relx=0.18, rely=0.21,anchor="center")
 supply_file_button = ttk.Button(root, text="Browse Supply File", command=browse_supply_file)
 supply_file_button.place(relx=0.18, rely=0.18,anchor="center")
 num_supply_label=tk.Label(root)
-num_supply_label.place(relx=0.18, rely=0.235,anchor="center")
+num_supply_label.place(relx=0.18, rely=0.24,anchor="center")
 
 #Create Demand file label browse button
 demand_file_label = tk.Label(root, text="No demand file selected",foreground="red")
@@ -815,7 +845,7 @@ demand_file_label.place(relx=0.80, rely=0.21,anchor="center")
 demand_file_button = ttk.Button(root, text="Browse Demand File", command=browse_demand_file)
 demand_file_button.place(relx=0.80, rely=0.18,anchor="center")
 num_demand_label=tk.Label(root)
-num_demand_label.place(relx=0.80, rely=0.235,anchor="center")
+num_demand_label.place(relx=0.80, rely=0.24,anchor="center")
 #Create construction_site detalils label
 Construction_site_label = tk.Label(root, text="Construction site details:",font=("Montserrat",12,"bold"),foreground="#000000")
 Construction_site_label.place(relx=0.5,rely=0.14,anchor="center")
@@ -823,31 +853,31 @@ Construction_site_label.place(relx=0.5,rely=0.14,anchor="center")
 #Create projectname label and entry
 Projectname_label = tk.Label(root, text="Project name:")
 Projectname_value_prefilled = tk.StringVar(value=constants["Project name"])
-Projectname_entry = tk.Entry(root,textvariable=Projectname_value_prefilled,fg="grey",widt=16)
-Projectname_label.place(relx=0.315,rely=0.18,anchor="center")
-Projectname_entry.place(relx=0.41,rely=0.18,anchor="center")
+Projectname_entry = tk.Entry(root,textvariable=Projectname_value_prefilled,fg="grey",widt=20)
+Projectname_label.place(relx=0.29,rely=0.18,anchor="center")
+Projectname_entry.place(relx=0.40,rely=0.18,anchor="center")
 Projectname_entry.bind('<FocusIn>', lambda event,entry=Projectname_entry,variabel="Project name":on_general_entry_string_click(event,entry,variabel))
 
 #Create project latitude label and entry
 ProjectLatitude_label = tk.Label(root, text="Latitude:")
-ProjectLatitude_value_prefilled = tk.StringVar(value=constants["Cite latitude"])
-latitude_coordinate.set(constants["Cite latitude"])
+ProjectLatitude_value_prefilled = tk.StringVar(value=constants["Site latitude"])
+latitude_coordinate.set(constants["Site latitude"])
 ProjectLatitude_entry = tk.Entry(root,textvariable=ProjectLatitude_value_prefilled,fg="grey",width=7)
 ProjectLatitude_label.place(relx=0.50,rely=0.18,anchor="center")
 ProjectLatitude_entry.place(relx=0.55,rely=0.18,anchor="center")
-ProjectLatitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLatitude_entry,variabel="Cite latitude":on_general_entry_string_click(event,entry,variabel))
+ProjectLatitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLatitude_entry,variabel="Site latitude":on_general_entry_string_click(event,entry,variabel))
 
 #Create project longitude label and entry
 ProjectLongitude_label = tk.Label(root, text="Longitude:")
-ProjectLongitude_value_prefilled = tk.StringVar(value=constants["Cite longitude"])
-longitude_coordinate.set(constants["Cite longitude"])
+ProjectLongitude_value_prefilled = tk.StringVar(value=constants["Site longitude"])
+longitude_coordinate.set(constants["Site longitude"])
 ProjectLongitude_entry = tk.Entry(root,textvariable=ProjectLongitude_value_prefilled,fg="grey",width=7)
 ProjectLongitude_label.place(relx=0.61,rely=0.18,anchor="center")
 ProjectLongitude_entry.place(relx=0.665,rely=0.18,anchor="center")
-ProjectLongitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLongitude_entry,variabel="Cite longitude":on_general_entry_string_click(event,entry,variabel))
+ProjectLongitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLongitude_entry,variabel="Site longitude":on_general_entry_string_click(event,entry,variabel))
 
 openmap_button = ttk.Button(root, text="Set from map", command=open_map)
-openmap_button.place(relx=0.61,rely=0.22,anchor="center",relheight=0.05,relwidth=0.10)
+openmap_button.place(relx=0.61,rely=0.22,anchor="center",relheight=0.04,relwidth=0.10)
 
 # Create the Matching metric dropdown menu
 matching_metric_var = tk.StringVar()
@@ -902,14 +932,14 @@ Steel_new_gwp_entry.config(validate='key', validatecommand=(root.register(valida
 Steel_new_gwp_entry.bind('<FocusIn>', lambda event,entry=Steel_new_gwp_entry,variabel="STEEL_GWP":on_general_entry_click(event,entry,variabel))
 
 #Create the new steel price input field (not shown before matching metric is choosen)
-Steel_price_label = tk.Label(root, text="New steel price [kr per m^3]:")
+Steel_price_label = tk.Label(root, text="New steel price [kr per kg]:")
 Steel_price_prefilled=tk.DoubleVar(value=constants["STEEL_PRICE"])
 Steel_price_entry = tk.Entry(root,textvariable=Steel_price_prefilled,fg="grey",widt=5)
 Steel_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
 Steel_price_entry.bind('<FocusIn>', lambda event,entry=Steel_price_entry,variabel="STEEL_PRICE":on_general_entry_click(event,entry,variabel))
 
 #Create the reused steel price input field (not shown before matching metric is choosen)
-Steel_reused_price_label = tk.Label(root, text="Reused steel price [kr per m^3]:")
+Steel_reused_price_label = tk.Label(root, text="Reused steel price [kr per kg]:")
 Steel_reused_price_prefilled=tk.DoubleVar(value=constants["STEEL_REUSE_PRICE"])
 Steel_reused_price_entry = tk.Entry(root,textvariable=Steel_reused_price_prefilled,fg="grey",widt=5)
 Steel_reused_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
@@ -928,7 +958,7 @@ include_transportation_var = tk.IntVar()
 include_transportation_checkbutton = tk.Checkbutton(root, text="Include transportation",font=("Montserrat", 12, "bold"), foreground="#000000", variable=include_transportation_var,command=include_transportation_checked)
 
 # Create the TransportGWP label and entry
-Transport_GWP_label = tk.Label(root, text="GWP transportation [factor]:")
+Transport_GWP_label = tk.Label(root, text="GWP transportation factor [g]:")
 Transport_GWP_prefilled=tk.DoubleVar(value=constants["TRANSPORT_GWP"])
 Transport_GWP_entry = tk.Entry(root,textvariable=Transport_GWP_prefilled,fg="grey",widt=5)
 Transport_GWP_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
@@ -980,6 +1010,8 @@ result_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
 calculate_button = ttk.Button(root, text="Calculate", command=calculate)
 calculate_button.place(relx=0.5,rely=0.8,anchor="center",relheight=0.05,relwidth=0.10)
 open_report_button = ttk.Button(root, text="Open report",style='Bold.TButton', command=open_report)
+open_matching_button = ttk.Button(root, text="Open matching",command=open_matching)
+
 open_reused_map_button = ttk.Button(root, text="Open reuse elements map", command=open_reused_map)
 open_manufactorer_map_button = ttk.Button(root, text="Open manufacturer elements map", command=open_manufactorer_map)
 
@@ -988,5 +1020,5 @@ bold_style.configure('Bold.TButton', font=('TkDefaultFont', 12, 'bold'))
 
 
 result_label = ttk.Label(root, text="")
-result_label.place(relx=0.5,rely=0.88,anchor="center")
+result_label.place(relx=0.5,rely=0.86,anchor="center")
 root.mainloop()

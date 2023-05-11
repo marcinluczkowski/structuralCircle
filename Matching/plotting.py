@@ -11,6 +11,47 @@ import folium
 from selenium import webdriver
 import time
 import os
+import platform
+
+color_palette = ["#EF8114", "#00509E", "#2E933C", "#CC2936", "#56203D"] #Orange, Blue, Green, Red, Purple 
+
+def plot_algorithm(alg_dict, x_values, xlabel, ylabel, fix_overlapping, title, save_filename):
+    plt.rcParams["font.family"] = "Times new roman"
+    fig, ax = plt.subplots(figsize = (7, 5))
+    values = list(alg_dict.values())
+    #Check if the plots are the same:
+    min_value = np.min(values)
+    if fix_overlapping:
+        styles = ["dashdot", "dashed", "dotted"]
+    else:
+        styles = ["solid"]
+    count = 0
+    color_count = 0
+    plotted_items = []
+    for key, items in alg_dict.items():
+        plt.plot(x_values, items, label = key, linestyle = styles[count], color = color_palette[color_count])
+        count += 1
+        color_count += 1
+        if count == len(styles):
+            count = 0
+        if color_count == len(color_palette):
+            color_count = 0
+        plotted_items.append(list(items))
+    plt.legend()
+    plt.title(title, fontsize = 16)
+    plt.xlabel(xlabel, fontsize=14)
+    plt.ylabel(ylabel, fontsize=14)
+    ax.set_facecolor("white")
+    ax.grid(visible=True, color="lightgrey", axis="y", zorder=1)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_color('#DDDDDD')
+    ax.tick_params(bottom=False, left=False)
+    ax.xaxis.get_major_locator().set_params(integer=True)
+    #plt.yscale('log')
+    plt.savefig(r"Local_files/Plots_overleaf/" + save_filename, dpi=300)
+
 
 def create_graph_specific_material(supply, demand, target_column, unit, number_of_intervals, material_string, fig_title, save_filename):
     requested_supply = supply.loc[supply["Material"] == material_string]
@@ -42,10 +83,12 @@ def plot_materials(supply, demand, fig_title, save_filename):
     plt.title(fig_title)
     ax.yaxis.get_major_locator().set_params(integer=True)
     width = 0.25
-    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color ="#ef8114")
-    bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = "#00509e")
-    ax.set_xticks(x, label, fontsize=12)
-    ax.legend()
+    ax.set_xlim([x[0]-0.60, x[-1]+0.60])
+    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color = color_palette[0])
+    bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = color_palette[1])
+    ax.set_xticks(x)
+    ax.set_xticklabels(label, fontsize=12)
+    ax.legend(loc = "upper right", bbox_to_anchor=(1.10, 1.12))
     ax.set_facecolor("white")
     ax.grid(visible=True, color="lightgrey", axis="y", zorder=1)
     #for position in ['top', 'bottom', 'left', 'right']:
@@ -55,8 +98,9 @@ def plot_materials(supply, demand, fig_title, save_filename):
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
+    # set x-axis limits to reduce space between groups of bars
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=300)
+    plt.savefig(save_name, dpi=100)
 
 
 
@@ -81,7 +125,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     min_length_pre = np.min([np.min(supply_lengths), np.min(demand_lengths)])
     if min_length_pre < 1:
         num_zeros = count_leading_zeros(min_length_pre)
-        unit_change = num_zeros+1
+        unit_change = int(num_zeros+1)
         unit_pure = unit.replace("[", "").replace("]", "")
         unit_change_pure = r"10$^{-"+ str(unit_change) + r"}$"
         unit = f"x {unit_change_pure} [{unit_pure}]"
@@ -137,10 +181,10 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     plt.title(fig_title)
     ax.yaxis.get_major_locator().set_params(integer=True)
     width = 0.25
-    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color ="#ef8114")
-    bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = "#00509e")
+    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color = color_palette[0])
+    bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = color_palette[1])
     ax.set_xticks(x, label, fontsize=12)
-    ax.legend()
+    ax.legend(loc = "upper right", bbox_to_anchor=(1.10, 1.12))
     ax.set_facecolor("white")
     ax.grid(visible=True, color="lightgrey", axis="y", zorder=1)
     #for position in ['top', 'bottom', 'left', 'right']:
@@ -151,7 +195,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=300)
+    plt.savefig(save_name, dpi=100)
 
 
 
@@ -161,24 +205,28 @@ def create_map_substitutions(df, pdf_results, df_type, color, legend_text, save_
     elif df_type == "demand":
         matches = list(pdf_results["Pairs"][pdf_results["Pairs"].str.contains("N")])
         indexes = list(map(lambda x: x.replace("N", "D"), matches))
-    df = df.copy().loc[indexes]
-    create_map_dataframe(df, color, legend_text, save_name)
+    
+    if len(indexes) == 0:
+        create_empty_map(df, color, legend_text, save_name)
+    else:
+        df = df.copy().loc[indexes]
+        create_map_dataframe(df, color, legend_text, save_name)
 
 def create_map_dataframe(df, color, legend_text, save_name):
     df = df.copy()
     df_locations = df[["Latitude", "Longitude"]]
-    cite_coords = (df.iloc[0]["Cite_lat"], df.iloc[0]["Cite_lon"])
+    site_coords = (df.iloc[0]["Site_lat"], df.iloc[0]["Site_lon"])
     coordinates_count = df_locations.groupby(['Latitude', 'Longitude']).size().reset_index(name='Count')
     coordinates_dict = dict(zip(coordinates_count[['Latitude', 'Longitude']].apply(tuple, axis=1), coordinates_count['Count']))
     m = folium.Map(location=[df_locations.Latitude.mean(), df_locations.Longitude.mean()], control_scale=True)
-    folium.Marker([cite_coords[0], cite_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
+    folium.Marker([site_coords[0], site_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
     # Create a custom legend with the marker colors and labels
-    fit_view_coordinates = [cite_coords]
+    fit_view_coordinates = [site_coords]
     for coord, count in coordinates_dict.items():
         fit_view_coordinates.append(coord)
         marker_number = coordinates_dict[coord]
         location = [coord[0],coord[1]]
-        icon_html = f'<div style="font-size: 12px; font-weight: bold; color: white; background-color: {color}; border-radius: 50%; padding: 5px 5px; height: 25px; width: 25px; text-align: center; line-height: 1.5;">{marker_number}</div>'
+        icon_html = f'<div style="font-size: 12px; font-weight: bold; color: white; background-color: {color}; border-radius: 50%; padding: 10px 5px; height: 35px; width: 35px; text-align: center; line-height: 1.5;">{marker_number}</div>'
         folium.Marker(
         location=location,
         icon=folium.DivIcon(
@@ -193,27 +241,156 @@ def create_map_dataframe(df, color, legend_text, save_name):
                     border:2px solid grey; z-index:9999; font-size:14px;
                     background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
         <i class="fa-solid fa-circle" style="color:{color};font-size=0.5px;"></i> {legend_text}<br>
-        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Cite location  
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Site location  
         </div>
         '''
 
     # Add the legend to the map
     m.get_root().html.add_child(folium.Element(legend_html))
-    #img = map._to_png(5)
-    #mg.save(r"./Results/map.png")
-    # Display the map
-    #map.show_in_browser()
     file_dir = r"./Local_files/GUI_files/Results/Maps/"
     m.save(file_dir+f"{save_name}.html")
-    options = webdriver.ChromeOptions()
-    options.add_experimental_option("useAutomationExtension", False)
-    options.add_experimental_option("excludeSwitches",["enable-automation"])
-    options.add_argument("--headless")
-    driver = webdriver.Chrome(chrome_options=options)
-    #driver.get(r"./Results/map.html")
-    filepath = os.getcwd() + file_dir+f"{save_name}.html"
-    driver.get("file:///" + filepath)
-    driver.maximize_window()
-    time.sleep(5)
-    driver.save_screenshot(file_dir+f"{save_name}.png")
-    driver.quit()
+    if platform.system()=="Windows":
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        driver = webdriver.Chrome(chrome_options=options)
+        #driver.get(r"./Results/map.html")
+        filepath = os.getcwd() + file_dir+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+    else:
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        #options.add_experimental_option('detach', True)
+        driver = webdriver.Chrome(chrome_options=options)
+        filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+
+    #options.add_argument('--disable-gpu')
+    #options.add_argument('--window-size=1280,800')
+    #options.add_argument('--disable-dev-shm-usage')
+
+def create_empty_map(df, color, legend_text, save_name):
+    df = df.copy()
+    site_coords = (df.iloc[0]["Site_lat"], df.iloc[0]["Site_lon"])
+    m = folium.Map(location=[site_coords[0], site_coords[1]], control_scale=True)
+    folium.Marker([site_coords[0], site_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
+    # Create a custom legend with the marker colors and labels
+
+    legend_html = f'''
+        <div style="position: fixed; 
+                    top: 10px; right: 10px; width: 180px; height: 50px; 
+                    border:2px solid grey; z-index:9999; font-size:14px;
+                    background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
+        <i class="fa-solid fa-circle" style="color:{color};font-size=0.5px;"></i> {legend_text}<br>
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Site location  
+        </div>
+        '''
+
+    # Add the legend to the map
+    m.get_root().html.add_child(folium.Element(legend_html))
+    file_dir = r"./Local_files/GUI_files/Results/Maps/"
+    m.save(file_dir+f"{save_name}.html")
+    if platform.system()=="Windows":
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        driver = webdriver.Chrome(chrome_options=options)
+        #driver.get(r"./Results/map.html")
+        filepath = os.getcwd() + file_dir+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+    else:
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        #options.add_experimental_option('detach', True)
+        driver = webdriver.Chrome(chrome_options=options)
+        filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+
+def create_map_supply_locations(supply_cords_df, site_lat, site_lon, save_name):
+    df = supply_cords_df.copy()
+    m = folium.Map(location=[site_lat, site_lon], control_scale=True) 
+    folium.Marker([site_lat, site_lon], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m) #Marker for site location
+
+    fit_view_coordinates = [(site_lat, site_lon)]
+    for index, row in df.iterrows():
+        coord = (row["Latitude"], row["Longitude"])
+        fit_view_coordinates.append(coord)
+        location = [coord[0],coord[1]]
+        folium.Marker([coord[0], coord[1]], icon=folium.Icon(prefix="fa", icon="fa-circle", color="green")).add_to(m) #Marker for reused locations
+
+    m.fit_bounds(fit_view_coordinates)
+
+    legend_html = f'''
+    <div style="position: fixed; 
+                top: 10px; right: 10px; width: 180px; height: 50px; 
+                border:2px solid grey; z-index:9999; font-size:14px;
+                background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
+    <i class="fa-solid fa-location-dot" style="color:#6BA524;"></i> Reused locations <br>
+    <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Site location  
+    </div>
+    '''
+    # Add the legend to the map
+    m.get_root().html.add_child(folium.Element(legend_html))
+    file_dir = r"./Local_files/GUI_files/Results/Maps/"
+    m.save(file_dir+f"{save_name}.html")
+
+    if platform.system()=="Windows":
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        driver = webdriver.Chrome(chrome_options=options)
+        #driver.get(r"./Results/map.html")
+        filepath = os.getcwd() + file_dir+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+    else:
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        #options.add_experimental_option('detach', True)
+        driver = webdriver.Chrome(chrome_options=options)
+        filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit

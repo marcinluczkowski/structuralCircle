@@ -100,7 +100,7 @@ def plot_materials(supply, demand, fig_title, save_filename):
     ax.tick_params(bottom=False, left=False)
     # set x-axis limits to reduce space between groups of bars
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=100)
+    plt.savefig(save_name, dpi=300)
 
 
 
@@ -195,7 +195,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=100)
+    plt.savefig(save_name, dpi=300)
 
 
 

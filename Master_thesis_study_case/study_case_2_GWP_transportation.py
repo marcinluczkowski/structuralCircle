@@ -33,8 +33,8 @@ constants = {
     "Include transportation": True,
     "Site latitude": "63.4154171",
     "Site longitude": "10.3994672",
-    "Demand file location": r"./CSV/master_thesis_study_case_demand.csv",
-    "Supply file location": r"./CSV/master_thesis_study_case_supply.csv",
+    "Demand file location": r"./CSV/master_thesis_study_case_demand_new_locs.csv",
+    "Supply file location": r"./CSV/master_thesis_study_case_supply_new_locs.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -43,30 +43,33 @@ constants = {
 supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
 steinkjer = ["Steinkjer", "64.024861", "11.4891085"]
-storen = ["Støren", "63.033639", "10.286356"]
-orkanger = ["Orkanger", "63.3000", "9.8468"]
+
+#orkanger = ["Orkanger", "63.3000", "9.8468"]
 meraker = ["Meråker", "63.415312", "11.747262"]
 berkak = ["Berkåk", "62.8238946","9.9934341"]
-melhus = ["Melhus", "63.2897753", "10.2934154"]
+vinjeora = ["Vinjeøra", "63.206995", "8.997224"]
+
+namsos = ["Namsos", "64.4675884", "11.501161"]
+dombas = ["Dombås", "62.073208", "9.121031"]
 
 supply_coords.loc[len(supply_coords)] = steinkjer
-supply_coords.loc[len(supply_coords)] = storen
-supply_coords.loc[len(supply_coords)] = orkanger
+supply_coords.loc[len(supply_coords)] = namsos
+supply_coords.loc[len(supply_coords)] = vinjeora
 supply_coords.loc[len(supply_coords)] = meraker
 supply_coords.loc[len(supply_coords)] = berkak
-supply_coords.loc[len(supply_coords)] = melhus
+supply_coords.loc[len(supply_coords)] = dombas
 
 
-materials = ["Timber", "Steel"]
+materials = ["Timber"]
 
 # GENERATE FILE
 # ============
-#supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-#demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
-#hm.export_dataframe_to_csv(supply, r"" + "./CSV/master_thesis_study_case_supply.csv")
-#hm.export_dataframe_to_csv(demand, r"" + "./CSV/master_thesis_study_case_demand.csv")
-#supply.to_excel(r"" + "./CSV/master_thesis_study_case_supply.xlsx")
-#demand.to_excel(r"" + "./CSV/master_thesis_study_case_demand.xlsx")
+#supply = hm.create_random_data_supply_pdf_reports(supply_count = 100, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+#demand = hm.create_random_data_demand_pdf_reports(demand_count = 100, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
+#hm.export_dataframe_to_csv(supply, r"" + "./CSV/master_thesis_study_case_supply_new_locs.csv")
+#hm.export_dataframe_to_csv(demand, r"" + "./CSV/master_thesis_study_case_demand_new_locs.csv")
+#supply.to_excel(r"" + "./CSV/master_thesis_study_case_supply_new_locs.xlsx")
+#demand.to_excel(r"" + "./CSV/master_thesis_study_case_demand_new_locs.xlsx")
 #========================================
 
 #PRE-PROSESSING DATA

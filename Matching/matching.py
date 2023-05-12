@@ -995,7 +995,7 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
         matches.append({'Name': 'Greedy Algorithm Plural', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if bipartite:
         matching.match_bipartite_graph()
-        matches.append({'Name': 'Maximum Bipartite Matching', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'MBM', 'Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if milp:
         matching.match_mixed_integer_programming()
         matches.append({'Name': 'MILP','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
@@ -1011,11 +1011,11 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
 
     if bipartite_plural:
         matching.match_bipartite_plural()
-        matches.append({'Name': 'Maximum Bipartite Matching Plural','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'MBM Plural','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
     if bipartite_plural_multiple:
         matching.match_bipartite_plural_multiple()
-        matches.append({'Name': 'Maximum Bipartite Matching Plural Multiple','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'MBM Plural Multiple','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     return matches
 
 

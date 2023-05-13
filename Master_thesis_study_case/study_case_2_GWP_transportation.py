@@ -43,12 +43,9 @@ constants = {
 supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
 steinkjer = ["Steinkjer", "64.024861", "11.4891085"]
-
-#orkanger = ["Orkanger", "63.3000", "9.8468"]
 meraker = ["Meråker", "63.415312", "11.747262"]
 berkak = ["Berkåk", "62.8238946","9.9934341"]
 vinjeora = ["Vinjeøra", "63.206995", "8.997224"]
-
 namsos = ["Namsos", "64.4675884", "11.501161"]
 dombas = ["Dombås", "62.073208", "9.121031"]
 
@@ -84,7 +81,7 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case2 = eval(run_string)
 pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
-hm.generate_pdf_report(pdf_results_case2," Study Case 2 10pros", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+hm.generate_pdf_report(pdf_results_case2, constants["Project name"]+ " Study Case 2", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
 
 #PLOTS FOR OVERLEAF

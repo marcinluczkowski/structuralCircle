@@ -88,7 +88,7 @@ run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
 #hm.generate_plots_pdf_report(supply, demand, pdf_results_case1, False)
-hm.generate_pdf_report(pdf_results_case1," Study Case 1 10pros", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+hm.generate_pdf_report(pdf_results_case1, constants["Project name"]+ " Study Case 1", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
 
 #PLOTS FOR OVERLEAF

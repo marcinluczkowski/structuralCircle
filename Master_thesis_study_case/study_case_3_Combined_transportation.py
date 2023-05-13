@@ -43,18 +43,18 @@ constants = {
 supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
 steinkjer = ["Steinkjer", "64.024861", "11.4891085"]
-storen = ["Støren", "63.033639", "10.286356"]
-orkanger = ["Orkanger", "63.3000", "9.8468"]
 meraker = ["Meråker", "63.415312", "11.747262"]
 berkak = ["Berkåk", "62.8238946","9.9934341"]
-melhus = ["Melhus", "63.2897753", "10.2934154"]
+vinjeora = ["Vinjeøra", "63.206995", "8.997224"]
+namsos = ["Namsos", "64.4675884", "11.501161"]
+dombas = ["Dombås", "62.073208", "9.121031"]
 
 supply_coords.loc[len(supply_coords)] = steinkjer
-supply_coords.loc[len(supply_coords)] = storen
-supply_coords.loc[len(supply_coords)] = orkanger
+supply_coords.loc[len(supply_coords)] = namsos
+supply_coords.loc[len(supply_coords)] = vinjeora
 supply_coords.loc[len(supply_coords)] = meraker
 supply_coords.loc[len(supply_coords)] = berkak
-supply_coords.loc[len(supply_coords)] = melhus
+supply_coords.loc[len(supply_coords)] = dombas
 
 
 materials = ["Timber", "Steel"]
@@ -81,7 +81,7 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case3 = eval(run_string)
 pdf_results_case3 = hm.extract_results_df_pdf(result_case3, constants)
-hm.generate_pdf_report(pdf_results_case3, " Study Case 3 10 pros", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+hm.generate_pdf_report(pdf_results_case3, constants["Project name"]+ " Study Case 3", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
 
 #PLOTS FOR OVERLEAF

@@ -237,7 +237,7 @@ def create_map_dataframe(df, color, legend_text, save_name):
 
     legend_html = f'''
         <div style="position: fixed; 
-                    top: 10px; right: 10px; width: 180px; height: 50px; 
+                    top: 10px; right: 10px; width: 180px; height: 45px; 
                     border:2px solid grey; z-index:9999; font-size:14px;
                     background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
         <i class="fa-solid fa-circle" style="color:{color};font-size=0.5px;"></i> {legend_text}<br>
@@ -369,6 +369,60 @@ def create_map_supply_locations(supply_cords_df, site_lat, site_lon, include_sit
         location = [coord[0],coord[1]]
         folium.Marker([coord[0], coord[1]], icon=folium.Icon(prefix="fa", icon="fa-circle", color="green")).add_to(m) #Marker for reused locations
 
+    m.fit_bounds(fit_view_coordinates)
+    # Add the legend to the map
+    m.get_root().html.add_child(folium.Element(legend_html))
+    file_dir = r"./Local_files/GUI_files/Results/Maps/"
+    m.save(file_dir+f"{save_name}.html")
+    if platform.system()=="Windows":
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        driver = webdriver.Chrome(chrome_options=options)
+        #driver.get(r"./Results/map.html")
+        filepath = os.getcwd() + file_dir+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+    else:
+        file_dir = r"./Local_files/GUI_files/Results/Maps/"
+        m.save(file_dir+f"{save_name}.html")
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches",["enable-automation"])
+        options.add_argument("--headless")
+        #options.add_experimental_option('detach', True)
+        driver = webdriver.Chrome(chrome_options=options)
+        filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
+        driver.get("file:///" + filepath)
+        driver.maximize_window()
+        time.sleep(3)
+        driver.save_screenshot(file_dir+f"{save_name}.png")
+        driver.quit
+
+def create_map_manufacturer_location(timber_lat, timber_lon, steel_lat, steel_lon, site_lat, site_lon, save_name):
+    m = folium.Map(location=[site_lat, site_lon], control_scale=True) 
+
+    folium.Marker([site_lat, site_lon], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m) #Marker for site location
+    legend_html = f'''
+    <div style="position: fixed; 
+                top: 10px; right: 10px; width: 180px; height: 45px; 
+                border:2px solid grey; z-index:9999; font-size:14px;
+                background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
+    <i class="fa-solid fa-location-dot" style="color:#D53E2A;"></i> Manufacturers<br>
+    <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Construction site  
+    </div>
+    '''
+
+    folium.Marker([steel_lat, steel_lon], icon=folium.Icon(prefix="fa", icon="fa-circle", color="red")).add_to(m) #Marker for steel manufacturer
+    folium.Marker([timber_lat, timber_lon], icon=folium.Icon(prefix="fa", icon="fa-circle", color="red")).add_to(m) #Marker for timber manufacturer
+
+    fit_view_coordinates = [(site_lat, site_lon), (timber_lat, timber_lon), (steel_lat, steel_lon)]
     m.fit_bounds(fit_view_coordinates)
     # Add the legend to the map
     m.get_root().html.add_child(folium.Element(legend_html))

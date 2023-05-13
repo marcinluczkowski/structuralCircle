@@ -62,8 +62,9 @@ supply_coords.loc[len(supply_coords)] = dombas
 
 materials = ["Timber"]
 
-plot.create_map_supply_locations(supply_coords, site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], include_site=True, save_name="supply_loc_with_site")
-plot.create_map_supply_locations(supply_coords, site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], include_site=False, save_name="supply_loc_wo_site")
+#plot.create_map_supply_locations(supply_coords, site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], include_site=True, save_name="supply_loc_with_site")
+#plot.create_map_supply_locations(supply_coords, site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], include_site=False, save_name="supply_loc_wo_site")
+plot.create_map_manufacturer_location(timber_lat="63.368923", timber_lon = "10.3749681", steel_lat="63.438445", steel_lon = "10.40994", site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], save_name="manu_loc_with_site")
 """
 # GENERATE FILE
 # ============

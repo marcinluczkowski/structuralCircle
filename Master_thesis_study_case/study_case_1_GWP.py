@@ -33,8 +33,8 @@ constants = {
     "Include transportation": False,
     "Site latitude": "63.4154171",
     "Site longitude": "10.3994672",
-    "Demand file location": r"./CSV/master_thesis_study_case_demand_10prosTransport.xlsx",
-    "Supply file location": r"./CSV/master_thesis_study_case_supply_10prosTransport.xlsx",
+    "Demand file location": r"./CSV/master_thesis_demand.xlsx",
+    "Supply file location": r"./CSV/master_thesis_supply.xlsx",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#

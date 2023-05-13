@@ -84,7 +84,7 @@ def plot_materials(supply, demand, fig_title, save_filename):
     ax.yaxis.get_major_locator().set_params(integer=True)
     width = 0.25
     ax.set_xlim([x[0]-0.60, x[-1]+0.60])
-    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color = color_palette[0])
+    bar1 = ax.bar(x - width / 2, supply_values, width, label="Supply", zorder=2, color = color_palette[0])
     bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = color_palette[1])
     ax.set_xticks(x)
     ax.set_xticklabels(label, fontsize=12)

@@ -33,8 +33,8 @@ constants = {
     "Include transportation": False,
     "Site latitude": "63.4154171",
     "Site longitude": "10.3994672",
-    "Demand file location": r"./CSV/master_thesis_study_case_demand.csv",
-    "Supply file location": r"./CSV/master_thesis_study_case_supply.csv",
+    "Demand file location": r"./CSV/master_thesis_study_case_demand_10prosTransport.xlsx",
+    "Supply file location": r"./CSV/master_thesis_study_case_supply_10prosTransport.xlsx",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -74,7 +74,7 @@ materials = ["Timber", "Steel"]
 #demand.to_excel(r"" + "./CSV/master_thesis_study_case_demand.xlsx")
 #========================================
 
-"""
+
 #PRE-PROSESSING DATA
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
@@ -87,9 +87,9 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
-hm.generate_plots_pdf_report(supply, demand, pdf_results_case1, False)
-#hm.generate_pdf_report(pdf_results_case1, constants["Project name"] + " Study Case 1", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
-"""
+#hm.generate_plots_pdf_report(supply, demand, pdf_results_case1, False)
+hm.generate_pdf_report(pdf_results_case1," Study Case 1 10pros", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+
 
 #PLOTS FOR OVERLEAF
 #plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")

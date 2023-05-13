@@ -33,8 +33,8 @@ constants = {
     "Include transportation": True,
     "Site latitude": "63.4154171",
     "Site longitude": "10.3994672",
-    "Demand file location": r"./CSV/master_thesis_study_case_demand_new_locs.csv",
-    "Supply file location": r"./CSV/master_thesis_study_case_supply_new_locs.csv",
+    "Demand file location": r"./CSV/master_thesis_study_case_demand_10prosTransport.xlsx",
+    "Supply file location": r"./CSV/master_thesis_study_case_supply_10prosTransport.xlsx",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -60,11 +60,11 @@ supply_coords.loc[len(supply_coords)] = berkak
 supply_coords.loc[len(supply_coords)] = dombas
 
 
-materials = ["Timber"]
+materials = ["Timber","Steel"]
 
-plot.create_map_supply_locations(supply_coords, site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], include_site=True, save_name="supply_loc_with_site")
-plot.create_map_supply_locations(supply_coords, site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], include_site=False, save_name="supply_loc_wo_site")
-"""
+#plot.create_map_supply_locations(supply_coords, site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], include_site=True, save_name="supply_loc_with_site")
+#plot.create_map_supply_locations(supply_coords, site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], include_site=False, save_name="supply_loc_wo_site")
+
 # GENERATE FILE
 # ============
 #supply = hm.create_random_data_supply_pdf_reports(supply_count = 100, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
@@ -87,9 +87,8 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case2 = eval(run_string)
 pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
-hm.generate_pdf_report(pdf_results_case2, constants["Project name"] + " Study Case 2", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+hm.generate_pdf_report(pdf_results_case2," Study Case 2 10pros", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
-"""
 
 #PLOTS FOR OVERLEAF
 #plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")

@@ -71,7 +71,7 @@ def generate_datasets(d_counts, s_counts):
 
 # ========== SCENARIO 1 ============== 
 var1 = 1
-d_counts = np.linspace(4, 14, num = 6).astype(int)
+d_counts = np.linspace(4, 10, num = 6).astype(int)
 s_counts = (d_counts * var1).astype(int)
 internal_runs = 100
 constraint_dict = constants["constraint_dict"]
@@ -115,5 +115,5 @@ for d, s in zip(d_counts, s_counts):
 #pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
 #pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
 
-plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Runtime [s]", title = "", fix_overlapping=False, save_filename="brute_results_time_14_100.png")
-plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = u"Total score [kgCO$_2$eq]", title = "", fix_overlapping=True, save_filename="brute_results_score_14_100.png")
+plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Runtime [s]", title = "", fix_overlapping=False, save_filename="brute_results_time_10_100.png")
+plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = u"Total score [kgCO2eq]", title = "", fix_overlapping=True, save_filename="brute_results_score_10_100.png")

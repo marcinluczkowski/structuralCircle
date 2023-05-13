@@ -504,7 +504,7 @@ def generate_plots_pdf_report(supply, demand, pdf_results, transportation_includ
     plot.plot_materials(supply, demand, "", save_filename=r"material_plot.png")
 
     if transportation_included:
-        plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Substitution locations", save_name=r"map_reused_subs")
+        plot.create_map_substitutions(supply, pdf_results, "supply", color = "green", legend_text="Reusable elements locations", save_name=r"map_reused_subs")
         plot.create_map_substitutions(demand, pdf_results, "demand", color = "red", legend_text="Manufacturer locations", save_name=r"map_manu_subs")
 
 def generate_pdf_report(results, projectname, supply, demand, filepath):

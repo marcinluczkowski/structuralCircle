@@ -336,10 +336,31 @@ def create_empty_map(df, color, legend_text, save_name):
         driver.save_screenshot(file_dir+f"{save_name}.png")
         driver.quit
 
-def create_map_supply_locations(supply_cords_df, site_lat, site_lon, save_name):
+def create_map_supply_locations(supply_cords_df, site_lat, site_lon, include_site, save_name):
     df = supply_cords_df.copy()
     m = folium.Map(location=[site_lat, site_lon], control_scale=True) 
-    folium.Marker([site_lat, site_lon], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m) #Marker for site location
+
+    if include_site:
+        folium.Marker([site_lat, site_lon], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m) #Marker for site location
+        legend_html = f'''
+        <div style="position: fixed; 
+                    top: 10px; right: 10px; width: 180px; height: 45px; 
+                    border:2px solid grey; z-index:9999; font-size:14px;
+                    background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
+        <i class="fa-solid fa-location-dot" style="color:#6BA524;"></i> Reusable elements<br>
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Construction site  
+        </div>
+        '''
+    else:
+        legend_html = f'''
+        <div style="position: fixed; 
+                    top: 10px; right: 10px; width: 180px; height: 25px; 
+                    border:2px solid grey; z-index:9999; font-size:14px;
+                    background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
+        <i class="fa-solid fa-location-dot" style="color:#6BA524;"></i> Reusable elements
+        </div>
+        '''
+
 
     fit_view_coordinates = [(site_lat, site_lon)]
     for index, row in df.iterrows():
@@ -349,21 +370,10 @@ def create_map_supply_locations(supply_cords_df, site_lat, site_lon, save_name):
         folium.Marker([coord[0], coord[1]], icon=folium.Icon(prefix="fa", icon="fa-circle", color="green")).add_to(m) #Marker for reused locations
 
     m.fit_bounds(fit_view_coordinates)
-
-    legend_html = f'''
-    <div style="position: fixed; 
-                top: 10px; right: 10px; width: 180px; height: 50px; 
-                border:2px solid grey; z-index:9999; font-size:14px;
-                background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
-    <i class="fa-solid fa-location-dot" style="color:#6BA524;"></i> Reused locations <br>
-    <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Site location  
-    </div>
-    '''
     # Add the legend to the map
     m.get_root().html.add_child(folium.Element(legend_html))
     file_dir = r"./Local_files/GUI_files/Results/Maps/"
     m.save(file_dir+f"{save_name}.html")
-
     if platform.system()=="Windows":
         file_dir = r"./Local_files/GUI_files/Results/Maps/"
         m.save(file_dir+f"{save_name}.html")

@@ -20,9 +20,9 @@ constants = {
     "STEEL_REUSE_GWP": 278.0, #kg CO2 eq per m^3, reduction of 97% from new according to Høydahl and Walter
     "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
     "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
-    "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
+    "TIMBER_REUSE_PRICE" : 1700.0, #Per m^3, assumes half the price
     "STEEL_PRICE": 67.0, #NOK per kg, ENTRA 2021
-    "STEEL_REUSE_PRICE": 67.0, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 30.0, #Half the price
     "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################

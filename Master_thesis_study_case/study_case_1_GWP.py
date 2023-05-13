@@ -43,12 +43,9 @@ constants = {
 supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
 steinkjer = ["Steinkjer", "64.024861", "11.4891085"]
-
-#orkanger = ["Orkanger", "63.3000", "9.8468"]
 meraker = ["Meråker", "63.415312", "11.747262"]
 berkak = ["Berkåk", "62.8238946","9.9934341"]
 vinjeora = ["Vinjeøra", "63.206995", "8.997224"]
-
 namsos = ["Namsos", "64.4675884", "11.501161"]
 dombas = ["Dombås", "62.073208", "9.121031"]
 

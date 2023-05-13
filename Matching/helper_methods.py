@@ -73,11 +73,11 @@ def extract_results_df_pdf(dict_list, constants):
         used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq"), "GWP reused timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq"), "GWP reused steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq")})
     elif metric == "Price":
         results_dict["Unit"] = "NOK"
-        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "NOK/m^3"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "NOK/m^3")})
+        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg")})
     elif metric == "Combined":
         results_dict["Unit"] = "NOK"
         used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq"), "GWP reused timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq"), "GWP reused steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq"), "Valuation of GWP": (constants["VALUATION_GWP"], "NOK/kgCO2eq")}) 
-        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "NOK/m^3"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "NOK/m^3")})
+        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_PRICE"], "NOK/kg"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg")})
     results_dict["Savings"] =  round(results_dict["All new score"] - results_dict["Score"], 2)
     results_dict["Number_reused"] = len(match_object.supply) - len(match_object.demand)
     results_dict["Number_demand"] = len(match_object.demand)

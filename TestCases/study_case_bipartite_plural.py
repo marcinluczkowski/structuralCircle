@@ -28,7 +28,7 @@ constants = {
     ########################
     "Project name": "Campussamling Hesthagen",
     "Metric": "GWP",
-    "Algorithms": ["bipartite", "bipartite_plural", "bipartite_plural_multiple"],
+    "Algorithms": ["greedy_plural","bipartite_plural"],
     "Include transportation": False,
     "Site latitude": "63.4154171",
     "Site longitude": "10.3994672",
@@ -68,9 +68,9 @@ def generate_datasets(d_counts, s_counts):
 
 # ========== Comparing bipartite plural vs bipartite plural multiple ============== 
 var1 = 1
-d_counts = np.linspace(50, 500, num = 10).astype(int)
+d_counts = np.linspace(100, 1500, num = 15).astype(int)
 s_counts = (d_counts * var1).astype(int)
-internal_runs = 100
+internal_runs = 10
 constraint_dict = constants["constraint_dict"]
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
@@ -112,5 +112,5 @@ for d, s in zip(d_counts, s_counts):
 #pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
 #pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
 
-plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Runtime [s]", title = "", fix_overlapping=False, save_filename="bipartite_results_time_test.png")
-plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kgCO2eq]", title = "", fix_overlapping=True, save_filename="bipartite_results_score_test.png")
+plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Runtime [s]", title = "", fix_overlapping=False, save_filename="bipartite_results_time_test_2000.png")
+plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kgCO2eq]", title = "", fix_overlapping=True, save_filename="bipartite_results_score_test_2000.png")

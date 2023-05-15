@@ -18,7 +18,7 @@ constants = {
     "TIMBER_DENSITY": 491.0,  #kg/m^3, based on NEPD-3442-2053-EN
     "STEEL_GWP": 9263.0, #kg CO2 eq per m^3, Norsk stål + density of steel
     "STEEL_REUSE_GWP": 278.0, #kg CO2 eq per m^3, reduction of 97% from new according to Høydahl and Walter
-    "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
+    "VALUATION_GWP": 7.0, #NOK per kg CO2, based on OECD
     "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
     "TIMBER_REUSE_PRICE" : 1700.0, #Per m^3, assumes half the price
     "STEEL_PRICE": 67.0, #NOK per kg, ENTRA 2021
@@ -26,7 +26,7 @@ constants = {
     "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "Campussamling Hesthagen",
+    "Project name": "MAC",
     "Metric": "Combined",
     #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],

@@ -26,7 +26,7 @@ constants = {
     "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "MAC",
+    "Project name": "ASUS",
     "Metric": "GWP",
     #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],

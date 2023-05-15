@@ -241,7 +241,7 @@ def create_map_dataframe(df, color, legend_text, save_name):
                     border:2px solid grey; z-index:9999; font-size:14px;
                     background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
         <i class="fa-solid fa-circle" style="color:{color};font-size=0.5px;"></i> {legend_text}<br>
-        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Site location  
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Construction site
         </div>
         '''
 
@@ -297,7 +297,7 @@ def create_empty_map(df, color, legend_text, save_name):
                     border:2px solid grey; z-index:9999; font-size:14px;
                     background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
         <i class="fa-solid fa-circle" style="color:{color};font-size=0.5px;"></i> {legend_text}<br>
-        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Site location  
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Construction site
         </div>
         '''
 

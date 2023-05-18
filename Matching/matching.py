@@ -1007,7 +1007,7 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
         matches.append({'Name': 'Genetic Algorithm','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     if brute:
         matching.match_brute()
-        matches.append({'Name': 'Brute Force','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
+        matches.append({'Name': 'Brute Force Approach','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
 
     if bipartite_plural:
         matching.match_bipartite_plural()

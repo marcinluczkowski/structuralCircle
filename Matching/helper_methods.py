@@ -526,12 +526,12 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     # Create a new PDF object
     # Create a new PDF object
     #Add CSV containing results to "Results"-folder
-    export_dataframe_to_xlsx(results["Pairs"], filepath + (projectname+"_substitutions.xlsx"))
+    save_name = projectname.replace(" ", "_") + "_substitutions.xlsx"
+    export_dataframe_to_xlsx(results["Pairs"], filepath + save_name)
     if results["Transportation included"] == "No":
         transportation_included = False
     elif results["Transportation included"] == "Yes":
         transportation_included = True
-
     #Add relevant plots
     generate_plots_pdf_report(supply, demand, results, transportation_included)
     pdf = FPDF()
@@ -589,12 +589,21 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.cell(25, 10, "Substitutions", 1, 1, "C", True)
     pdf.set_fill_color(247, 247, 247)
     score = format_float(round(results['Score'],0))
+    unit = results["Unit"]
     new_score = format_float(round(results['All new score'],0))
     substitutions = round(results['Number of substitutions']/results['Number_demand']*100, 2)
     savings = round(results['Savings']/results['All new score']*100, 2)
-    pdf.cell(50, 10, f"{score} {results['Unit']}", 1, 0, "C", True)
+
+    if unit == "NOK":
+        score_text = f"{unit} {score}"
+        score_new_text = f"{unit} {new_score}"
+    else:
+        score_text = f"{score} {unit}"
+        score_new_text = f"{new_score} {unit}"
+
+    pdf.cell(50, 10, score_text, 1, 0, "C", True)
     #TODO check this line: better? change from kr to NOK?
-    pdf.cell(50, 10, f"{new_score} {results['Unit']}", 1, 0, "C", True)
+    pdf.cell(50, 10, score_new_text, 1, 0, "C", True)
     pdf.cell(25, 10, f"{savings}%", 1, 0, "C", True)
     pdf.cell(25, 10, f"{substitutions}%", 1, 1, "C", True) 
     pdf.ln()
@@ -603,20 +612,28 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_left_margin(15)
     pdf.set_y(110)
     pdf.set_font("Times", size=12, style ="")
-    summary = f"The '{results['Algorithm']}' algorithm yields the best results, substituting {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {score} {results['Unit']} is achieved. For comparison, a score of {new_score} {results['Unit']} would have been obtained by employing exclusively new materials. This results in a total saving of {savings}%."
+    summary = f"The best results was obtained by the following algorithm: {results['Algorithm']}. This algorithm sucessfully substituted {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {score_text} was achieved. For comparison, a score of {score_new_text} would have been obtained by employing exclusively new materials. This resulted in a total saving of {savings}%."
+    if results["Metric"] == "GWP":
+        summary += f"The amount of CO2eq corresponds to {np.floor(score/206)} round-trip flights between Oslo and Trondheim."
     if transportation_included:
-        summary += f" Note that impacts of transporting the materials to the construction site is accounted for and contributes to {results['Transportation percentage']}% of the total score. "
+        summary += f" Note that impacts of transporting the materials to the construction site was accounted for and contributed to {results['Transportation percentage']}% of the total score. "
     else:
-        summary += f" Note that impacts of transporting the materials to the construction site is not accounted for. "
-    summary += f"Open the CSV-file \"{projectname}_substitutions.csv\" to examine the substitutions."
+        summary += f" Note that impacts of transporting the materials to the construction site was not accounted for. "
+    summary += f"Open the CSV-file \"{save_name}\" to examine the substitutions."
 
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
+
+    
 
 
     #Constants used in calculations:
     ###############
+    if len(list(results["Constants used"].keys())) > 8:
+        new_page()
+        pdf.set_xy(table_x, 30)
+    else:
+        pdf.set_xy(table_x, table_y2)
     pdf.set_font("Times", size=16, style ="")
-    pdf.set_xy(table_x, table_y2)
     pdf.multi_cell(160, 7, txt="Constants used in calculations")
     pdf.set_font("Times", size=10)
     pdf.ln(5)
@@ -663,7 +680,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_left_margin(15)
     pdf.set_y(80)
     pdf.set_font("Times", size=12, style ="")
-    summary_info = f"The files contains {results['Number_reused']} reuse elements and {results['Number_demand']} demand elements. The graphs below depicts some of the properties of the elements, including length, area, moment of inertia and the material distribution."
+    summary_info = f"The files used contains {results['Number_reused']} reuse elements and {results['Number_demand']} demand elements. The graphs below depicts the distribution of some of the properties of the elements, including the materials, lengths, areas, and moment of inertias."
     pdf.multi_cell(pdf.w-2*15,8, summary_info, 0, "L", False)
 
     #Images, 6 of them
@@ -707,16 +724,24 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
         pdf.set_fill_color(247, 247, 247)
         transportation_score = format_float(round(results['Transportation score'], 0))
         new_transportation_score = format_float(round(results['Transportation all new'], 0))
-        pdf.cell(50, 10, f"{transportation_score} {results['Unit']}", 1, 0, "C", True)
+
+        if unit == "NOK":
+            trans_text = f"{unit} {transportation_score}"
+            trans_new_text = f"{unit} {new_transportation_score}"
+        else:
+            trans_text = f"{transportation_score} {unit}"
+            trans_new_text = f"{new_transportation_score} {unit}"
+
+        pdf.cell(50, 10, trans_text, 1, 0, "C", True)
         pdf.cell(50, 10, f"{results['Transportation percentage']}%", 1, 0, "C", True)
-        pdf.cell(50, 10, f"{new_transportation_score} {results['Unit']}", 1, 1, "C", True)
+        pdf.cell(50, 10, trans_new_text, 1, 1, "C", True)
         pdf.ln()
         y_information += 35
         #Short text summary
         pdf.set_left_margin(15)
         pdf.set_y(y_information)
         pdf.set_font("Times", size=12, style ="")
-        summary = f"All calculations in this report take impacts of transportation of the materials to the construction site into consideration. Transportation itself is responsible for {transportation_score} {results['Unit']}. This accounts for {results['Transportation percentage']}% of the total score of {score} {results['Unit']}. For comparison, the transportation impact for exclusively using new materials would have been {new_transportation_score} {results['Unit']}. Two maps are included to show the location of the suggested substitutions of reused elements and the manufacturer locations where new elements can be obtained. The numbers on the maps indicate the number of elements present at each location."
+        summary = f"All calculations in this report accouned for the effects of material transportation to the construction site. Transportation itself was responsible for {trans_text}. This accounts for {results['Transportation percentage']}% of the total score of {score_text}. For comparison, the transportation impact for exclusively using new materials would have been {trans_new_text}. Two maps are included to show the location of the suggested substitutions of reused elements and the manufacturer locations where new elements can be obtained. The numbers on the maps indicate the number of elements present at each location."
         
         pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
         
@@ -752,14 +777,21 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
 
     pdf.set_fill_color(247, 247, 247)
     performance = results['Performance'] #Dataframe
+    
+    if unit == "NOK":
+        performance_text = f"{unit} {performance}"
+    else:
+        performance_text = f"{performance} {unit}"
+
     print_names = ""
     for i in range(len(performance)):
         y_information += 10
         performance_score = format_float(round(performance.iloc[i]['Score'], 0)) 
+        performance_time = format_float(round(performance.iloc[i]['Score'], 2)) 
         pdf.cell(75, 10, f"{performance.iloc[i]['Names']}", 1, 0, "C", True)
-        pdf.cell(51, 10, f"{performance_score} {results['Unit']}", 1, 0, "C", True)
+        pdf.cell(51, 10, performance_text, 1, 0, "C", True)
         pdf.cell(25, 10, f"{performance.iloc[i]['Sub_percent']}%", 1, 0, "C", True)
-        pdf.cell(25, 10, f"{performance.iloc[i]['Time']}s", 1, 0, "C", True)
+        pdf.cell(25, 10, f"{performance_time}s", 1, 0, "C", True)
         if len(performance) == 1:
             print_names += performance.iloc[i]['Names']
         elif i != len(performance) - 1:
@@ -769,11 +801,13 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
             print_names += "and " + performance.iloc[i]['Names']
         pdf.ln()
 
-
+    if len(performance) == 1:
+        summary = f"The design tool achieved a score of {score_text} with the following algorithm: {performance.iloc[0]['Names']}. The substitutions by this algorithm are completed in {results['Time']} seconds"
+    else:
+        summary = f"The design tool was executed with {len(performance)} algorithms, namely: {print_names}. The {results['Algorithm']} yielded the lowest score, as shown in the table. The substitutions by this algorithm was completed in {results['Time']} seconds."
     pdf.set_font("Times", size=12, style ="")
     pdf.set_left_margin(15)
     pdf.set_y(y_information+25)
-    summary = f"The design tool is runned with {len(performance)} algorithms, namely: {print_names}. The {results['Algorithm']} yields the lowest score, as shown in the table. The substitutions by this algorithm are completed in {results['Time']} seconds."
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
  
     # Save the PDF to a file

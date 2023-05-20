@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import igraph as ig
 import logging
 import LCA as lca
+import helper_methods as hm
 import itertools
 import random
 import matplotlib.ticker as ticker
@@ -493,3 +494,13 @@ def draw_comparison_image(CO2_score):
 
     # Save the modified image
     image.save(r"./Local_files/comparison_image.png", dpi = (300, 300))
+
+
+def plot_substitutions_matrix():
+    subs1 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_1_substitutions.xlsx", index_replacer="D")
+    subs2 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_2_substitutions.xlsx", index_replacer="D")
+    subs3 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_3_substitutions.xlsx", index_replacer="D")
+    subs4 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_4_substitutions.xlsx", index_replacer="D")
+    all_subs = pd.concat([subs1, subs2, subs3, subs4], axis = 1)
+    #TODO: Must run all study cases one more time!
+    test = 4

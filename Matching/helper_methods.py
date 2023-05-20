@@ -614,7 +614,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_font("Times", size=12, style ="")
     summary = f"The best results was obtained by the following algorithm: {results['Algorithm']}. This algorithm sucessfully substituted {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {score_text} was achieved. For comparison, a score of {score_new_text} would have been obtained by employing exclusively new materials. This resulted in a total saving of {savings}%."
     if results["Metric"] == "GWP":
-        summary += f"The amount of CO2eq corresponds to {np.floor(score/206)} round-trip flights between Oslo and Trondheim."
+        summary += f"The amount of kgCO2eq corresponds to {np.floor(int(results['All new score'])/206)} round-trip flights between Oslo and Trondheim."
     if transportation_included:
         summary += f" Note that impacts of transporting the materials to the construction site was accounted for and contributed to {results['Transportation percentage']}% of the total score. "
     else:

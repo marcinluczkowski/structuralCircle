@@ -14,6 +14,7 @@ import time
 import os
 import platform
 from PIL import Image, ImageDraw, ImageFont
+import seaborn as sns
 
 color_palette = ["#EF8114", "#00509E", "#2E933C", "#CC2936", "#56203D"] #Orange, Blue, Green, Red, Purple 
 
@@ -52,7 +53,7 @@ def plot_algorithm(alg_dict, x_values, xlabel, ylabel, fix_overlapping, title, s
     ax.tick_params(bottom=False, left=False)
     ax.xaxis.get_major_locator().set_params(integer=True)
     #plt.yscale('log')
-    plt.savefig(r"Local_files/Plots_overleaf/" + save_filename, dpi=300)
+    plt.savefig(r"Local_files/Plots_overleaf/" + save_filename, dpi=300, bbox_inches='tight', pad_inches=0.01)
 
 
 def create_graph_specific_material(supply, demand, target_column, unit, number_of_intervals, material_string, fig_title, save_filename):
@@ -102,7 +103,7 @@ def plot_materials(supply, demand, fig_title, save_filename):
     ax.tick_params(bottom=False, left=False)
     # set x-axis limits to reduce space between groups of bars
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=300)
+    plt.savefig(save_name, dpi=300, bbox_inches='tight', pad_inches=0.01)
 
 
 
@@ -183,7 +184,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     plt.title(fig_title)
     ax.yaxis.get_major_locator().set_params(integer=True)
     width = 0.25
-    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color = color_palette[0])
+    bar1 = ax.bar(x - width / 2, supply_values, width, label="Supply", zorder=2, color = color_palette[0])
     bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = color_palette[1])
     ax.set_xticks(x, label, fontsize=12)
     ax.legend(loc = "upper right", bbox_to_anchor=(1.10, 1.12))
@@ -197,7 +198,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=300)
+    plt.savefig(save_name, dpi=300, bbox_inches='tight', pad_inches=0.01)
 
 
 
@@ -496,11 +497,35 @@ def draw_comparison_image(CO2_score):
     image.save(r"./Local_files/comparison_image.png", dpi = (300, 300))
 
 
-def plot_substitutions_matrix():
-    subs1 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_1_substitutions.xlsx", index_replacer="D")
-    subs2 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_2_substitutions.xlsx", index_replacer="D")
-    subs3 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_3_substitutions.xlsx", index_replacer="D")
-    subs4 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_4_substitutions.xlsx", index_replacer="D")
+def plot_substitutions_matrix(save_name):
+    def calculate_fraction(column1, column2):
+        equal_count = sum(column1 == column2)
+        total_count = len(column1)
+        return (equal_count / total_count)
+    plt.figure(figsize=(7, 5))
+    subs1 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_1_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 1"})
+    subs2 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_2_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 2"})
+    subs3 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_3_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 3"})
+    subs4 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_4_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 4"})
     all_subs = pd.concat([subs1, subs2, subs3, subs4], axis = 1)
-    #TODO: Must run all study cases one more time!
+
+    columns = all_subs.columns
+    M = pd.DataFrame(index=columns, columns=columns, dtype=float)
+
+    for i in range(len(columns)):
+        for j in range(i, len(columns)):
+            col1 = all_subs[columns[i]]
+            col2 = all_subs[columns[j]]
+            percentage = calculate_fraction(col1, col2)
+            M.at[columns[i], columns[j]] = percentage
+            M.at[columns[j], columns[i]] = percentage
     test = 4
+    sns.set(font='Times New Roman')
+    ax = sns.heatmap(M, annot=True, cmap='YlGnBu')
+    ax.xaxis.tick_top() # x axis on top
+    ax.xaxis.set_label_position('top')
+    ax.tick_params(axis='x', which='both', bottom=False, top=False)
+    plt.yticks(rotation=0)
+    #plt.title("Fraction of equal substitutions between the case studies")
+    file_path = r"./Local_files/Plots_overleaf/" + save_name
+    plt.savefig(file_path, dpi = 300, bbox_inches='tight', pad_inches=0.01)

@@ -79,9 +79,9 @@ constraint_dict = constants["constraint_dict"]
 ########### STUDY CASE 2: GWP with transportation ###########
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
-#result_case2 = eval(run_string)
-#pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
-#hm.generate_pdf_report(pdf_results_case2, constants["Project name"]+ " Study Case 2", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+result_case2 = eval(run_string)
+pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
+hm.generate_pdf_report(pdf_results_case2, constants["Project name"]+ " Study Case 2", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
 
 #PLOTS FOR OVERLEAF

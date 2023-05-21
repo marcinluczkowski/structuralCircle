@@ -614,7 +614,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_font("Times", size=12, style ="")
     summary = f"The best results was obtained by the following algorithm: {results['Algorithm']}. This algorithm sucessfully substituted {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {score_text} was achieved. For comparison, a score of {score_new_text} would have been obtained by employing exclusively new materials. This resulted in a total saving of {savings}%."
     if results["Metric"] == "GWP":
-        summary += f"The amount of kgCO2eq corresponds to {np.floor(int(results['All new score'])/206)} round-trip flights between Oslo and Trondheim."
+        summary += f" The amount of kgCO2eq is equivalent to {int(np.floor(results['All new score']/206))*2} flights for one person between Oslo and Trondheim."
     if transportation_included:
         summary += f" Note that impacts of transporting the materials to the construction site was accounted for and contributed to {results['Transportation percentage']}% of the total score. "
     else:
@@ -702,7 +702,6 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     #pdf.set_y(110)
     
     
-    #TODO: Add more information about the datasets. Some histograms and graphs!
 
     ##################PAGE 2.5 (Transportation)##################
     new_page()
@@ -809,9 +808,11 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_left_margin(15)
     pdf.set_y(y_information+25)
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
- 
+    save_string = filepath+projectname
+    save_string = save_string.replace(" ", "_")
+    
     # Save the PDF to a file
-    pdf.output(filepath + projectname+"_report.pdf")
+    pdf.output(save_string+"_report.pdf")
 
 
 def generate_score_function_string(constants):

@@ -571,7 +571,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_left_margin(15)
     table_x = (pdf.w - 180) / 2
     table_y1 = 75
-    table_y2 = 165
+    table_y2 = 180
 
     #Summary
     ######################
@@ -717,9 +717,9 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
         pdf.ln(5)
         pdf.set_fill_color(96, 150, 208)
         pdf.set_draw_color(204, 204, 204)
-        pdf.cell(50, 10, f"Transportation score", 1, 0, "C", True)
+        pdf.cell(50, 10, f"Utilizing reusable elements", 1, 0, "C", True)
         pdf.cell(50, 10, "Percentage of total score", 1, 0, "C", True)
-        pdf.cell(50, 10, "Transportation all new", 1, 1, "C", True)
+        pdf.cell(50, 10, "Only manufactured elements", 1, 1, "C", True)
         pdf.set_fill_color(247, 247, 247)
         transportation_score = format_float(round(results['Transportation score'], 0))
         new_transportation_score = format_float(round(results['Transportation all new'], 0))
@@ -769,7 +769,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.ln(5)
     pdf.set_fill_color(96, 150, 208)
     pdf.set_draw_color(204, 204, 204)
-    pdf.cell(75, 10, "Name", 1, 0, "C", True)
+    pdf.cell(75, 10, "Algorithm name", 1, 0, "C", True)
     pdf.cell(51, 10, "Total score", 1, 0, "C", True)
     pdf.cell(25, 10, "Substitutions", 1, 0, "C", True)
     pdf.cell(25, 10, "Time", 1, 1, "C", True)
@@ -777,16 +777,17 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_fill_color(247, 247, 247)
     performance = results['Performance'] #Dataframe
     
-    if unit == "NOK":
-        performance_text = f"{unit} {performance}"
-    else:
-        performance_text = f"{performance} {unit}"
+    
 
     print_names = ""
     for i in range(len(performance)):
         y_information += 10
         performance_score = format_float(round(performance.iloc[i]['Score'], 0)) 
-        performance_time = format_float(round(performance.iloc[i]['Score'], 2)) 
+        performance_time = format_float(round(performance.iloc[i]['Time'], 2)) 
+        if unit == "NOK":
+            performance_text = f"{unit} {performance_score}"
+        else:
+            performance_text = f"{performance_score} {unit}"
         pdf.cell(75, 10, f"{performance.iloc[i]['Names']}", 1, 0, "C", True)
         pdf.cell(51, 10, performance_text, 1, 0, "C", True)
         pdf.cell(25, 10, f"{performance.iloc[i]['Sub_percent']}%", 1, 0, "C", True)

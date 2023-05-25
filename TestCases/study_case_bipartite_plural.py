@@ -68,9 +68,9 @@ def generate_datasets(d_counts, s_counts):
 
 # ========== Comparing bipartite plural vs bipartite plural multiple ============== 
 var1 = 1
-d_counts = np.linspace(100, 1500, num = 15).astype(int)
+d_counts = np.linspace(100, 1250, num = 24).astype(int)
 s_counts = (d_counts * var1).astype(int)
-internal_runs = 10
+internal_runs = 20
 constraint_dict = constants["constraint_dict"]
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)

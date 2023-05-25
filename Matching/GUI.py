@@ -866,6 +866,8 @@ ProjectLatitude_entry = tk.Entry(root,textvariable=ProjectLatitude_value_prefill
 ProjectLatitude_label.place(relx=0.50,rely=0.18,anchor="center")
 ProjectLatitude_entry.place(relx=0.55,rely=0.18,anchor="center")
 ProjectLatitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLatitude_entry,variabel="Site latitude":on_general_entry_string_click(event,entry,variabel))
+ProjectLatitude_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
+
 
 #Create project longitude label and entry
 ProjectLongitude_label = tk.Label(root, text="Longitude:")
@@ -874,7 +876,10 @@ longitude_coordinate.set(constants["Site longitude"])
 ProjectLongitude_entry = tk.Entry(root,textvariable=ProjectLongitude_value_prefilled,fg="grey",width=7)
 ProjectLongitude_label.place(relx=0.61,rely=0.18,anchor="center")
 ProjectLongitude_entry.place(relx=0.665,rely=0.18,anchor="center")
+
+
 ProjectLongitude_entry.bind('<FocusIn>', lambda event,entry=ProjectLongitude_entry,variabel="Site longitude":on_general_entry_string_click(event,entry,variabel))
+ProjectLongitude_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
 
 openmap_button = ttk.Button(root, text="Set from map", command=open_map)
 openmap_button.place(relx=0.61,rely=0.22,anchor="center",relheight=0.04,relwidth=0.10)

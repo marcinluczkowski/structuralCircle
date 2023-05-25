@@ -22,11 +22,11 @@ constants = {
     "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
     "TIMBER_REUSE_PRICE" : 1700.0, #Per m^3, assumes half the price
     "STEEL_PRICE": 67.0, #NOK per kg, ENTRA 2021
-    "STEEL_REUSE_PRICE": 30.0, #Half the price
+    "STEEL_REUSE_PRICE": 33.5, #Half the price
     "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "MAC",
+    "Project name": "ASUS",
     "Metric": "Combined",
     #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import igraph as ig
 import logging
 import LCA as lca
+import helper_methods as hm
 import itertools
 import random
 import matplotlib.ticker as ticker
@@ -12,6 +13,8 @@ from selenium import webdriver
 import time
 import os
 import platform
+from PIL import Image, ImageDraw, ImageFont
+import seaborn as sns
 
 color_palette = ["#EF8114", "#00509E", "#2E933C", "#CC2936", "#56203D"] #Orange, Blue, Green, Red, Purple 
 
@@ -50,7 +53,7 @@ def plot_algorithm(alg_dict, x_values, xlabel, ylabel, fix_overlapping, title, s
     ax.tick_params(bottom=False, left=False)
     ax.xaxis.get_major_locator().set_params(integer=True)
     #plt.yscale('log')
-    plt.savefig(r"Local_files/Plots_overleaf/" + save_filename, dpi=300)
+    plt.savefig(r"Local_files/Plots_overleaf/" + save_filename, dpi=300, bbox_inches='tight', pad_inches=0.01)
 
 
 def create_graph_specific_material(supply, demand, target_column, unit, number_of_intervals, material_string, fig_title, save_filename):
@@ -100,7 +103,7 @@ def plot_materials(supply, demand, fig_title, save_filename):
     ax.tick_params(bottom=False, left=False)
     # set x-axis limits to reduce space between groups of bars
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=300)
+    plt.savefig(save_name, dpi=300, bbox_inches='tight', pad_inches=0.01)
 
 
 
@@ -181,7 +184,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     plt.title(fig_title)
     ax.yaxis.get_major_locator().set_params(integer=True)
     width = 0.25
-    bar1 = ax.bar(x - width / 2, supply_values, width, label="Reuse", zorder=2, color = color_palette[0])
+    bar1 = ax.bar(x - width / 2, supply_values, width, label="Supply", zorder=2, color = color_palette[0])
     bar2 = ax.bar(x + width / 2, demand_values, width, label="Demand", zorder=2, color = color_palette[1])
     ax.set_xticks(x, label, fontsize=12)
     ax.legend(loc = "upper right", bbox_to_anchor=(1.10, 1.12))
@@ -195,7 +198,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     ax.spines['bottom'].set_color('#DDDDDD')
     ax.tick_params(bottom=False, left=False)
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
-    plt.savefig(save_name, dpi=300)
+    plt.savefig(save_name, dpi=300, bbox_inches='tight', pad_inches=0.01)
 
 
 
@@ -241,7 +244,7 @@ def create_map_dataframe(df, color, legend_text, save_name):
                     border:2px solid grey; z-index:9999; font-size:14px;
                     background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
         <i class="fa-solid fa-circle" style="color:{color};font-size=0.5px;"></i> {legend_text}<br>
-        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Site location  
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Construction site
         </div>
         '''
 
@@ -297,7 +300,7 @@ def create_empty_map(df, color, legend_text, save_name):
                     border:2px solid grey; z-index:9999; font-size:14px;
                     background-color: white;text-align:center;font-family: "Times New Roman", Times, serif;">
         <i class="fa-solid fa-circle" style="color:{color};font-size=0.5px;"></i> {legend_text}<br>
-        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Site location  
+        <i class="fa-solid fa-location-dot" style="color:#38AADD;"></i> Construction site
         </div>
         '''
 
@@ -458,3 +461,71 @@ def create_map_manufacturer_location(timber_lat, timber_lon, steel_lat, steel_lo
         time.sleep(3)
         driver.save_screenshot(file_dir+f"{save_name}.png")
         driver.quit
+
+def draw_comparison_image(CO2_score):
+    factor = 206
+    flights = np.floor(CO2_score/factor)
+    # Load the PNG image
+    image = Image.open(r"./Local_files/airplane.jpeg")
+    # Create a drawing context
+    draw = ImageDraw.Draw(image, mode = "RGB")
+    draw.fontmode = "L"
+    image_width, image_height = image.size
+    # Define the font and size you want to use
+    font = ImageFont.truetype("times.ttf", 200)
+    # Define the text you want to add
+    text1 = "The CO2 equivalents corresponds to 2060"
+    text2 = "round-trip flights between Oslo and Trondheim"
+    text_bbox1 = draw.textbbox((0, 0), text1, font=font)
+    text_bbox2 = draw.textbbox((0, 0), text2, font=font)
+
+    # Calculate the width and height of the text
+    text_width1 = text_bbox1[2] - text_bbox1[0]
+    text_height1 = text_bbox1[3] - text_bbox1[1]
+    text_width2 = text_bbox2[2] - text_bbox2[0]
+    text_height2 = text_bbox2[3] - text_bbox2[1]
+
+    # Calculate the position to place the text in the middle
+    position1 = ((image_width - text_width1) // 2, 150 + text_height1)
+    position2 = ((image_width - text_width2) // 2, 150 + text_height2*2 + 50)
+
+    # Add the text to the image
+    draw.text(position1, text1, font=font, fill=(256, 256, 256))
+    draw.text(position2, text2, font=font, fill=(256, 256, 256))
+
+    # Save the modified image
+    image.save(r"./Local_files/comparison_image.png", dpi = (300, 300))
+
+
+def plot_substitutions_matrix(save_name):
+    def calculate_fraction(column1, column2):
+        equal_count = sum(column1 == column2)
+        total_count = len(column1)
+        return (equal_count / total_count)
+    plt.figure(figsize=(7, 5))
+    subs1 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_1_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 1"})
+    subs2 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_2_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 2"})
+    subs3 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_3_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 3"})
+    subs4 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_4_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 4"})
+    all_subs = pd.concat([subs1, subs2, subs3, subs4], axis = 1)
+
+    columns = all_subs.columns
+    M = pd.DataFrame(index=columns, columns=columns, dtype=float)
+
+    for i in range(len(columns)):
+        for j in range(i, len(columns)):
+            col1 = all_subs[columns[i]]
+            col2 = all_subs[columns[j]]
+            percentage = calculate_fraction(col1, col2)
+            M.at[columns[i], columns[j]] = percentage
+            M.at[columns[j], columns[i]] = percentage
+    test = 4
+    sns.set(font='Times New Roman')
+    ax = sns.heatmap(M, annot=True, cmap='YlGnBu')
+    ax.xaxis.tick_top() # x axis on top
+    ax.xaxis.set_label_position('top')
+    ax.tick_params(axis='x', which='both', bottom=False, top=False)
+    plt.yticks(rotation=0)
+    #plt.title("Fraction of equal substitutions between the case studies")
+    file_path = r"./Local_files/Plots_overleaf/" + save_name
+    plt.savefig(file_path, dpi = 300, bbox_inches='tight', pad_inches=0.01)

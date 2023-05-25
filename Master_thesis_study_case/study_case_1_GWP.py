@@ -26,7 +26,7 @@ constants = {
     "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "MAC",
+    "Project name": "ASUS",
     "Metric": "GWP",
     #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
@@ -84,9 +84,9 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
-#hm.generate_plots_pdf_report(supply, demand, pdf_results_case1, False)
 hm.generate_pdf_report(pdf_results_case1, constants["Project name"]+ " Study Case 1", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
 
 #PLOTS FOR OVERLEAF
 #plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")
+#plot.plot_substitutions_matrix(save_name = r"fraction_matrix.png")

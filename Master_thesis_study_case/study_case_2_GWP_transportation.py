@@ -26,7 +26,7 @@ constants = {
     "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "MAC",
+    "Project name": "ASUS",
     "Metric": "GWP",
     #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
@@ -85,4 +85,5 @@ hm.generate_pdf_report(pdf_results_case2, constants["Project name"]+ " Study Cas
 
 
 #PLOTS FOR OVERLEAF
-#plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")
+#plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations", include_site=False)
+#plot.create_map_manufacturer_location(timber_lat="63.368923", timber_lon="10.3749681", steel_lat="63.438445", steel_lon="10.40994", site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], save_name = "manu_locations")

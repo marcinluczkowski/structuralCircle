@@ -598,7 +598,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     if unit == "NOK":
         score_text = f"{unit} {score}"
         score_new_text = f"{unit} {new_score}"
-        savings_text = f"{unit} {savings_value}"
+        savings_value_text = f"{unit} {savings_value}"
     else:
         score_text = f"{score} {unit}"
         score_new_text = f"{new_score} {unit}"
@@ -614,7 +614,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_left_margin(15)
     pdf.set_y(110)
     pdf.set_font("Times", size=12, style ="")
-    summary = f"The best results was obtained by the following algorithm: {results['Algorithm']}. This algorithm sucessfully substituted {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {score_text} was achieved. For comparison, a score of {score_new_text} would have been obtained by employing exclusively new materials. This resulted in a total saving of {savings}%, which corresponds to {savings_value_text}."
+    summary = f"The best results was obtained by the following algorithm: {results['Algorithm']}. This algorithm sucessfully substituted {results['Number of substitutions']}/{results['Number_demand']} ({substitutions}%) of the demand elements with reusable elements. Using '{results['Metric']}' as the optimization metric, a total score of {score_text} was achieved. For comparison, a score of {score_new_text} would have been obtained by employing exclusively new materials. This resulted in a total saving of {savings}%, which corresponds to {savings_value_text}."
     if results["Metric"] == "GWP":
         summary += f" The savings is equivalent to {int(np.floor((results['All new score']-results['Score'])/206))*2} flights for one person between Oslo and Trondheim."
     if transportation_included:

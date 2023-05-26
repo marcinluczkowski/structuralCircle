@@ -70,14 +70,14 @@ def extract_results_df_pdf(dict_list, constants):
     results_dict.update(constants)
     if metric == "GWP":
         results_dict["Unit"] = "kgCO2eq"
-        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq"), "GWP reused timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq"), "GWP reused steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq")})
+        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq"), "GWP reusable timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq"), "GWP reusable steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq")})
     elif metric == "Price":
         results_dict["Unit"] = "NOK"
-        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg")})
+        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reusable timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg"), "Price reusable steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg")})
     elif metric == "Combined":
         results_dict["Unit"] = "NOK"
-        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq"), "GWP reused timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq"), "GWP reused steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq"), "Valuation of GWP": (constants["VALUATION_GWP"], "NOK/kgCO2eq")}) 
-        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reused timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_PRICE"], "NOK/kg"), "Price reused steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg")})
+        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq"), "GWP reusable timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq"), "GWP reusable steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq"), "Valuation of GWP": (constants["VALUATION_GWP"], "NOK/kgCO2eq")}) 
+        used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reusable timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_PRICE"], "NOK/kg"), "Price reusable steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg")})
     results_dict["Savings"] =  round(results_dict["All new score"] - results_dict["Score"], 2)
     results_dict["Number_reused"] = len(match_object.supply) - len(match_object.demand)
     results_dict["Number_demand"] = len(match_object.demand)
@@ -545,7 +545,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_text_color(0, 80, 158)
     pdf.set_y(10)
     # Add the title to the PDF
-    pdf.cell(0, 50, "Results from Element Matching", 0, 1, "C")
+    pdf.cell(0, 50, "Results from the Design Tool", 0, 1, "C")
     pdf.set_left_margin(15)
 
     # Information about the project:
@@ -593,16 +593,18 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     new_score = format_float(round(results['All new score'],0))
     substitutions = round(results['Number of substitutions']/results['Number_demand']*100, 2)
     savings = round(results['Savings']/results['All new score']*100, 2)
+    savings_value = format_float(round(results['Savings'],0))
 
     if unit == "NOK":
         score_text = f"{unit} {score}"
         score_new_text = f"{unit} {new_score}"
+        savings_text = f"{unit} {savings_value}"
     else:
         score_text = f"{score} {unit}"
         score_new_text = f"{new_score} {unit}"
+        savings_value_text = f"{savings_value} {unit}"
 
     pdf.cell(50, 10, score_text, 1, 0, "C", True)
-    #TODO check this line: better? change from kr to NOK?
     pdf.cell(50, 10, score_new_text, 1, 0, "C", True)
     pdf.cell(25, 10, f"{savings}%", 1, 0, "C", True)
     pdf.cell(25, 10, f"{substitutions}%", 1, 1, "C", True) 
@@ -612,14 +614,14 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_left_margin(15)
     pdf.set_y(110)
     pdf.set_font("Times", size=12, style ="")
-    summary = f"The best results was obtained by the following algorithm: {results['Algorithm']}. This algorithm sucessfully substituted {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {score_text} was achieved. For comparison, a score of {score_new_text} would have been obtained by employing exclusively new materials. This resulted in a total saving of {savings}%."
+    summary = f"The best results was obtained by the following algorithm: {results['Algorithm']}. This algorithm sucessfully substituted {results['Number of substitutions']}/{results['Number_demand']} demand elements ({substitutions}%). Using '{results['Metric']}' as the optimization metric, a total score of {score_text} was achieved. For comparison, a score of {score_new_text} would have been obtained by employing exclusively new materials. This resulted in a total saving of {savings}%, which corresponds to {savings_value_text}."
     if results["Metric"] == "GWP":
-        summary += f" The amount of kgCO2eq is equivalent to {int(np.floor(results['All new score']/206))*2} flights for one person between Oslo and Trondheim."
+        summary += f" The savings is equivalent to {int(np.floor((results['All new score']-results['Score'])/206))*2} flights for one person between Oslo and Trondheim."
     if transportation_included:
         summary += f" Note that impacts of transporting the materials to the construction site was accounted for and contributed to {results['Transportation percentage']}% of the total score. "
     else:
         summary += f" Note that impacts of transporting the materials to the construction site was not accounted for. "
-    summary += f"Open the CSV-file \"{save_name}\" to examine the substitutions."
+    summary += f"Open the Excel file \"{save_name}\" to examine the substitutions."
 
     pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
 
@@ -634,7 +636,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     else:
         pdf.set_xy(table_x, table_y2)
     pdf.set_font("Times", size=16, style ="")
-    pdf.multi_cell(160, 7, txt="Constants used in calculations")
+    pdf.multi_cell(160, 7, txt="Constants used in the calculations")
     pdf.set_font("Times", size=10)
     pdf.ln(5)
     pdf.set_fill_color(96, 150, 208)
@@ -659,7 +661,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     ###########################
     pdf.set_font("Times", size=16, style ="")
     pdf.set_xy(table_x, 30)
-    pdf.multi_cell(160, 7, txt="Information about datasets")
+    pdf.multi_cell(160, 7, txt="Information about the datasets")
     pdf.set_font("Times", size=10)
     pdf.ln(5)
     pdf.set_left_margin(30)
@@ -669,7 +671,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.cell(80, 10, "Filename", 1, 0, "C", True)
     pdf.cell(40, 10, "Number of elements", 1, 1, "C", True)
     pdf.set_fill_color(247, 247, 247)
-    pdf.cell(30, 10, f"Reused", 1, 0, "C", True)
+    pdf.cell(30, 10, f"Supply", 1, 0, "C", True)
     pdf.cell(80, 10, f"{results['Supply file location'].split('/')[-1]}", 1, 0, "C", True)
     pdf.cell(40, 10, f"{results['Number_reused']}", 1, 0, "C", True)
     pdf.ln()
@@ -680,7 +682,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_left_margin(15)
     pdf.set_y(80)
     pdf.set_font("Times", size=12, style ="")
-    summary_info = f"The files used contains {results['Number_reused']} reuse elements and {results['Number_demand']} demand elements. The graphs below depicts the distribution of some of the properties of the elements, including the materials, lengths, areas, and moment of inertias."
+    summary_info = f"The datasets contains {results['Number_reused']} supply elements and {results['Number_demand']} demand elements. The graphs below depicts the distribution of some of the properties of the elements, including the material, length, area, and moment of inertia."
     pdf.multi_cell(pdf.w-2*15,8, summary_info, 0, "L", False)
 
     #Images, 6 of them
@@ -740,7 +742,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
         pdf.set_left_margin(15)
         pdf.set_y(y_information)
         pdf.set_font("Times", size=12, style ="")
-        summary = f"All calculations in this report accouned for the effects of material transportation to the construction site. Transportation itself was responsible for {trans_text}. This accounts for {results['Transportation percentage']}% of the total score of {score_text}. For comparison, the transportation impact for exclusively using new materials would have been {trans_new_text}. Two maps are included to show the location of the suggested substitutions of reused elements and the manufacturer locations where new elements can be obtained. The numbers on the maps indicate the number of elements present at each location."
+        summary = f"All calculations in this report accouned for the effects of material transportation to the construction site. Transportation itself was responsible for {trans_text}. This accounts for {results['Transportation percentage']}% of the total score of {score_text}. For comparison, the transportation impact for exclusively using new materials would have been {trans_new_text}. Two maps are included to show the locations of the suggested element substitutions from the design tool. The numbers on the maps indicate the number of elements transported from each location."
         
         pdf.multi_cell(pdf.w-2*15,8, summary, 0, "L", False)
         
@@ -763,7 +765,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     pdf.set_left_margin(15)
     pdf.set_y(y_information)
     pdf.set_font("Times", size=16, style ="")
-    pdf.multi_cell(160, 7, txt="Performance of algorithms")
+    pdf.multi_cell(160, 7, txt="Performance of the optimization algorithms")
     pdf.set_font("Times", size=10)
     pdf.set_left_margin(17)
     pdf.ln(5)
@@ -783,7 +785,7 @@ def generate_pdf_report(results, projectname, supply, demand, filepath):
     for i in range(len(performance)):
         y_information += 10
         performance_score = format_float(round(performance.iloc[i]['Score'], 0)) 
-        performance_time = format_float(round(performance.iloc[i]['Time'], 2)) 
+        performance_time = round(performance.iloc[i]['Time'], 2)
         if unit == "NOK":
             performance_text = f"{unit} {performance_score}"
         else:

@@ -26,7 +26,7 @@ constants = {
     "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "ASUS",
+    "Project name": "Case Study 3",
     "Metric": "Combined",
     #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
@@ -81,7 +81,7 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case3 = eval(run_string)
 pdf_results_case3 = hm.extract_results_df_pdf(result_case3, constants)
-hm.generate_pdf_report(pdf_results_case3, constants["Project name"]+ " Study Case 3", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+hm.generate_pdf_report(pdf_results_case3, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
 
 #PLOTS FOR OVERLEAF

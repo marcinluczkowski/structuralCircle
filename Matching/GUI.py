@@ -33,12 +33,12 @@ constants = {
     "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne. Rough estimate from Grønland 2022 
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "Campus development NTNU",
+    "Project name": "Project name",
     "Metric": "GWP",
     "Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Include transportation": False,
-    "Site latitude": "63.4154171",
-    "Site longitude": "10.3994672",
+    "Site latitude": "xx.xxxxxx",
+    "Site longitude": "xx.xxxxxx",
     #"Site latitude": "XX.XXXX",
     #"Site longitude": "XX.XXXX",
     "Demand file location": r"./CSV/study_case_supply.csv",
@@ -608,15 +608,15 @@ def warning_longruntime_brute():
     print("supply elements: ",num_supply_elements)
     if brute_var.get() and num_supply_elements.get()>14 and num_demand_elements.get()>14:
         result_label.configure(text="Warning! Brute force will take almost forever due to the datasets size. ("+str(num_demand_elements.get())+" * "+str(num_supply_elements.get())+")", foreground="red")
-        result_label.after(6000,clear_error_message)
-    elif not brute_var.get() and num_supply_elements.get()>14 and num_demand_elements.get()>14:
-        result_label.configure(text="Smart choice!", foreground="green")
-        result_label.after(4000,clear_error_message)
+        result_label.after(5000,clear_error_message)
+    #elif not brute_var.get() and num_supply_elements.get()>14 and num_demand_elements.get()>14:
+        #result_label.configure(text="Smart!", foreground="green")
+        #result_label.after(4000,clear_error_message)
 
 def warning_longruntime_genetic():
     if genetic_var.get() and num_supply_elements.get()>50 or num_demand_elements.get()>50:
         result_label.configure(text="Warning! Genetic algorithm requires a very long runtime to completedue to the datasets size. ("+str(num_demand_elements.get())+" * "+str(num_supply_elements.get())+")", foreground="red")
-        result_label.after(6000,clear_error_message)
+        result_label.after(5000,clear_error_message)
     elif not genetic_var.get() and num_supply_elements.get()>50 and num_demand_elements.get()>50:
         result_label.configure(text="")
         result_label.after(0,clear_error_message)

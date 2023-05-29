@@ -9,6 +9,10 @@ import LCA as lca
 import plotting as plot
 
 
+#########################################################################
+### INVESTIGATING THE PERFORMANCE OF GENETIC ALGORITHM ###
+#########################################################################
+
 #==========USER FILLS IN============#
 #Constants
 constants = {
@@ -107,12 +111,6 @@ for d, s in zip(d_counts, s_counts):
         key = list(time_dict.keys())[i]
         time_dict[key].append(mean_time[i])
         score_dict[key].append(mean_score[i])
-
-
-
-
-#pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
-#pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
 
 plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Runtime [s]", title = "", fix_overlapping=False, save_filename="genetic_results_time.png")
 plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kgCO2eq]", title = "", fix_overlapping=False, save_filename="genetic_results_score.png")

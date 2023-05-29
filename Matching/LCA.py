@@ -1,6 +1,17 @@
 import logging
 import requests
 
+TIMBER_GWP = 28.9       # based on NEPD-3442-2053-EN
+TIMBER_REUSE_GWP = 2.25        # 0.0778*28.9 = 2.25 based on Eberhardt
+TRANSPORT_GWP = 96.0    # TODO kg/m3/t based on ????
+TIMBER_DENSITY = 491.0  # kg, based on NEPD-3442-2053-EN
+
+#Inlcuding price:
+NEW_ELEMENT_PRICE_TIMBER=435 #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
+REUSED_ELEMENT_PRICE_TIMBER=100 #Per m^2
+GWP_PRICE=0.6 #In kr:Per kg CO2, based on OECD
+PRICE_TRANSPORT = 3.78 #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
+
 def calculate_lca(length, area, include_transportation, distance, gwp_factor, transport_gwp, density):
     """ Calculates the GWP of the elements
 

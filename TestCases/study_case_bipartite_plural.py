@@ -8,6 +8,9 @@ from matching import run_matching # Matching
 import LCA as lca
 import plotting as plot
 
+#########################################################################
+### INVESTIGATING THE PERFORMANCE OF THE DEVELOPED BIPARTITE VERSIONS ###
+#########################################################################
 
 #==========USER FILLS IN============#
 #Constants
@@ -28,7 +31,7 @@ constants = {
     ########################
     "Project name": "Campussamling Hesthagen",
     "Metric": "GWP",
-    "Algorithms": ["greedy_plural","bipartite_plural"],
+    "Algorithms": ["bipartite","bipartite_plural", "bipartite_plural_multiple"],
     "Include transportation": False,
     "Site latitude": "63.4154171",
     "Site longitude": "10.3994672",
@@ -66,11 +69,11 @@ def generate_datasets(d_counts, s_counts):
     demand.index = map(lambda text: "D" + str(text), demand.index)
     return demand, supply
 
-# ========== Comparing bipartite plural vs bipartite plural multiple ============== 
+# ========== Comparing bipartite vs bipartite plural vs bipartite plural multiple ============== 
 var1 = 1
 d_counts = np.linspace(100, 1250, num = 24).astype(int)
 s_counts = (d_counts * var1).astype(int)
-internal_runs = 20
+internal_runs = 100
 constraint_dict = constants["constraint_dict"]
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
@@ -106,11 +109,51 @@ for d, s in zip(d_counts, s_counts):
         time_dict[key].append(mean_time[i])
         score_dict[key].append(mean_score[i])
 
+plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Runtime [s]", title = "", fix_overlapping=False, save_filename="bipartite_versions_results_time_DEL.png")
+plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kgCO2eq]", title = "", fix_overlapping=True, save_filename="bipartite_versions_results_score_DEL.png")
 
 
+# ========== Comparing bipartite plural vs greedy_plural ============== 
+var1 = 1
+d_counts = np.linspace(50, 500, num = 19).astype(int)
+s_counts = (d_counts * var1).astype(int)
+internal_runs = 100
+constraint_dict = constants["constraint_dict"]
+constants["Algorithms"] = ["greedy_plural", "bipartite_plural"]
+score_function_string = hm.generate_score_function_string(constants)
+run_string = hm.generate_run_string(constants)
+results = [] #list of results for each iteration
 
-#pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
-#pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
+hm.print_header("Starting Run")
 
-plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Runtime [s]", title = "", fix_overlapping=False, save_filename="bipartite_results_time_test_2000.png")
-plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kgCO2eq]", title = "", fix_overlapping=True, save_filename="bipartite_results_score_test_2000.png")
+dict_made = False
+x_values = []
+for d, s in zip(d_counts, s_counts):
+    x_values.append(d+s)
+    #create data
+    temp_times = [[] for _ in range(len(constants["Algorithms"]))]
+    temp_scores = [[] for _ in range(len(constants["Algorithms"]))]
+    for i in range(internal_runs):
+        demand, supply = generate_datasets(d, s)
+        #Add necessary columns to run the algorithm
+        supply = hm.add_necessary_columns_pdf(supply, constants)
+        demand = hm.add_necessary_columns_pdf(demand, constants)
+        result = eval(run_string)
+        if dict_made == False:
+            time_dict = {res[list(res.keys())[0]] : [] for res in result}
+            score_dict = {res[list(res.keys())[0]] : [] for res in result}
+            dict_made = True
+        for i in range(len(result)):
+            temp_times[i].append(result[i]["Match object"].solution_time)
+            temp_scores[i].append(result[i]["Match object"].result)
+
+    mean_time = np.mean(temp_times, axis = 1)
+    mean_score = np.mean(temp_scores, axis = 1)
+    for i in range(len(list(time_dict.keys()))):
+        key = list(time_dict.keys())[i]
+        time_dict[key].append(mean_time[i])
+        score_dict[key].append(mean_score[i])
+
+plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Runtime [s]", title = "", fix_overlapping=False, save_filename="bipartite_results_time_DEL.png")
+plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = "Total score [kgCO2eq]", title = "", fix_overlapping=True, save_filename="bipartite_results_score_DEL.png")
+

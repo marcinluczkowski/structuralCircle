@@ -39,8 +39,6 @@ constants = {
     "Include transportation": False,
     "Site latitude": "xx.xxxxxx",
     "Site longitude": "xx.xxxxxx",
-    #"Site latitude": "XX.XXXX",
-    #"Site longitude": "XX.XXXX",
     "Demand file location": r"./CSV/study_case_supply.csv",
     "Supply file location": r"./CSV/study_case_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}

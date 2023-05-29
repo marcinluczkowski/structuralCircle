@@ -7,6 +7,9 @@ from matching import run_matching
 import LCA as lca
 import plotting as plot
 
+"""
+Code needed to generate datasets for the demonstration of the design tool
+"""
 
 #==========USER FILLS IN============#
 
@@ -28,7 +31,6 @@ constants = {
     ########################
     "Project name": "Demo",
     "Metric": "GWP",
-    #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
     "Include transportation": True,
     "Site latitude": "63.4154171",
@@ -76,7 +78,7 @@ demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], 
 hm.export_dataframe_to_csv(supply, r"" + "./CSV/demo_supply.csv")
 hm.export_dataframe_to_csv(demand, r"" + "./CSV/demo_demand.csv")
 
-"""
+
 #PRE-PROSESSING DATA
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
@@ -84,14 +86,14 @@ supply = hm.add_necessary_columns_pdf(supply, constants)
 demand = hm.add_necessary_columns_pdf(demand, constants)
 constraint_dict = constants["constraint_dict"]
 
-########### STUDY CASE 2: GWP with transportation ###########
+########### DEMO: GWP with transportation ###########
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
-result_case2 = eval(run_string)
-pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
-#hm.generate_pdf_report(pdf_results_case2, constants["Project name"]+ " Test", supply, demand, filepath = r"./Local_files/GUI_files/Results/")
-print(pdf_results_case2["Transportation percentage"])
-"""
+result_case_demo = eval(run_string)
+pdf_results_case_demo = hm.extract_results_df_pdf(result_case_demo, constants)
+hm.generate_pdf_report(pdf_results_case_demo, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+
+
 #PLOTS FOR OVERLEAF
 #plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations", include_site=False)
 #plot.create_map_manufacturer_location(timber_lat="63.368923", timber_lon="10.3749681", steel_lat="63.438445", steel_lon="10.40994", site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], save_name = "manu_locations")

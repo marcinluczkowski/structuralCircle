@@ -28,7 +28,6 @@ constants = {
     ########################
     "Project name": "Case Study 4",
     "Metric": "Combined",
-    #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
     "Include transportation": True,
     "Site latitude": "63.4154171",
@@ -82,7 +81,3 @@ run_string = hm.generate_run_string(constants)
 result_case4 = eval(run_string)
 pdf_results_case4 = hm.extract_results_df_pdf(result_case4, constants)
 hm.generate_pdf_report(pdf_results_case4, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
-
-
-#PLOTS FOR OVERLEAF
-#plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")

@@ -86,7 +86,7 @@ def extract_results_df_pdf(dict_list, constants):
         used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reusable timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg"), "Price reusable steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg")})
     elif metric == "Combined":
         results_dict["Unit"] = "NOK"
-        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq"), "GWP reusable timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq"), "GWP reusable steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq"), "Valuation of GWP": (constants["VALUATION_GWP"], "NOK/kgCO2eq")}) 
+        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq/m^3"), "GWP reusable timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq/m^3"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq/kg"), "GWP reusable steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq/kg"), "Valuation of GWP": (constants["VALUATION_GWP"], "NOK/kgCO2eq")}) 
         used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reusable timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_PRICE"], "NOK/kg"), "Price reusable steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg")})
     
     #Information about the savings and substitutions

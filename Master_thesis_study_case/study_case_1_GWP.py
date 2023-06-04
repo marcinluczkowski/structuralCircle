@@ -28,7 +28,6 @@ constants = {
     ########################
     "Project name": "Case Study 1",
     "Metric": "GWP",
-    #"Algorithms": ["greedy_plural", "milp", "bipartite_plural"],
     "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
     "Include transportation": False,
     "Site latitude": "63.4154171",
@@ -56,10 +55,7 @@ supply_coords.loc[len(supply_coords)] = meraker
 supply_coords.loc[len(supply_coords)] = berkak
 supply_coords.loc[len(supply_coords)] = dombas
 
-
 materials = ["Timber", "Steel"]
-
-#plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")
 
 # GENERATE FILE
 # ============
@@ -85,8 +81,3 @@ run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
 pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
 hm.generate_pdf_report(pdf_results_case1, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
-
-
-#PLOTS FOR OVERLEAF
-#plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations")
-#plot.plot_substitutions_matrix(save_name = r"fraction_matrix.png")

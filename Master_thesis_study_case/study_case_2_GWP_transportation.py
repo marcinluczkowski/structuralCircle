@@ -82,8 +82,3 @@ run_string = hm.generate_run_string(constants)
 result_case2 = eval(run_string)
 pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
 hm.generate_pdf_report(pdf_results_case2, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
-
-
-#PLOTS FOR OVERLEAF
-#plot.create_map_supply_locations(supply_coords, constants["Site latitude"], constants["Site longitude"], save_name="supply_locations", include_site=False)
-#plot.create_map_manufacturer_location(timber_lat="63.368923", timber_lon="10.3749681", steel_lat="63.438445", steel_lon="10.40994", site_lat=constants["Site latitude"], site_lon=constants["Site longitude"], save_name = "manu_locations")

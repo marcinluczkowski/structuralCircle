@@ -8,6 +8,9 @@ from matching import run_matching # Matching
 import LCA as lca
 import plotting as plot
 
+#########################################################################
+### INVESTIGATING THE PERFORMANCE OF BRUTE FORCE APPROACH ###
+#########################################################################
 
 #==========USER FILLS IN============#
 #Constants
@@ -48,16 +51,12 @@ def generate_datasets(d_counts, s_counts):
     hell = ["Hell", "63.4452539", "10.8971079"]
     melhus = ["Melhus", "63.2897753", "10.2934154"]
 
-
-
     supply_coords.loc[len(supply_coords)] = tiller
     supply_coords.loc[len(supply_coords)] = storen
     supply_coords.loc[len(supply_coords)] = orkanger
     supply_coords.loc[len(supply_coords)] = meraker
     supply_coords.loc[len(supply_coords)] = hell
     supply_coords.loc[len(supply_coords)] = melhus
-
-
 
     materials = ["Timber", "Steel"]
 
@@ -109,11 +108,6 @@ for d, s in zip(d_counts, s_counts):
         time_dict[key].append(mean_time[i])
         score_dict[key].append(mean_score[i])
 
-
-
-
-#pairs_df = pd.concat([res['Match object'].pairs for res in results[0]], axis = 1)
-#pairs_df.columns = [res[list(res.keys())[0]] for res in results[0]]
 
 plot.plot_algorithm(time_dict, x_values, xlabel = "Number of elements", ylabel = "Runtime [s]", title = "", fix_overlapping=False, save_filename="brute_results_time_10_100.png")
 plot.plot_algorithm(score_dict, x_values, xlabel = "Number of elements", ylabel = u"Total score [kgCO2eq]", title = "", fix_overlapping=True, save_filename="brute_results_score_10_100.png")

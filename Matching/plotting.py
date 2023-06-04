@@ -16,14 +16,27 @@ import platform
 from PIL import Image, ImageDraw, ImageFont
 import seaborn as sns
 
+""" Code for plotting """
+
 color_palette = ["#EF8114", "#00509E", "#2E933C", "#CC2936", "#56203D"] #Orange, Blue, Green, Red, Purple 
 
 def plot_algorithm(alg_dict, x_values, xlabel, ylabel, fix_overlapping, title, save_filename):
+    """Plotting the performance of a given set of algorithms
+
+    Args:
+        alg_dict (dictonary): dictionary containing perfromance (either time or score) to be plotted
+        x_values (list): list containing floats for each datapoint corresponding to the sum of the number of supply and number of demand elements
+        xlabel (string): label for the x-axis
+        ylabel (string): label for the y-axis
+        fix_overlapping (boolean): set to True if you are worried that the lines will overlap, false if not
+        title (string): title of the plot
+        save_filename (string): filename for the saved plot
+    """
     plt.rcParams["font.family"] = "Times new roman"
     fig, ax = plt.subplots(figsize = (7, 5))
     values = list(alg_dict.values())
-    #Check if the plots are the same:
-    min_value = np.min(values)
+
+    #Fixing overlapping if wanted
     if fix_overlapping:
         styles = ["dashdot", "dashed", "dotted"]
     else:
@@ -32,6 +45,7 @@ def plot_algorithm(alg_dict, x_values, xlabel, ylabel, fix_overlapping, title, s
     color_count = 0
     plotted_items = []
     for key, items in alg_dict.items():
+        #Plotting each algorithm
         plt.plot(x_values, items, label = key, linestyle = styles[count], color = color_palette[color_count])
         count += 1
         color_count += 1
@@ -46,22 +60,44 @@ def plot_algorithm(alg_dict, x_values, xlabel, ylabel, fix_overlapping, title, s
     plt.ylabel(ylabel, fontsize=14)
     ax.set_facecolor("white")
     ax.grid(visible=True, color="lightgrey", axis="y", zorder=1)
+    #Removing the border lines
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD')
+
     ax.tick_params(bottom=False, left=False)
     ax.xaxis.get_major_locator().set_params(integer=True)
-    #plt.yscale('log')
     plt.savefig(r"Local_files/Plots_overleaf/" + save_filename, dpi=300, bbox_inches='tight', pad_inches=0.01)
 
 
 def create_graph_specific_material(supply, demand, target_column, unit, number_of_intervals, material_string, fig_title, save_filename):
+    """Create graph for specific material
+
+    Args:
+        supply (DataFrame): supply dataframe
+        demand (DataFrame): demand dataframe
+        target_column (string): column-name containing the requested information
+        unit (string): unit of the values
+        number_of_intervals (int): number of interals on the x-axis
+        material_string (string): material name
+        fig_title (string): title for the plot
+        save_filename (string): filename of the saved figure
+    """
     requested_supply = supply.loc[supply["Material"] == material_string]
     requested_demand = demand.loc[demand["Material"] == material_string]
     create_graph(requested_supply, requested_demand, target_column, unit, number_of_intervals, fig_title, save_filename)
 
 def plot_materials(supply, demand, fig_title, save_filename):
+    """Plot the material distribution
+
+    Args:
+        supply (DataFrame): supply dataframe
+        demand (DataFrame): demand dataframe
+        fig_title (string): title of the plot
+        save_filename (string): filename of the saved figure
+    """
+
     supply_counts = supply["Material"].value_counts().to_dict()
     demand_counts = demand["Material"].value_counts().to_dict()
     unique_keys = list(set(supply_counts.keys()) | set(demand_counts.keys()))
@@ -105,10 +141,28 @@ def plot_materials(supply, demand, fig_title, save_filename):
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
     plt.savefig(save_name, dpi=300, bbox_inches='tight', pad_inches=0.01)
 
-
-
 def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_title, save_filename):
+    """Create a distribution graph for a given property (given by target_column), for instance "Length", "Area" or "Moment of Inertia"
+
+    Args:
+        supply (DataFrame): supply dataframe
+        demand (DataFrame): demand dataframe
+        target_column (string): column_name containing the values to be plotted
+        unit (string): the unit of the column_name
+        number_of_intervals (int): number of intervals on the x-axis
+        fig_title (string): title of the figure
+        save_filename (string): filename to save the figure with
+    """
+
     def count_leading_zeros(num):
+        """Counts the number of leading zeros in a float
+
+        Args:
+            num (float): number
+
+        Returns:
+            int: number of leading zeros
+        """
         count = 0
         num_str = str(num)
         if "e" in num_str:
@@ -142,30 +196,25 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     max_length_pre = np.max([np.max(supply_lengths), np.max(demand_lengths)])
     max_length = np.ceil(max_length_pre*10**dec_format)/10**dec_format
    
-    
+    #Creating the itnervals
     interval_size = (max_length - min_length) / number_of_intervals
-    #dec_format_max = len(str(max_length_pre).split('.')[1])
-    #dec_format_min = len(str(min_length_pre).split('.')[1])
-    #dec_format = shifter
     supply_counts = {}
     demand_counts = {}
     start = min_length
     for i in range(number_of_intervals):
         end = start + interval_size
-        #intervals.append("{:.1f}-{:.1f}".format(start, end))
-        #supply_counts["{:.1f}-{:.1f}".format(start, end)] = 0
-        #intervals.append(f"{start}:.{dec_format}f-{end}:.{dec_format}f")
         supply_counts[f"{start:.{dec_format}f}-{end:.{dec_format}f}"] = 0
         demand_counts[f"{start:.{dec_format}f}-{end:.{dec_format}f}"] = 0
-        #demand_counts["{:.1f}-{:.1f}".format(start, end)] = 0
         start = end
 
+    #Counting the number of supply lengts in each interval
     for length in supply_lengths:
         for interval in supply_counts:
             start, end = map(float, interval.split("-"))
             if start <= length <= end:
                 supply_counts[interval] += 1
                 break
+    #Counting the number of demand lengts in each interval
     for length in demand_lengths:
         for interval in demand_counts:
             start, end = map(float, interval.split("-"))
@@ -173,6 +222,7 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
                 demand_counts[interval] += 1
                 break
 
+    #Plotting the figure
     label = list(supply_counts.keys())
     supply_values = supply_counts.values()
     demand_values = demand_counts.values()
@@ -190,8 +240,6 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     ax.legend(loc = "upper right", bbox_to_anchor=(1.10, 1.12))
     ax.set_facecolor("white")
     ax.grid(visible=True, color="lightgrey", axis="y", zorder=1)
-    #for position in ['top', 'bottom', 'left', 'right']:
-    #    ax.spines[position].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -200,31 +248,55 @@ def create_graph(supply, demand, target_column, unit, number_of_intervals, fig_t
     save_name = r"./Local_files/GUI_files/Results/Plots/" + save_filename
     plt.savefig(save_name, dpi=300, bbox_inches='tight', pad_inches=0.01)
 
-
-
 def create_map_substitutions(df, pdf_results, df_type, color, legend_text, save_name):
+    """Creates a map containing the locations matched elements
+
+    Args:
+        df (DataFrame): dataframe, either supply or demand
+        pdf_results (dictinary): the returned dictionary from extract_results_df_pdf()
+        df_type (string): "supply" or "demand"
+        color (string): color of the legend
+        legend_text (string): legend text
+        save_name (string): filename of the figure
+    """
+    #Finding the indexes of the matches
     if df_type == "supply":
         indexes = list(pdf_results["Pairs"][pdf_results["Pairs"].str.contains("S")])
     elif df_type == "demand":
         matches = list(pdf_results["Pairs"][pdf_results["Pairs"].str.contains("N")])
         indexes = list(map(lambda x: x.replace("N", "D"), matches))
     
-    if len(indexes) == 0:
+    
+    if len(indexes) == 0: #Creates an empty map if there is no matches
         create_empty_map(df, color, legend_text, save_name)
-    else:
+    else: #Creates map
         df = df.copy().loc[indexes]
         create_map_dataframe(df, color, legend_text, save_name)
 
 def create_map_dataframe(df, color, legend_text, save_name):
+    """Creates map
+
+    Args:
+        df (DataFrame): dataframe, either supply or demand
+        color (string): color of the legend
+        legend_text (string): legend text
+        save_name (string): filename of the figure
+    """
     df = df.copy()
     df_locations = df[["Latitude", "Longitude"]]
     site_coords = (df.iloc[0]["Site_lat"], df.iloc[0]["Site_lon"])
+
+    #Counting the number of elements at each unique location
     coordinates_count = df_locations.groupby(['Latitude', 'Longitude']).size().reset_index(name='Count')
     coordinates_dict = dict(zip(coordinates_count[['Latitude', 'Longitude']].apply(tuple, axis=1), coordinates_count['Count']))
+
+    #Create a map
     m = folium.Map(location=[df_locations.Latitude.mean(), df_locations.Longitude.mean()], control_scale=True)
+    #Marker for the construction site
     folium.Marker([site_coords[0], site_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
-    # Create a custom legend with the marker colors and labels
+    
     fit_view_coordinates = [site_coords]
+    # Adding markers with numbers for the elements in the dataframe
     for coord, count in coordinates_dict.items():
         fit_view_coordinates.append(coord)
         marker_number = coordinates_dict[coord]
@@ -236,8 +308,10 @@ def create_map_dataframe(df, color, legend_text, save_name):
             html=icon_html)
         ).add_to(m)
 
+    #Fit the map the to coordinates present
     m.fit_bounds(fit_view_coordinates)
 
+    # Create a custom legend with the marker colors and labels
     legend_html = f'''
         <div style="position: fixed; 
                     top: 10px; right: 10px; width: 180px; height: 45px; 
@@ -252,6 +326,8 @@ def create_map_dataframe(df, color, legend_text, save_name):
     m.get_root().html.add_child(folium.Element(legend_html))
     file_dir = r"./Local_files/GUI_files/Results/Maps/"
     m.save(file_dir+f"{save_name}.html")
+
+    #Take screenshot of the map
     if platform.system()=="Windows":
         file_dir = r"./Local_files/GUI_files/Results/Maps/"
         m.save(file_dir+f"{save_name}.html")
@@ -260,7 +336,6 @@ def create_map_dataframe(df, color, legend_text, save_name):
         options.add_experimental_option("excludeSwitches",["enable-automation"])
         options.add_argument("--headless")
         driver = webdriver.Chrome(chrome_options=options)
-        #driver.get(r"./Results/map.html")
         filepath = os.getcwd() + file_dir+f"{save_name}.html"
         driver.get("file:///" + filepath)
         driver.maximize_window()
@@ -274,7 +349,6 @@ def create_map_dataframe(df, color, legend_text, save_name):
         options.add_experimental_option("useAutomationExtension", False)
         options.add_experimental_option("excludeSwitches",["enable-automation"])
         options.add_argument("--headless")
-        #options.add_experimental_option('detach', True)
         driver = webdriver.Chrome(chrome_options=options)
         filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
         driver.get("file:///" + filepath)
@@ -283,17 +357,22 @@ def create_map_dataframe(df, color, legend_text, save_name):
         driver.save_screenshot(file_dir+f"{save_name}.png")
         driver.quit
 
-    #options.add_argument('--disable-gpu')
-    #options.add_argument('--window-size=1280,800')
-    #options.add_argument('--disable-dev-shm-usage')
-
 def create_empty_map(df, color, legend_text, save_name):
+    """Creates an empty map with only a marker for the construction site
+
+    Args:
+        df (DataFrame): dataframe, either supply or demand
+        color (string): color of the legend
+        legend_text (string): legend text
+        save_name (string): filename of the figure
+    """
     df = df.copy()
     site_coords = (df.iloc[0]["Site_lat"], df.iloc[0]["Site_lon"])
+    #Create a map
     m = folium.Map(location=[site_coords[0], site_coords[1]], control_scale=True)
     folium.Marker([site_coords[0], site_coords[1]], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m)
+    
     # Create a custom legend with the marker colors and labels
-
     legend_html = f'''
         <div style="position: fixed; 
                     top: 10px; right: 10px; width: 180px; height: 50px; 
@@ -308,6 +387,8 @@ def create_empty_map(df, color, legend_text, save_name):
     m.get_root().html.add_child(folium.Element(legend_html))
     file_dir = r"./Local_files/GUI_files/Results/Maps/"
     m.save(file_dir+f"{save_name}.html")
+
+    #Take screenshot of the map
     if platform.system()=="Windows":
         file_dir = r"./Local_files/GUI_files/Results/Maps/"
         m.save(file_dir+f"{save_name}.html")
@@ -316,7 +397,6 @@ def create_empty_map(df, color, legend_text, save_name):
         options.add_experimental_option("excludeSwitches",["enable-automation"])
         options.add_argument("--headless")
         driver = webdriver.Chrome(chrome_options=options)
-        #driver.get(r"./Results/map.html")
         filepath = os.getcwd() + file_dir+f"{save_name}.html"
         driver.get("file:///" + filepath)
         driver.maximize_window()
@@ -330,7 +410,6 @@ def create_empty_map(df, color, legend_text, save_name):
         options.add_experimental_option("useAutomationExtension", False)
         options.add_experimental_option("excludeSwitches",["enable-automation"])
         options.add_argument("--headless")
-        #options.add_experimental_option('detach', True)
         driver = webdriver.Chrome(chrome_options=options)
         filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
         driver.get("file:///" + filepath)
@@ -340,7 +419,17 @@ def create_empty_map(df, color, legend_text, save_name):
         driver.quit
 
 def create_map_supply_locations(supply_cords_df, site_lat, site_lon, include_site, save_name):
+    """Creates a map of the unique supply locations
+
+    Args:
+        supply_cords_df (DataFrame): supply coordinates dataframe
+        site_lat (float): latitude of the construction site
+        site_lon (float): longitude of the construction site
+        include_site (boolean): if a marker of the construction site should be included or not
+        save_name (string): filename to save
+    """
     df = supply_cords_df.copy()
+    #Create a map
     m = folium.Map(location=[site_lat, site_lon], control_scale=True) 
 
     if include_site:
@@ -377,6 +466,8 @@ def create_map_supply_locations(supply_cords_df, site_lat, site_lon, include_sit
     m.get_root().html.add_child(folium.Element(legend_html))
     file_dir = r"./Local_files/GUI_files/Results/Maps/"
     m.save(file_dir+f"{save_name}.html")
+
+    #Take screenshot of the maps
     if platform.system()=="Windows":
         file_dir = r"./Local_files/GUI_files/Results/Maps/"
         m.save(file_dir+f"{save_name}.html")
@@ -385,7 +476,6 @@ def create_map_supply_locations(supply_cords_df, site_lat, site_lon, include_sit
         options.add_experimental_option("excludeSwitches",["enable-automation"])
         options.add_argument("--headless")
         driver = webdriver.Chrome(chrome_options=options)
-        #driver.get(r"./Results/map.html")
         filepath = os.getcwd() + file_dir+f"{save_name}.html"
         driver.get("file:///" + filepath)
         driver.maximize_window()
@@ -399,7 +489,6 @@ def create_map_supply_locations(supply_cords_df, site_lat, site_lon, include_sit
         options.add_experimental_option("useAutomationExtension", False)
         options.add_experimental_option("excludeSwitches",["enable-automation"])
         options.add_argument("--headless")
-        #options.add_experimental_option('detach', True)
         driver = webdriver.Chrome(chrome_options=options)
         filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
         driver.get("file:///" + filepath)
@@ -409,9 +498,24 @@ def create_map_supply_locations(supply_cords_df, site_lat, site_lon, include_sit
         driver.quit
 
 def create_map_manufacturer_location(timber_lat, timber_lon, steel_lat, steel_lon, site_lat, site_lon, save_name):
-    m = folium.Map(location=[site_lat, site_lon], control_scale=True) 
+    """Crate map for the locations of the manufacturers
 
-    folium.Marker([site_lat, site_lon], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m) #Marker for site location
+    Args:
+        timber_lat (float): latitude of timber manufacturer
+        timber_lon (float): longitude of timber manufacturer
+        steel_lat (float): latitude of steel manufacturer
+        steel_lon (float): longitude of steel manufacturer
+        site_lat (float): latitude of construction site
+        site_lon (float): longitude of construction site
+        save_name (_type_): filename to save the figure
+    """
+    #Create a map
+    m = folium.Map(location=[site_lat, site_lon], control_scale=True)
+
+    #Marker for site location
+    folium.Marker([site_lat, site_lon], icon=folium.Icon(prefix="fa", icon="fa-circle")).add_to(m) 
+
+    #Custom legend
     legend_html = f'''
     <div style="position: fixed; 
                 top: 10px; right: 10px; width: 180px; height: 45px; 
@@ -431,6 +535,7 @@ def create_map_manufacturer_location(timber_lat, timber_lon, steel_lat, steel_lo
     m.get_root().html.add_child(folium.Element(legend_html))
     file_dir = r"./Local_files/GUI_files/Results/Maps/"
     m.save(file_dir+f"{save_name}.html")
+    #Take screenshot of map
     if platform.system()=="Windows":
         file_dir = r"./Local_files/GUI_files/Results/Maps/"
         m.save(file_dir+f"{save_name}.html")
@@ -439,7 +544,6 @@ def create_map_manufacturer_location(timber_lat, timber_lon, steel_lat, steel_lo
         options.add_experimental_option("excludeSwitches",["enable-automation"])
         options.add_argument("--headless")
         driver = webdriver.Chrome(chrome_options=options)
-        #driver.get(r"./Results/map.html")
         filepath = os.getcwd() + file_dir+f"{save_name}.html"
         driver.get("file:///" + filepath)
         driver.maximize_window()
@@ -453,7 +557,6 @@ def create_map_manufacturer_location(timber_lat, timber_lon, steel_lat, steel_lo
         options.add_experimental_option("useAutomationExtension", False)
         options.add_experimental_option("excludeSwitches",["enable-automation"])
         options.add_argument("--headless")
-        #options.add_experimental_option('detach', True)
         driver = webdriver.Chrome(chrome_options=options)
         filepath = os.getcwd() + file_dir[1:]+f"{save_name}.html"
         driver.get("file:///" + filepath)
@@ -462,56 +565,40 @@ def create_map_manufacturer_location(timber_lat, timber_lon, steel_lat, steel_lo
         driver.save_screenshot(file_dir+f"{save_name}.png")
         driver.quit
 
-def draw_comparison_image(CO2_score):
-    factor = 206
-    flights = np.floor(CO2_score/factor)
-    # Load the PNG image
-    image = Image.open(r"./Local_files/airplane.jpeg")
-    # Create a drawing context
-    draw = ImageDraw.Draw(image, mode = "RGB")
-    draw.fontmode = "L"
-    image_width, image_height = image.size
-    # Define the font and size you want to use
-    font = ImageFont.truetype("times.ttf", 200)
-    # Define the text you want to add
-    text1 = "The CO2 equivalents corresponds to 2060"
-    text2 = "round-trip flights between Oslo and Trondheim"
-    text_bbox1 = draw.textbbox((0, 0), text1, font=font)
-    text_bbox2 = draw.textbbox((0, 0), text2, font=font)
-
-    # Calculate the width and height of the text
-    text_width1 = text_bbox1[2] - text_bbox1[0]
-    text_height1 = text_bbox1[3] - text_bbox1[1]
-    text_width2 = text_bbox2[2] - text_bbox2[0]
-    text_height2 = text_bbox2[3] - text_bbox2[1]
-
-    # Calculate the position to place the text in the middle
-    position1 = ((image_width - text_width1) // 2, 150 + text_height1)
-    position2 = ((image_width - text_width2) // 2, 150 + text_height2*2 + 50)
-
-    # Add the text to the image
-    draw.text(position1, text1, font=font, fill=(256, 256, 256))
-    draw.text(position2, text2, font=font, fill=(256, 256, 256))
-
-    # Save the modified image
-    image.save(r"./Local_files/comparison_image.png", dpi = (300, 300))
-
-
 def plot_substitutions_matrix(save_name):
+    """Plot the similarity matrix of the substitutions from different case studies
+
+    Args:
+        save_name (string): filename to save the figure
+    """
     def calculate_fraction(column1, column2):
+        """Calculate the similarity between the values in two columns
+
+        Args:
+            column1 (Pandas Series): values of column1
+            column2 (Pandas Series): values of column2
+
+        Returns:
+            float: the fraction of similarities
+        """
+
         equal_count = sum(column1 == column2)
         total_count = len(column1)
         return (equal_count / total_count)
+    
     plt.figure(figsize=(7, 5))
-    subs1 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_1_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 1"})
-    subs2 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_2_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 2"})
-    subs3 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_3_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 3"})
-    subs4 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/ASUS_Study_Case_4_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 4"})
+    #The Excel-files containing the substitutions for each case study is manually inserted
+    subs1 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/Case_Study_1_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 1"})
+    subs2 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/Case_Study_2_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 2"})
+    subs3 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/Case_Study_3_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 3"})
+    subs4 = hm.import_dataframe_from_file(file_location=r"./Local_files/GUI_files/Results/Case_Study_4_substitutions.xlsx", index_replacer="D").rename(columns={"Substitutions": "Case Study 4"})
     all_subs = pd.concat([subs1, subs2, subs3, subs4], axis = 1)
-
     columns = all_subs.columns
+
+    #Create matrix
     M = pd.DataFrame(index=columns, columns=columns, dtype=float)
 
+    #Calculate the fractions of similarities between the columns
     for i in range(len(columns)):
         for j in range(i, len(columns)):
             col1 = all_subs[columns[i]]
@@ -519,13 +606,13 @@ def plot_substitutions_matrix(save_name):
             percentage = calculate_fraction(col1, col2)
             M.at[columns[i], columns[j]] = percentage
             M.at[columns[j], columns[i]] = percentage
-    test = 4
+    
+    #Create plot 
     sns.set(font='Times New Roman')
     ax = sns.heatmap(M, annot=True, cmap='YlGnBu')
     ax.xaxis.tick_top() # x axis on top
     ax.xaxis.set_label_position('top')
     ax.tick_params(axis='x', which='both', bottom=False, top=False)
     plt.yticks(rotation=0)
-    #plt.title("Fraction of equal substitutions between the case studies")
     file_path = r"./Local_files/Plots_overleaf/" + save_name
     plt.savefig(file_path, dpi = 300, bbox_inches='tight', pad_inches=0.01)

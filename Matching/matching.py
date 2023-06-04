@@ -56,6 +56,7 @@ class Matching():
         
         pd.set_option('display.max_columns', 10)
 
+        #Calculate the score and transportation score for the demand and supply elements
         self.demand['Score'], self.demand["Transportation"] = self.demand.eval(self.score_function_string)
         self.supply['Score'], self.supply["Transportation"] = self.supply.eval(self.score_function_string)
 
@@ -274,11 +275,13 @@ class Matching():
         self.result += original_score
         self.result_transport += original_transport
 
-    ### MATCHING ALGORITHMS
+    ###########################
+    ### MATCHING ALGORITHMS ###
+    ###########################
 
     @_matching_decorator
     def match_brute(self, plural_assign=False):
-        """Brute forces all possible solutions"""
+        """Brute Force Approach that investigates all possible solutions"""
         weights = self.weights
         bestmatch=[]
         lowest_lca=10e10
@@ -429,6 +432,7 @@ class Matching():
         weights_rows = list(self.weights.index)
         score_index = list(self.supply.columns).index("Score")
         any_cutoff_found = False
+
         #Iterate through matches
         for match_edge in bipartite_matching.edges():
             demand_name = match_edge.source_vertex["label"]
@@ -583,6 +587,7 @@ class Matching():
     @_matching_decorator
     def match_genetic_algorithm(self):
         """Genetic algorithm with the initial population with random solutions (not necessary an actual solution)"""
+
         number_of_demand_elements = len(self.demand)
         weights_new = hm.transform_weights(self.weights) #Create a new weight matrix with only one column representing all new elements
         weights_1d_array = weights_new.to_numpy().flatten()
@@ -592,15 +597,6 @@ class Matching():
         chromosome_length = len(supply_names) * len(self.demand)
         requested_number_of_chromosomes = len(supply_names)**2
 
-        #For matrix fitness function:
-        #############################
-
-        #weights_negative = weights_new.copy()
-        #weights_negative = weights_negative.fillna(-1.0)
-        #weights_negative_1d = weights_negative.to_numpy().flatten()
-        #weights_matrix_negative = np.array_split(weights_negative_1d, number_of_demand_elements)
-        #############################
-        
         #Initializing a random population
         initial_population = np.array(([[random.randint(0,1) for x in range(chromosome_length)] for y in range(requested_number_of_chromosomes)]))
         solutions_per_population = len(initial_population)
@@ -628,7 +624,7 @@ class Matching():
                         if np.isnan(weights[i][j]): #Element cannot be matched => penalty
                             fitness += penalty #Penalty
                         else:
-                            reward += weights[i][j] #LCA of match
+                            reward += weights[i][j] #score of match
                             num_matches_in_bracket += 1
                             new_element_index = len(solutions[i])-1
                             if not j == new_element_index: #Means that a supply element (not a new element) is matched with a demand element
@@ -1018,7 +1014,7 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
         matches.append({'Name': 'MBM Plural Multiple','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
     return matches
 
-
+""" NOT USED, THE DESIGN TOOL IS RUNNED THROUGH STUDY CASE PYTHON FILES
 if __name__ == "__main__":
     #DEMAND_JSON = sys.argv[1]
     #SUPPLY_JSON = sys.argv[2]
@@ -1038,3 +1034,5 @@ if __name__ == "__main__":
     print()
     print("Simple results")
     print(simple_results)
+
+"""

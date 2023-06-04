@@ -80,13 +80,13 @@ def extract_results_df_pdf(dict_list, constants):
     #Adding the constants used in the matching tool
     if metric == "GWP":
         results_dict["Unit"] = "kgCO2eq"
-        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq/m^3"), "GWP reusable timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq/m^3"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq/kg"), "GWP reusable steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq/kg")})
+        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq/m^3"), "GWP reusable timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq/m^3"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq/m^3"), "GWP reusable steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq/m^3")})
     elif metric == "Price":
         results_dict["Unit"] = "NOK"
         used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reusable timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg"), "Price reusable steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg")})
     elif metric == "Combined":
         results_dict["Unit"] = "NOK"
-        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq/m^3"), "GWP reusable timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq/m^3"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq/kg"), "GWP reusable steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq/kg"), "Valuation of GWP": (constants["VALUATION_GWP"], "NOK/kgCO2eq")}) 
+        used_constants.update({"GWP new timber": (constants["TIMBER_GWP"],"kgCO2eq/m^3"), "GWP reusable timber": (constants["TIMBER_REUSE_GWP"], "kgCO2eq/m^3"), "GWP new steel": (constants["STEEL_GWP"], "kgCO2eq/m^3"), "GWP reusable steel": (constants["STEEL_REUSE_GWP"], "kgCO2eq/m^3"), "Valuation of GWP": (constants["VALUATION_GWP"], "NOK/kgCO2eq")}) 
         used_constants.update({"Price new timber": (constants["TIMBER_PRICE"], "NOK/m^3"), "Price reusable timber": (constants["TIMBER_REUSE_PRICE"], "NOK/m^3"), "Price new steel": (constants["STEEL_PRICE"], "NOK/kg"), "Price reusable steel": (constants["STEEL_REUSE_PRICE"], "NOK/kg")})
     
     #Information about the savings and substitutions

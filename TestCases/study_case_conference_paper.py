@@ -27,14 +27,14 @@ constants = {
     "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "Case Study 1",
-    "Metric": "GWP",
+    "Project name": "Conference_test",
+    "Metric": "Combined",
     "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
     "Include transportation": False,
-    "Site latitude": "63.4154171",
-    "Site longitude": "10.3994672",
-    "Demand file location": r"./CSV/master_thesis_demand.xlsx",
-    "Supply file location": r"./CSV/master_thesis_supply.xlsx",
+    "Site latitude": "53.4630014",
+    "Site longitude": "-2.2950054",
+    "Demand file location": r"./CSV/conference_demand.xlsx",
+    "Supply file location": r"./CSV/conference_supply.xlsx",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -42,32 +42,29 @@ constants = {
 #===================
 supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
-""" UPDATE THE LOCATIONS TO EITHER MANCHESTER OR SAN JOSE
-steinkjer = ["Steinkjer", "64.024861", "11.4891085"]
-meraker = ["Meråker", "63.415312", "11.747262"]
-berkak = ["Berkåk", "62.8238946","9.9934341"]
-vinjeora = ["Vinjeøra", "63.206995", "8.997224"]
-namsos = ["Namsos", "64.4675884", "11.501161"]
-dombas = ["Dombås", "62.073208", "9.121031"]
 
-supply_coords.loc[len(supply_coords)] = steinkjer
-supply_coords.loc[len(supply_coords)] = namsos
-supply_coords.loc[len(supply_coords)] = vinjeora
-supply_coords.loc[len(supply_coords)] = meraker
-supply_coords.loc[len(supply_coords)] = berkak
-supply_coords.loc[len(supply_coords)] = dombas
-"""
+liverpool = ["Liverpool", "53.4308365", "-2.9633863"]
+sheffield = ["Sheffield", "53.3705246", "-1.4747101"]
+birmingham = ["Birmingham", "52.4757188","-1.8681831"]
+newcastle = ["Newcastle", "54.9750507", "-1.621952"]
+london = ["London", "51.5548885", "-0.108438"]
 
-materials = ["Timber","Steel"]
+supply_coords.loc[len(supply_coords)] = liverpool
+supply_coords.loc[len(supply_coords)] = sheffield
+supply_coords.loc[len(supply_coords)] = birmingham
+supply_coords.loc[len(supply_coords)] = newcastle
+supply_coords.loc[len(supply_coords)] = london
+
+materials = ["Steel"]
 
 # GENERATE FILE
 # ============
-#supply = hm.create_random_data_supply_pdf_reports(supply_count = 100, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-#demand = hm.create_random_data_demand_pdf_reports(demand_count = 100, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
+#supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+#demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
 #hm.export_dataframe_to_csv(supply, r"" + "./CSV/master_thesis_study_case_supply_new_locs.csv")
 #hm.export_dataframe_to_csv(demand, r"" + "./CSV/master_thesis_study_case_demand_new_locs.csv")
-#supply.to_excel(r"" + "./CSV/master_thesis_study_case_supply_new_locs.xlsx")
-#demand.to_excel(r"" + "./CSV/master_thesis_study_case_demand_new_locs.xlsx")
+#supply.to_excel(r"" + "./CSV/conference_supply.xlsx")
+#demand.to_excel(r"" + "./CSV/conference_demand.xlsx")
 #========================================
 
 #PRE-PROSESSING DATA
@@ -80,7 +77,7 @@ constraint_dict = constants["constraint_dict"]
 #####################################
 ### 1: GWP WITHOUT TRANSPORTATION ###
 #####################################
-
+"""
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case1 = eval(run_string)
@@ -90,7 +87,7 @@ hm.generate_pdf_report(pdf_results_case1, constants["Project name"], supply, dem
 #####################################
 ### 2: GWP WITH TRANSPORTATION ###
 #####################################
-
+"""
 #Constants
 constants = {
     "TIMBER_GWP": 28.9,       #kg CO2 eq per m^3, based on NEPD-3442-2053-EN
@@ -99,7 +96,7 @@ constants = {
     "TIMBER_DENSITY": 491.0,  #kg/m^3, based on NEPD-3442-2053-EN
     "STEEL_GWP": 9263.0, #kg CO2 eq per m^3, Norsk stål + density of steel
     "STEEL_REUSE_GWP": 278.0, #kg CO2 eq per m^3, reduction of 97% from new according to Høydahl and Walter
-    "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
+    "VALUATION_GWP": 7.0, #NOK per kg CO2, based on OECD
     "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
     "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
     "STEEL_PRICE": 67.0, #NOK per kg, ENTRA 2021
@@ -107,16 +104,24 @@ constants = {
     "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "Case Study 2",
-    "Metric": "GWP",
-    "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
+    "Project name": "Conference_test",
+    "Metric": "Combined",
+    #"Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
+    "Algorithms": ["greedy_plural"],
     "Include transportation": True,
-    "Site latitude": "63.4154171",
-    "Site longitude": "10.3994672",
-    "Demand file location": r"./CSV/master_thesis_demand.xlsx",
-    "Supply file location": r"./CSV/master_thesis_supply.xlsx",
+    "Site latitude": "53.4630014",
+    "Site longitude": "-2.2950054",
+    "Demand file location": r"./CSV/conference_demand.xlsx",
+    "Supply file location": r"./CSV/conference_supply.xlsx",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
+
+#PRE-PROSESSING DATA
+supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
+demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
+supply = hm.add_necessary_columns_pdf(supply, constants)
+demand = hm.add_necessary_columns_pdf(demand, constants)
+constraint_dict = constants["constraint_dict"]
 
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)

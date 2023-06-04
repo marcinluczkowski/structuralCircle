@@ -243,12 +243,12 @@ def on_matching_metric_change(*args):
     matching_metric_var_constant.set(matching_metric_var.get())
     if matching_metric_var.get() == "Combined" and not include_transportation_var.get() == 1:
         #GWP
-        Timber_reused_gwp_label.place(relx=0.03,rely=0.32,anchor="w")
+        Timber_reused_gwp_label.place(relx=0.022,rely=0.32,anchor="w")
         Timber_reused_gwp_entry.place(relx=0.23,rely=0.32,anchor="w")
         Timber_new_gwp_label.place(relx=0.28,rely=0.32,anchor="w")
         Timber_new_gwp_entry.place(relx=0.47,rely=0.32,anchor="w")
         
-        Steel_reused_gwp_label.place(relx=0.03,rely=0.37,anchor="w")
+        Steel_reused_gwp_label.place(relx=0.022,rely=0.37,anchor="w")
         Steel_reused_gwp_entry.place(relx=0.23,rely=0.37,anchor="w")
         Steel_new_gwp_label.place(relx=0.28,rely=0.37,anchor="w")
         Steel_new_gwp_entry.place(relx=0.47,rely=0.37,anchor="w")
@@ -259,9 +259,9 @@ def on_matching_metric_change(*args):
         Steel_price_label.place(relx=0.52,rely=0.37,anchor="w")
         Steel_price_entry.place(relx=0.67,rely=0.37,anchor="w")
         Timber_reused_price_label.place(relx=0.72,rely=0.32,anchor="w")
-        Timber_reused_price_entry.place(relx=0.89,rely=0.32,anchor="w")
+        Timber_reused_price_entry.place(relx=0.895,rely=0.32,anchor="w")
         Steel_reused_price_label.place(relx=0.72,rely=0.37,anchor="w")
-        Steel_reused_price_entry.place(relx=0.89,rely=0.37,anchor="w")
+        Steel_reused_price_entry.place(relx=0.895,rely=0.37,anchor="w")
 
         GWP_valuation_label.place(relx=0.495,rely=0.42,anchor="e")
         GWP_valuation_entry.place(relx=0.505,rely=0.42,anchor="w")
@@ -278,12 +278,12 @@ def on_matching_metric_change(*args):
         brute_checkbutton.place(relx=0.75,rely=0.7,anchor="w")
     
     elif matching_metric_var.get() == "Combined" and include_transportation_var.get() == 1:
-        Timber_reused_gwp_label.place(relx=0.03,rely=0.32,anchor="w")
+        Timber_reused_gwp_label.place(relx=0.022,rely=0.32,anchor="w")
         Timber_reused_gwp_entry.place(relx=0.23,rely=0.32,anchor="w")
         Timber_new_gwp_label.place(relx=0.28,rely=0.32,anchor="w")
         Timber_new_gwp_entry.place(relx=0.47,rely=0.32,anchor="w")
         
-        Steel_reused_gwp_label.place(relx=0.03,rely=0.37,anchor="w")
+        Steel_reused_gwp_label.place(relx=0.022,rely=0.37,anchor="w")
         Steel_reused_gwp_entry.place(relx=0.23,rely=0.37,anchor="w")
         Steel_new_gwp_label.place(relx=0.28,rely=0.37,anchor="w")
         Steel_new_gwp_entry.place(relx=0.47,rely=0.37,anchor="w")
@@ -294,9 +294,9 @@ def on_matching_metric_change(*args):
         Steel_price_label.place(relx=0.52,rely=0.37,anchor="w")
         Steel_price_entry.place(relx=0.67,rely=0.37,anchor="w")
         Timber_reused_price_label.place(relx=0.72,rely=0.32,anchor="w")
-        Timber_reused_price_entry.place(relx=0.89,rely=0.32,anchor="w")
+        Timber_reused_price_entry.place(relx=0.895,rely=0.32,anchor="w")
         Steel_reused_price_label.place(relx=0.72,rely=0.37,anchor="w")
-        Steel_reused_price_entry.place(relx=0.89,rely=0.37,anchor="w")
+        Steel_reused_price_entry.place(relx=0.895,rely=0.37,anchor="w")
 
         GWP_valuation_label.place(relx=0.495,rely=0.42,anchor="e")
         GWP_valuation_entry.place(relx=0.505,rely=0.42,anchor="w")
@@ -319,12 +319,12 @@ def on_matching_metric_change(*args):
 
     elif matching_metric_var.get() == "GWP" and not include_transportation_var.get() == 1:
         #GWP
-        Timber_reused_gwp_label.place(relx=0.24,rely=0.32,anchor="w")
+        Timber_reused_gwp_label.place(relx=0.23,rely=0.32,anchor="w")
         Timber_reused_gwp_entry.place(relx=0.44,rely=0.32,anchor="w")
         Timber_new_gwp_label.place(relx=0.50,rely=0.32,anchor="w")
         Timber_new_gwp_entry.place(relx=0.69,rely=0.32,anchor="w")
         
-        Steel_reused_gwp_label.place(relx=0.24,rely=0.37,anchor="w")
+        Steel_reused_gwp_label.place(relx=0.23,rely=0.37,anchor="w")
         Steel_reused_gwp_entry.place(relx=0.44,rely=0.37,anchor="w")
         Steel_new_gwp_label.place(relx=0.50,rely=0.37,anchor="w")
         Steel_new_gwp_entry.place(relx=0.69,rely=0.37,anchor="w")
@@ -364,12 +364,12 @@ def on_matching_metric_change(*args):
         
     elif matching_metric_var.get() == "GWP" and include_transportation_var.get() == 1:
         #GWP
-        Timber_reused_gwp_label.place(relx=0.24,rely=0.32,anchor="w")
+        Timber_reused_gwp_label.place(relx=0.23,rely=0.32,anchor="w")
         Timber_reused_gwp_entry.place(relx=0.44,rely=0.32,anchor="w")
         Timber_new_gwp_label.place(relx=0.50,rely=0.32,anchor="w")
         Timber_new_gwp_entry.place(relx=0.69,rely=0.32,anchor="w")
         
-        Steel_reused_gwp_label.place(relx=0.24,rely=0.37,anchor="w")
+        Steel_reused_gwp_label.place(relx=0.23,rely=0.37,anchor="w")
         Steel_reused_gwp_entry.place(relx=0.44,rely=0.37,anchor="w")
         Steel_new_gwp_label.place(relx=0.50,rely=0.37,anchor="w")
         Steel_new_gwp_entry.place(relx=0.69,rely=0.37,anchor="w")
@@ -416,9 +416,9 @@ def on_matching_metric_change(*args):
         Steel_price_label.place(relx=0.29,rely=0.37,anchor="w")
         Steel_price_entry.place(relx=0.44,rely=0.37,anchor="w")
         Timber_reused_price_label.place(relx=0.52,rely=0.32,anchor="w")
-        Timber_reused_price_entry.place(relx=0.69,rely=0.32,anchor="w")
+        Timber_reused_price_entry.place(relx=0.70,rely=0.32,anchor="w")
         Steel_reused_price_label.place(relx=0.52,rely=0.37,anchor="w")
-        Steel_reused_price_entry.place(relx=0.69,rely=0.37,anchor="w")
+        Steel_reused_price_entry.place(relx=0.70,rely=0.37,anchor="w")
 
         #Transport 
         include_transportation_checkbutton.place(relx=0.5,rely=0.48,anchor="center")
@@ -459,9 +459,9 @@ def on_matching_metric_change(*args):
         Steel_price_label.place(relx=0.29,rely=0.37,anchor="w")
         Steel_price_entry.place(relx=0.44,rely=0.37,anchor="w")
         Timber_reused_price_label.place(relx=0.52,rely=0.32,anchor="w")
-        Timber_reused_price_entry.place(relx=0.69,rely=0.32,anchor="w")
+        Timber_reused_price_entry.place(relx=0.70,rely=0.32,anchor="w")
         Steel_reused_price_label.place(relx=0.52,rely=0.37,anchor="w")
-        Steel_reused_price_entry.place(relx=0.69,rely=0.37,anchor="w")
+        Steel_reused_price_entry.place(relx=0.70,rely=0.37,anchor="w")
 
         #Transport 
         include_transportation_checkbutton.place(relx=0.5,rely=0.48,anchor="center")
@@ -608,7 +608,7 @@ def warning_longruntime_brute():
     print("supply elements: ",num_supply_elements)
     if brute_var.get() and num_supply_elements.get()>14 and num_demand_elements.get()>14:
         result_label.configure(text="Warning! Brute force will take almost forever due to the datasets size. ("+str(num_demand_elements.get())+" * "+str(num_supply_elements.get())+")", foreground="red")
-        result_label.after(5000,clear_error_message)
+        result_label.after(8000,clear_error_message)
     #elif not brute_var.get() and num_supply_elements.get()>14 and num_demand_elements.get()>14:
         #result_label.configure(text="Smart!", foreground="green")
         #result_label.after(4000,clear_error_message)
@@ -808,11 +808,11 @@ icon = tk.PhotoImage(file=icon_path)
 root.iconphoto(True, icon)
 #root.attributes('-fullscreen', True)
 #Create title
-root.title("Element Matching Machine")
-root.title_label = ttk.Label(root, text="Element Matching Program", font=("Montserrat", 34, "bold"), foreground="#00509e")
+root.title("Design tool")
+root.title_label = ttk.Label(root, text="Design Tool - Structural Circle ", font=("Montserrat", 34, "bold"), foreground="#00509e")
 root.title_label.place(relx=0.5,rely=0.05,anchor="center")
 #Create describtion
-root.description_label = tk.Label(root, text="Choose demand and supply files and fill in the below variables, then click \"Calculate\" to generate a report with the results from the desired matching algorithms.",font=("Montserrat", 12, "bold"), foreground="#00509e")
+root.description_label = tk.Label(root, text="Choose demand and supply files and fill in the variables below, then click \"Calculate\" to generate a report with the results from the desired optimization algorithms.",font=("Montserrat", 12, "bold"), foreground="#00509e")
 root.description_label.place(relx=0.5,rely=0.105,anchor="center")
 
 
@@ -886,7 +886,7 @@ openmap_button.place(relx=0.61,rely=0.22,anchor="center",relheight=0.04,relwidth
 
 # Create the Matching metric dropdown menu
 matching_metric_var = tk.StringVar()
-matching_metric_label = ttk.Label(root, text="Matching metric:",font=("Montserrat",12,"bold"),foreground="#000000")
+matching_metric_label = ttk.Label(root, text="Optimization metric:",font=("Montserrat",12,"bold"),foreground="#000000")
 matching_metric_label.place(relx=0.5,rely=0.24,anchor="center")
 matching_metric_dropdown = ttk.Combobox(root, textvariable=matching_metric_var, values=["Price", "GWP", "Combined"])
 matching_metric_dropdown.place(relx=0.5,rely=0.27,anchor="center")
@@ -894,7 +894,7 @@ matching_metric_var.trace("w", on_matching_metric_change)
 
 ###TIMBER
 #Create the timber reused GWP input field (not shown before matching metric is choosen)
-Timber_reused_gwp_label = tk.Label(root, text="Reused timber GWP [kgCO2eq per m^3]:")
+Timber_reused_gwp_label = tk.Label(root, text="Reusable timber GWP [kgCO2eq per m^3]:")
 Timber_reused_GWP_prefilled=tk.DoubleVar(value=constants["TIMBER_REUSE_GWP"])
 Timber_reused_gwp_entry = tk.Entry(root,textvariable=Timber_reused_GWP_prefilled,fg="grey",widt=5)
 Timber_reused_gwp_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
@@ -915,7 +915,7 @@ Timber_price_entry.config(validate='key', validatecommand=(root.register(validat
 Timber_price_entry.bind('<FocusIn>', lambda event,entry=Timber_price_entry,variabel="TIMBER_PRICE":on_general_entry_click(event,entry,variabel))
 
 #Create the new timber price input field (not shown before matching metric is choosen)
-Timber_reused_price_label = tk.Label(root, text="Reused timber price [kr per m^3]:")
+Timber_reused_price_label = tk.Label(root, text="Reusable timber price [kr per m^3]:")
 Timber_reused_price_prefilled=tk.DoubleVar(value=constants["TIMBER_REUSE_PRICE"])
 Timber_reused_price_entry = tk.Entry(root,textvariable=Timber_reused_price_prefilled,fg="grey",widt=5)
 Timber_reused_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
@@ -923,7 +923,7 @@ Timber_reused_price_entry.bind('<FocusIn>', lambda event,entry=Timber_reused_pri
 
 ###STEEL
 #Create the steel reused GWP input field (not shown before matching metric is choosen)
-Steel_reused_gwp_label = tk.Label(root, text="Reused steel GWP [kgCO2eq per m^3]:")
+Steel_reused_gwp_label = tk.Label(root, text="Reusable steel GWP [kgCO2eq per m^3]:")
 Steel_reused_GWP_prefilled=tk.DoubleVar(value=constants["STEEL_REUSE_GWP"])
 Steel_reused_gwp_entry = tk.Entry(root,textvariable=Steel_reused_GWP_prefilled,fg="grey",widt=5)
 Steel_reused_gwp_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
@@ -944,7 +944,7 @@ Steel_price_entry.config(validate='key', validatecommand=(root.register(validate
 Steel_price_entry.bind('<FocusIn>', lambda event,entry=Steel_price_entry,variabel="STEEL_PRICE":on_general_entry_click(event,entry,variabel))
 
 #Create the reused steel price input field (not shown before matching metric is choosen)
-Steel_reused_price_label = tk.Label(root, text="Reused steel price [kr per kg]:")
+Steel_reused_price_label = tk.Label(root, text="Reusable steel price [kr per kg]:")
 Steel_reused_price_prefilled=tk.DoubleVar(value=constants["STEEL_REUSE_PRICE"])
 Steel_reused_price_entry = tk.Entry(root,textvariable=Steel_reused_price_prefilled,fg="grey",widt=5)
 Steel_reused_price_entry.config(validate='key', validatecommand=(root.register(validate_input), '%P'))
@@ -979,31 +979,31 @@ Transport_price_entry.bind('<FocusIn>', lambda event,entry=Transport_price_entry
 ###ALGORITHMS
 
 #Create choose algorithms label
-Choose_algorithms_label = tk.Label(root, text="Choose the desidered algorithms:",font=("Montserrat",12,"bold"),foreground="#000000")
+Choose_algorithms_label = tk.Label(root, text="Choose the desidered optimization algorithms:",font=("Montserrat",12,"bold"),foreground="#000000")
 
 greedy_var = tk.IntVar()
-greedy_checkbutton = tk.Checkbutton(root, text="Greedy",font=("Montserrat", 12), foreground="#000000", variable=greedy_var,command=none)
+greedy_checkbutton = tk.Checkbutton(root, text="Greedy Algorithm",font=("Montserrat", 12), foreground="#000000", variable=greedy_var,command=none)
 
 greedy_plural_var = tk.IntVar()
-greedy_plural_checkbutton = tk.Checkbutton(root, text="Greedy plural",font=("Montserrat", 12), foreground="#000000", variable=greedy_plural_var,command=none)
+greedy_plural_checkbutton = tk.Checkbutton(root, text="Greedy Algorithm Plural",font=("Montserrat", 12), foreground="#000000", variable=greedy_plural_var,command=none)
 
 bipartite_var = tk.IntVar()
-bipartite_checkbutton = tk.Checkbutton(root, text="Bipartite",font=("Montserrat", 12), foreground="#000000", variable=bipartite_var,command=none)
+bipartite_checkbutton = tk.Checkbutton(root, text="MBM",font=("Montserrat", 12), foreground="#000000", variable=bipartite_var,command=none)
 
 bipartite_plural_var = tk.IntVar()
-bipartite_plural_checkbutton = tk.Checkbutton(root, text="Bipartite plural",font=("Montserrat", 12), foreground="#000000", variable=bipartite_plural_var,command=none)
+bipartite_plural_checkbutton = tk.Checkbutton(root, text="MBM Plural",font=("Montserrat", 12), foreground="#000000", variable=bipartite_plural_var,command=none)
 
 bipartite_multi_plural = tk.IntVar()
-bipartite_multi_plural_checkbutton = tk.Checkbutton(root, text="Bipartite multi plural",font=("Montserrat", 12), foreground="#000000", variable=bipartite_multi_plural,command=none)
+bipartite_multi_plural_checkbutton = tk.Checkbutton(root, text="MBM Plural Multiple",font=("Montserrat", 12), foreground="#000000", variable=bipartite_multi_plural,command=none)
 
 MILP_var = tk.IntVar()
 MILP_checkbutton = tk.Checkbutton(root, text="MILP",font=("Montserrat", 12), foreground="#000000", variable=MILP_var,command=none)
 
 brute_var = tk.IntVar()
-brute_checkbutton = tk.Checkbutton(root, text="Brute force",font=("Montserrat", 12), foreground="#000000", variable=brute_var,command=warning_longruntime_brute)
+brute_checkbutton = tk.Checkbutton(root, text="Brute Force Approach",font=("Montserrat", 12), foreground="#000000", variable=brute_var,command=warning_longruntime_brute)
 
 genetic_var = tk.IntVar()
-genetic_checkbutton = tk.Checkbutton(root, text="Genetic",font=("Montserrat", 12), foreground="#000000", variable=genetic_var,command=warning_longruntime_genetic)
+genetic_checkbutton = tk.Checkbutton(root, text="Genetic Algorithm",font=("Montserrat", 12), foreground="#000000", variable=genetic_var,command=warning_longruntime_genetic)
 
 
 result_frame = ttk.Frame(root)

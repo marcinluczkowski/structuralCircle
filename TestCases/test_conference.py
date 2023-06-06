@@ -7,7 +7,7 @@ from matching import run_matching
 import LCA as lca
 import plotting as plot
 
-"""
+
 ##### LOWEST BENCHMARK ####
 #==========USER FILLS IN============#
 
@@ -56,10 +56,10 @@ supply_coords.loc[len(supply_coords)] = birmingham
 supply_coords.loc[len(supply_coords)] = newcastle
 supply_coords.loc[len(supply_coords)] = london
 
-demand = hm.create_random_data_demand_conference(9000, 2.5, 12.1)
-supply = hm.create_random_data_supply_conference(9000, 2.5, 12.1, supply_coords)
-demand.to_excel(r"" + "./CSV/con_new_demand.xlsx")
-supply.to_excel(r"" + "./CSV/con_new_supply.xlsx")
+#demand = hm.create_random_data_demand_conference(9000, 2.5, 12.1)
+#supply = hm.create_random_data_supply_conference(9000, 2.5, 12.1, supply_coords)
+#demand.to_excel(r"" + "./CSV/con_new_demand.xlsx")
+#supply.to_excel(r"" + "./CSV/con_new_supply.xlsx")
 
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
@@ -115,3 +115,4 @@ run_string = hm.generate_run_string(constants)
 result_case2 = eval(run_string)
 pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
 hm.generate_pdf_report(pdf_results_case2, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+"""

@@ -7,11 +7,12 @@ from matching import run_matching
 import LCA as lca
 import plotting as plot
 
-#TODO: ADD LOCATIONS
 
+##### LOWEST BENCHMARK ####
 #==========USER FILLS IN============#
 
 #Constants
+NOK_TO_EURO = 0.085
 constants = {
     "TIMBER_GWP": 28.9,       #kg CO2 eq per m^3, based on NEPD-3442-2053-EN
     "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25kg CO2 eq per m^3, based on Eberhardt
@@ -19,29 +20,29 @@ constants = {
     "TIMBER_DENSITY": 491.0,  #kg/m^3, based on NEPD-3442-2053-EN
     "STEEL_GWP": 9263.0, #kg CO2 eq per m^3, Norsk stål + density of steel
     "STEEL_REUSE_GWP": 278.0, #kg CO2 eq per m^3, reduction of 97% from new according to Høydahl and Walter
-    "VALUATION_GWP": 0.7, #NOK per kg CO2, based on OECD
-    "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
-    "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
-    "STEEL_PRICE": 67.0, #NOK per kg, ENTRA 2021
-    "STEEL_REUSE_PRICE": 67.0, #NOK per kg, ENTRA 2021
-    "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne, Grønland 2022 + Gran 2013
+    "VALUATION_GWP": 0.7 *0.5 * NOK_TO_EURO, #NOK per kg CO2, based on OECD
+    "TIMBER_PRICE": 3400.0 * NOK_TO_EURO, #Per m^3, Treindustrien 2023
+    "TIMBER_REUSE_PRICE" : 3400.0 * NOK_TO_EURO, #Per m^3, assumes the price is the same is new elements
+    "STEEL_PRICE": 67.0 * NOK_TO_EURO, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 67.0 * NOK_TO_EURO, #NOK per kg, ENTRA 2021
+    "PRICE_TRANSPORTATION": 4.0 * NOK_TO_EURO, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "Conference_test",
+    "Project name": "Con_lowest_benchmark",
     "Metric": "Combined",
-    "Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
-    "Include transportation": False,
+    "Algorithms": ["greedy_plural", "bipartite_plural"],
+    "Include transportation": True,
     "Site latitude": "53.4630014",
     "Site longitude": "-2.2950054",
-    "Demand file location": r"./CSV/conference_demand.xlsx",
-    "Supply file location": r"./CSV/conference_supply.xlsx",
+    "Demand file location": r"./CSV/con_new_demand.xlsx",
+    "Supply file location": r"./CSV/con_new_supply.xlsx",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
-#========================#
-#Generating dataset
-#===================
-supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
+
+### Generating dataset ###
+
+supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
 liverpool = ["Liverpool", "53.4308365", "-2.9633863"]
 sheffield = ["Sheffield", "53.3705246", "-1.4747101"]
@@ -55,40 +56,28 @@ supply_coords.loc[len(supply_coords)] = birmingham
 supply_coords.loc[len(supply_coords)] = newcastle
 supply_coords.loc[len(supply_coords)] = london
 
-materials = ["Steel"]
+#demand = hm.create_random_data_demand_conference(9000, 2.5, 12.1)
+#supply = hm.create_random_data_supply_conference(9000, 2.5, 12.1, supply_coords)
+#demand.to_excel(r"" + "./CSV/con_new_demand.xlsx")
+#supply.to_excel(r"" + "./CSV/con_new_supply.xlsx")
 
-# GENERATE FILE
-# ============
-#supply = hm.create_random_data_supply_pdf_reports(supply_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-#demand = hm.create_random_data_demand_pdf_reports(demand_count = 1000, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
-#hm.export_dataframe_to_csv(supply, r"" + "./CSV/master_thesis_study_case_supply_new_locs.csv")
-#hm.export_dataframe_to_csv(demand, r"" + "./CSV/master_thesis_study_case_demand_new_locs.csv")
-#supply.to_excel(r"" + "./CSV/conference_supply.xlsx")
-#demand.to_excel(r"" + "./CSV/conference_demand.xlsx")
-#========================================
-
-#PRE-PROSESSING DATA
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
 supply = hm.add_necessary_columns_pdf(supply, constants)
 demand = hm.add_necessary_columns_pdf(demand, constants)
 constraint_dict = constants["constraint_dict"]
 
-#####################################
-### 1: GWP WITHOUT TRANSPORTATION ###
-#####################################
-"""
 score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
-result_case1 = eval(run_string)
-pdf_results_case1 = hm.extract_results_df_pdf(result_case1, constants)
-hm.generate_pdf_report(pdf_results_case1, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+result_case2 = eval(run_string)
+pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
+hm.generate_pdf_report(pdf_results_case2, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
-#####################################
-### 2: GWP WITH TRANSPORTATION ###
-#####################################
-"""
+##### Highest BENCHMARK ####
+#==========USER FILLS IN============#
+
 #Constants
+NOK_TO_EURO = 0.085
 constants = {
     "TIMBER_GWP": 28.9,       #kg CO2 eq per m^3, based on NEPD-3442-2053-EN
     "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25kg CO2 eq per m^3, based on Eberhardt
@@ -96,27 +85,25 @@ constants = {
     "TIMBER_DENSITY": 491.0,  #kg/m^3, based on NEPD-3442-2053-EN
     "STEEL_GWP": 9263.0, #kg CO2 eq per m^3, Norsk stål + density of steel
     "STEEL_REUSE_GWP": 278.0, #kg CO2 eq per m^3, reduction of 97% from new according to Høydahl and Walter
-    "VALUATION_GWP": 7.0, #NOK per kg CO2, based on OECD
-    "TIMBER_PRICE": 3400.0, #Per m^3, Treindustrien 2023
-    "TIMBER_REUSE_PRICE" : 3400.0, #Per m^3, assumes the price is the same is new elements
-    "STEEL_PRICE": 67.0, #NOK per kg, ENTRA 2021
-    "STEEL_REUSE_PRICE": 67.0, #NOK per kg, ENTRA 2021
-    "PRICE_TRANSPORTATION": 4.0, #NOK per km per tonne, Grønland 2022 + Gran 2013
+    "VALUATION_GWP": 0.7 *2 * NOK_TO_EURO, #NOK per kg CO2, based on OECD
+    "TIMBER_PRICE": 3400.0 * NOK_TO_EURO, #Per m^3, Treindustrien 2023
+    "TIMBER_REUSE_PRICE" : 3400.0 * NOK_TO_EURO, #Per m^3, assumes the price is the same is new elements
+    "STEEL_PRICE": 67.0 * NOK_TO_EURO, #NOK per kg, ENTRA 2021
+    "STEEL_REUSE_PRICE": 67.0 * NOK_TO_EURO, #NOK per kg, ENTRA 2021
+    "PRICE_TRANSPORTATION": 4.0 * NOK_TO_EURO, #NOK per km per tonne, Grønland 2022 + Gran 2013
     "STEEL_DENSITY": 7850.0, #kg/m^3 EUROCODE
     ########################
-    "Project name": "Conference_test",
+    "Project name": "Con_highest_benchmark",
     "Metric": "Combined",
-    #"Algorithms": ["greedy_single", "greedy_plural", "bipartite_plural"],
-    "Algorithms": ["greedy_plural"],
+    "Algorithms": ["greedy_plural", "bipartite_plural"],
     "Include transportation": True,
     "Site latitude": "53.4630014",
     "Site longitude": "-2.2950054",
-    "Demand file location": r"./CSV/conference_demand.xlsx",
-    "Supply file location": r"./CSV/conference_supply.xlsx",
+    "Demand file location": r"./CSV/con_new_demand.xlsx",
+    "Supply file location": r"./CSV/con_new_supply.xlsx",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 
-#PRE-PROSESSING DATA
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
 demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
 supply = hm.add_necessary_columns_pdf(supply, constants)

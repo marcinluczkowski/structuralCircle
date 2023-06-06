@@ -305,7 +305,16 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
     return demand
 
 def create_random_data_demand_conference(requested_tonnes, length_min, length_max):
+    """Generates a demand dataset that has approximately the requested number of tonnes of steel
 
+    Args:
+        requested_tonnes (float): desired total number of tonnes steel in the dataset
+        length_min (float): minimum element length
+        length_max (float): maxmimum element length
+
+    Returns:
+        DataFrame: demand dataset
+    """
     #Available steel sections with corresponding area and moment of inertia
     steel_cs = {"CHS 457x40": (5.2402e-2, 1.149e-3, 0.4114),# (area, moment of inertia, mass [tonne/m])
                 "CHS 508x30": (3.7935e-2, 1.109e-3, 0.3536), 
@@ -334,7 +343,17 @@ def create_random_data_demand_conference(requested_tonnes, length_min, length_ma
     return demand
 
 def create_random_data_supply_conference(requested_tonnes, length_min, length_max, supply_coords):
+    """Generates a supply dataset that has approximately the requested number of tonnes of steel
 
+    Args:
+        requested_tonnes (float): desired total number of tonnes steel in the dataset
+        length_min (float): minimum element length
+        length_max (float): maxmimum element length
+        supply_cords (DataFrame): contains the location name, latitude and longitude of the supply elements
+
+    Returns:
+        DataFrame: supply dataset
+    """
     #Available steel sections with corresponding area and moment of inertia
     steel_cs = {"CHS 457x40": (5.2402e-2, 1.149e-3, 0.4114),# (area, moment of inertia, mass [tonne/m])
                 "CHS 508x30": (3.7935e-2, 1.109e-3, 0.3536), 

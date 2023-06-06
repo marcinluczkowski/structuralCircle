@@ -304,6 +304,64 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
         demand.loc[row, "Material"] = material
     return demand
 
+def create_random_data_demand_conference(requested_tonnes, length_min, length_max):
+
+    #Available steel sections with corresponding area and moment of inertia
+    steel_cs = {"CHS 457x40": (5.2402e-2, 1.149e-3, 0.4114),# (area, moment of inertia, mass [tonne/m])
+                "CHS 508x30": (3.7935e-2, 1.109e-3, 0.3536), 
+                "CHS 610x30": (5.4664e-2, 2.305e-3, 0.4291),
+                "CHS 813x30": (7.3789e-2, 5.664e-3, 0.5793),
+                "CHS 1067x25": (8.1838e-2, 1.111e-2, 0.6424),
+                "CHS 1219x25": (9.3777e-2, 1.6720e-2, 0.7361)
+    }
+
+    demand = pd.DataFrame(columns = ["Length", "Area", "Moment of Inertia", "Material", "Manufacturer", "Latitude", "Longitude"])
+    material = "Steel"
+    manufacturer = 0
+    lat = 0
+    lon = 0
+    #Add random data
+    tonne_used = 0.0
+    while tonne_used < requested_tonnes:
+        print(tonne_used)
+        steel_idx = random.choice(list(steel_cs.keys()))
+        length = np.random.uniform(length_min, length_max)
+        area = steel_cs[steel_idx][0]
+        moment = steel_cs[steel_idx][1]
+        tonne = steel_cs[steel_idx][2] * length
+        demand.loc[len(demand.index)] = [length, area, moment, material, manufacturer, lat, lon]
+        tonne_used += tonne
+    return demand
+
+def create_random_data_supply_conference(requested_tonnes, length_min, length_max, supply_coords):
+
+    #Available steel sections with corresponding area and moment of inertia
+    steel_cs = {"CHS 457x40": (5.2402e-2, 1.149e-3, 0.4114),# (area, moment of inertia, mass [tonne/m])
+                "CHS 508x30": (3.7935e-2, 1.109e-3, 0.3536), 
+                "CHS 610x30": (5.4664e-2, 2.305e-3, 0.4291),
+                "CHS 813x30": (7.3789e-2, 5.664e-3, 0.5793),
+                "CHS 1067x25": (8.1838e-2, 1.111e-2, 0.6424),
+                "CHS 1219x25": (9.3777e-2, 1.6720e-2, 0.7361)
+    }
+
+    supply = pd.DataFrame(columns = ["Length", "Area", "Moment of Inertia", "Material", "Location", "Latitude", "Longitude"])
+    material = "Steel"
+    #Add random data
+    tonne_used = 0.0
+    while tonne_used < requested_tonnes:
+        steel_idx = random.choice(list(steel_cs.keys()))
+        loc_idx = lokasjon=random.randint(0, len(supply_coords)-1)
+        loc = supply_coords.loc[loc_idx,"Location"]
+        lat = supply_coords.loc[loc_idx,"Latitude"]
+        lon = supply_coords.loc[lokasjon,"Longitude"]
+        length = np.random.uniform(length_min, length_max)
+        area = steel_cs[steel_idx][0]
+        moment = steel_cs[steel_idx][1]
+        tonne = steel_cs[steel_idx][2] * length
+        supply.loc[len(supply.index)] = [length, area, moment, material, loc, lat, lon]
+        tonne_used += tonne
+    return supply
+
 def extract_brute_possibilities(incidence_matrix):
     """Extracts all matching possibilities based on the incidence matrix.
 

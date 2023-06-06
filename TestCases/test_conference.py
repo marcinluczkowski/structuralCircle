@@ -30,7 +30,7 @@ constants = {
     ########################
     "Project name": "Con_lowest_benchmark",
     "Metric": "Combined",
-    "Algorithms": ["greedy_plural"],
+    "Algorithms": ["greedy_plural", "bipartite_plural"],
     "Include transportation": True,
     "Site latitude": "53.4630014",
     "Site longitude": "-2.2950054",
@@ -72,7 +72,7 @@ run_string = hm.generate_run_string(constants)
 result_case2 = eval(run_string)
 pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
 hm.generate_pdf_report(pdf_results_case2, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
-"""
+
 ##### Highest BENCHMARK ####
 #==========USER FILLS IN============#
 
@@ -95,7 +95,7 @@ constants = {
     ########################
     "Project name": "Con_highest_benchmark",
     "Metric": "Combined",
-    "Algorithms": ["greedy_plural"],
+    "Algorithms": ["greedy_plural", "bipartite_plural"],
     "Include transportation": True,
     "Site latitude": "53.4630014",
     "Site longitude": "-2.2950054",
@@ -115,4 +115,3 @@ run_string = hm.generate_run_string(constants)
 result_case2 = eval(run_string)
 pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
 hm.generate_pdf_report(pdf_results_case2, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
-"""

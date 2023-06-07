@@ -57,10 +57,13 @@ def calculate_score(length, area, include_transportation, distance, gwp_factor, 
         score (float): the score of the element concidering both GWP and Price (combined)
         transportation_score (float): the score of transporting the element
     """
+    CO2_impact = 0
     volume = length * area
     score = volume * gwp_factor
     transportation_score = score.copy()
     transportation_score[:] = 0
+
+    CO2_impact += score
   
     if not include_transportation:
         score=score*priceGWP
@@ -70,6 +73,7 @@ def calculate_score(length, area, include_transportation, distance, gwp_factor, 
         transportation_cost= calcultate_price_transport(volume,density,distance, price_transport)
         logging.debug(f"Transportation LCA:", transportation_LCA)
         score += transportation_LCA
+        CO2_impact += transportation_LCA
         score=score*priceGWP
         score+=transportation_cost
         transportation_score += transportation_LCA*priceGWP + transportation_cost
@@ -77,7 +81,7 @@ def calculate_score(length, area, include_transportation, distance, gwp_factor, 
     price_element=volume*price
     score+=price_element
     
-    return score, transportation_score
+    return score, transportation_score, CO2_impact
 
 def calculate_price(length, area, include_transportation, distance, price, density, price_transport):
     """ Method for evaluatating the price of an element

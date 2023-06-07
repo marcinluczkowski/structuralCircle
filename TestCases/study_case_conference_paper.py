@@ -10,7 +10,7 @@ import plotting as plot
 
 ##### LOWEST BENCHMARK ####
 #==========USER FILLS IN============#
-
+"""
 #Constants
 NOK_TO_EURO = 0.085
 constants = {
@@ -71,8 +71,9 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case2 = eval(run_string)
 pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
-hm.generate_pdf_report(pdf_results_case2, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+#hm.generate_pdf_report(pdf_results_case2, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
 
+"""
 ##### Highest BENCHMARK ####
 #==========USER FILLS IN============#
 
@@ -114,4 +115,9 @@ score_function_string = hm.generate_score_function_string(constants)
 run_string = hm.generate_run_string(constants)
 result_case2 = eval(run_string)
 pdf_results_case2 = hm.extract_results_df_pdf(result_case2, constants)
-hm.generate_pdf_report(pdf_results_case2, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+#hm.generate_pdf_report(pdf_results_case2, constants["Project name"], supply, demand, filepath = r"./Local_files/GUI_files/Results/")
+
+
+print("SAVINGS:", pdf_results_case2["Savings"])
+print("CO2 emissions with reuse:", pdf_results_case2["CO2_emissions"])
+print("CO2 emissions all new:", pdf_results_case2["CO2_all_new"])

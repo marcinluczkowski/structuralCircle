@@ -114,6 +114,8 @@ def extract_results_df_pdf(dict_list, constants):
         results_dict["Transportation score"] = 0
         results_dict["Transportation all new"] = 0
 
+    results_dict["CO2_emissions"] = round(match_object.CO2_emissions, 2)
+    results_dict["CO2_all_new"] = match_object.demand["CO2_emissions"].sum()
     #Adding the pairs of the best algorithm
     pairs = extract_pairs_df(dict_list)[results_dict["Algorithm"]]
     pairs.name = "Substitutions"

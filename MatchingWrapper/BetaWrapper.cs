@@ -11,6 +11,7 @@ using MatchingWrapper;
 using System.Reflection;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 namespace MatchingWrapper
 {
@@ -54,7 +55,7 @@ namespace MatchingWrapper
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddIntegerParameter("Matching", "matching", "Results from the matching", GH_ParamAccess.tree); // 0
+            pManager.AddTextParameter("Matching", "matching", "Results from the matching", GH_ParamAccess.list); // 0
             pManager.AddTextParameter("Result info", "info", "Info about the matching process", GH_ParamAccess.list); // 1
         }
 
@@ -135,8 +136,26 @@ namespace MatchingWrapper
             // Exectute matching.py script from terminal. This will probably only work as long as the user has all the methods available. Need to build a package?
 
 
-            var resultString = HelperMethods.ExecuteBatch(methodNumber: methodInt, demandPath: Path.Combine(fileDir, demandPath), supplyPath: Path.Combine(fileDir, supplyPath), constraints: constraints); 
+            var resultString = HelperMethods.ExecuteBatch(methodNumber: methodInt, demandPath: Path.Combine(fileDir, demandPath), supplyPath: Path.Combine(fileDir, supplyPath), constraints: constraints);
+
+            // Read the result from result.py
+            List<string> matching_pairs = new List<string>();
+            try
+            {
+                string resultText = File.ReadAllText(Path.Combine(fileDir, "result.json"));
+                var matchingResults = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string,string>>>(resultText);
+                var pairDict = matchingResults["Supply_id"];
+                foreach (KeyValuePair<string, string> entry in pairDict) {
+                    matching_pairs.Add(entry.Key + ":" + entry.Value);
+                }
+
+            }
+            catch (Exception)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Could not find result file and deserialize to dictionary.");
+            }
             
+
 
             /*
             // read the csv file created in batch/python
@@ -168,6 +187,7 @@ namespace MatchingWrapper
 
 
             // -- output --
+            DA.SetDataList(0, matching_pairs);
             DA.SetDataList(1, String.Join("\n", resultString));
         }
 

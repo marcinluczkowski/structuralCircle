@@ -980,10 +980,33 @@ class Matching():
 def run_matching(demand, supply, score_function_string, constraints = None, add_new = True, solution_limit = 120,
                 bipartite = False, greedy_single = False, greedy_plural = False, genetic = False, milp = False, sci_milp = False, brute=False, brutevol2 = False,brutevol3=False,brutevol4=False, bipartite_plural = False, bipartite_plural_multiple = False):
 
-    """Run selected matching algorithms and returns results for comparison.
-    By default, bipartite, and both greedy algorithms are run. Activate and deactivate as wished."""
-    #TODO Can **kwargs be used instead of all these arguments
-    # create matching object 
+    """General matching for running a matching problem with one or multiple algorithms
+    Args:
+        demand (DataFrame): DataFrame representing the demand elements
+        supply (DataFrame): DataFrame representing the supply elements
+        score_function_string (str): _description_
+        constraints (_type_, optional): _description_. Defaults to None.
+        add_new (bool, optional): _description_. Defaults to True.
+        solution_limit (int, optional): _description_. Defaults to 120.
+        bipartite (bool, optional): _description_. Defaults to False.
+        greedy_single (bool, optional): _description_. Defaults to False.
+        greedy_plural (bool, optional): _description_. Defaults to False.
+        genetic (bool, optional): _description_. Defaults to False.
+        milp (bool, optional): _description_. Defaults to False.
+        sci_milp (bool, optional): _description_. Defaults to False.
+        brute (bool, optional): _description_. Defaults to False.
+        brutevol2 (bool, optional): _description_. Defaults to False.
+        brutevol3 (bool, optional): _description_. Defaults to False.
+        brutevol4 (bool, optional): _description_. Defaults to False.
+        bipartite_plural (bool, optional): _description_. Defaults to False.
+        bipartite_plural_multiple (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        _type_: _description_
+    """
+    
+    # create matching object
+
     matching = Matching(demand=demand, supply=supply, score_function_string=score_function_string,constraints=constraints, add_new=add_new, multi = True, solution_limit=solution_limit)
     matches =[] # results to return
     headers = []
@@ -1028,7 +1051,8 @@ if __name__ == "__main__":
     RESULT_FILE = r"MatchingAlgorithms\result.csv"
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
-    demand, supply = hm.create_random_data(demand_count=8, supply_count=8)
+    demand = hm.create_random_data_demand(demand_count=8)
+    supply = hm.create_random_data_supply(supply_count=8)
     score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
     result = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, greedy_plural = False, bipartite=False, genetic=True)
     simple_pairs = hm.extract_pairs_df(result)

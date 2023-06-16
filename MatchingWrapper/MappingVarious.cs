@@ -8,7 +8,7 @@ using Rhino.Geometry;
 using System.IO;
 using Serilog;
 
-namespace FirstPythonComponent
+namespace MatchingWrapper
 {
     public class MappingVarious : GH_Component
     {

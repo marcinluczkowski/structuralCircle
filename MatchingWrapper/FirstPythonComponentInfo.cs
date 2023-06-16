@@ -3,7 +3,7 @@ using Grasshopper.Kernel;
 using System;
 using System.Drawing;
 
-namespace FirstPythonComponent
+namespace MatchingWrapper
 {
     public class FirstPythonComponentInfo : GH_AssemblyInfo
     {

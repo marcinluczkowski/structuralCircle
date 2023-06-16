@@ -11,6 +11,12 @@
   </PropertyGroup>
 	
   <ItemGroup>
+    <Compile Remove="MatchingPython\**" />
+    <EmbeddedResource Remove="MatchingPython\**" />
+    <None Remove="MatchingPython\**" />
+  </ItemGroup>
+	
+  <ItemGroup>
     <None Remove="Resources\beta_wrap.png" />
     <None Remove="Resources\matching_logo.png" />
   </ItemGroup>
@@ -33,19 +39,19 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="PythonFiles\from_batch.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="PythonFiles\mapping_beta.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="PythonFiles\mapping_graph.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="PythonFiles\python_json.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="PythonFiles\test.bat">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -54,7 +60,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <Folder Include="MatchingPython\" />
     <Folder Include="Icons\" />
   </ItemGroup>
   

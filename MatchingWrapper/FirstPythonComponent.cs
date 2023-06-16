@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace FirstPythonComponent
+namespace MatchingWrapper
 {
     public class FirstPythonComponent : GH_Component
     {

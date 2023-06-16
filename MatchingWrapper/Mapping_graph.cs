@@ -16,7 +16,7 @@ using Serilog;
 
 using Serilog.Core;
 
-namespace FirstPythonComponent
+namespace MatchingWrapper
 {
     public class MappingGraph : GH_Component
     {

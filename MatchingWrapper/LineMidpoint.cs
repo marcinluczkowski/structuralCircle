@@ -11,7 +11,7 @@ using Serilog;
 
 using Serilog.Core;
 
-namespace FirstPythonComponent
+namespace MatchingWrapper
 {
     public class LineMidpoint : GH_Component
     {

@@ -14,7 +14,7 @@ using Rhino.Geometry;
 using Serilog;
 using Serilog.Core;
 
-namespace FirstPythonComponent
+namespace MatchingWrapper
 {
     public class MappingBeta : GH_Component
     {

@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\sverremh\source\repos\MatchingWrapper\MatchingWrapper\DevelopPythonFiles\matching_env"
+VIRTUAL_ENV="C:\Users\sverremh\source\repos\MatchingWrapper\MatchingWrapper\PythonFiles\matching_env"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

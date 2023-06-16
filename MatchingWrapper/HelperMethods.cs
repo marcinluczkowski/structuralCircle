@@ -13,8 +13,11 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Serilog;
 using System.Reflection;
+using Rhino.Input.Custom;
+using System.Text;
+using System.Threading;
 
-namespace FirstPythonComponent
+namespace MatchingWrapper
 {
     public static class HelperMethods
     {
@@ -42,7 +45,11 @@ namespace FirstPythonComponent
 
             return nestedList;
         }
-
+        /// <summary>
+        /// Converts a Nested List to a DataTree structure for Grasshopper
+        /// </summary>
+        /// <param name="nestedList">Nested list to convert</param>
+        /// <returns>A grasshopper DataTree<object></returns>
         public static DataTree<object> NestedListToDataTree(List<List<object>> nestedList)
         {
             var dataTree = new DataTree<object>();
@@ -195,50 +202,150 @@ namespace FirstPythonComponent
             return new Tuple<string, string>(errors, results);
         }
 
-        public static string ExecutePython3(string filePath = "", string PythonPath = "", int methodNumber = 0, string demandPath = "", string supplyPath  = "")
+
+        public static string ExecuteBatch(string filePath = "", string PythonPath = "", int methodNumber = 0, string demandPath = "", string supplyPath = "", string constraints = "")
+        {
+            try
+            {
+                int exitCode;
+                var username = Environment.UserName; // Get the username of the current user.
+                string batchFilePath = String.Format(@"C:\Users\{0}\AppData\Roaming\Grasshopper\Libraries\MatchingWrapper\PythonFiles\test.bat", username); // location to runfile
+
+                
+
+                Process process = new Process();
+                process.StartInfo.FileName = "cmd.exe";
+                process.StartInfo.Arguments = "/c " + batchFilePath + " \"" +  Convert.ToString(methodNumber) + "\" \"" + demandPath + "\" \"" + supplyPath + "\" \"" + constraints + "\"";
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                
+
+                process.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                string errors = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+                
+                //Console.WriteLine("Batch file execution completed.");
+                //Console.WriteLine("Output:");
+                //Console.WriteLine(output);
+
+                return output;
+            }
+            catch (Exception ex)
+            {
+                return "Error occurred: " + ex.Message;
+            }
+
+        }
+
+        public static string ExecuteBatch2(string filePath = "", string PythonPath = "", int methodNumber = 0, string demandPath = "", string supplyPath = "")
         {
             // 1) create the process start info
             int exitCode;
-            var processInfo = new ProcessStartInfo();
-
             var username = Environment.UserName; // Get the username of the current user.
             var batchFileLocation = String.Format(@"C:\Users\{0}\AppData\Roaming\Grasshopper\Libraries\MatchingWrapper\PythonFiles\test.bat", username); // location to runfile
-            var localBatchLoc = "test.bat";
 
-            //processInfo.FileName = batchFileLocation; // Needed? Give the full script path to the process
+
 
             // 2) Provide script and arguments
-
             // create command line command
-            string argString = $"/c";
-            var args = new List<string> { batchFileLocation, "4", "3" };
+            //string argString = $"/c";
+            string argString = "";
+            //var args = new List<string> { batchFileLocation, String.Format("{0}", methodNumber), "3" };
+            var args = new List<string> { batchFileLocation };
+            
             foreach (string arg in args)
             {
                 argString += (" " + arg + " ");
             }
 
             // 3) Process configuration
-            processInfo.FileName = "cmd.exe";
-            processInfo.Arguments = argString;
-                        
-            processInfo.UseShellExecute = false;
-            processInfo.CreateNoWindow = false;
-            processInfo.RedirectStandardError = true;
-            processInfo.RedirectStandardOutput = true;
+            string filename = "cmd.exe";
+
             // 4) Execute process and get output
 
             // 4) Execute process and get output
-            var errors = "";
-            var results = "";
-
-            using (Process process = Process.Start(processInfo))
+            //List<string> errors = new List<string>();
+            //List<string> results = new List<string>();
+            string outputString = "";
+            using (Process process = new Process())
             {
+                process.StartInfo.FileName = filename;
+                process.StartInfo.Arguments = argString;
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.RedirectStandardOutput = true;
+
+                StringBuilder output = new StringBuilder();
+                StringBuilder error = new StringBuilder();
+
+                using (AutoResetEvent outputWaitHandle = new AutoResetEvent(false))
+                using (AutoResetEvent errorWaitHandle = new AutoResetEvent(false))
+                {
+                    process.OutputDataReceived += (sender, e) =>
+                    {
+                        if (e.Data == null)
+                        {
+                            outputWaitHandle.Set();
+                        }
+                        else
+                        {
+                            output.AppendLine(e.Data);
+                        }
+                        outputString = output.ToString();
+                    };
+                    process.ErrorDataReceived += (sender, e) =>
+                    {
+                        if (e.Data == null)
+                        {
+                            errorWaitHandle.Set();
+                        }
+                        else
+                        {
+                            error.AppendLine(e.Data);
+                        }
+                    };
+
+                    process.Start();
+                    double maxWaitMin = 0.25; // number of minutes to wait for solver to run. 
+                    int timeout = Convert.ToInt32(1000 * 60 * maxWaitMin);
+                    bool b1 = process.WaitForExit(timeout);
+                    bool b2 = outputWaitHandle.WaitOne(timeout);
+                    bool b3 = errorWaitHandle.WaitOne(timeout);
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    
+                    if (b1 && b2 && b3)
+                    {
+                        // Process completed. Check process.ExitCode here.
+                        string test = process.StandardOutput.ReadToEnd();
+                        exitCode = process.ExitCode;
+                    }
+                    else
+                    {
+                        string timeOutString = "Something happened?";
+                        // Timed out.
+                    }
+                }
+                /*
                 try
                 {
                     var w = new System.Diagnostics.Stopwatch();
                     Log.Information("Reading results from shell:"); w.Start();
-                    errors = process.StandardError.ReadToEnd();
-                    results = process.StandardOutput.ReadToEnd();
+                    
+                    while (process.StandardError.Peek() > -1)
+                    {
+                        error.Add(process.StandardError.ReadLine());
+                    }
+                    
+                    while (process.StandardOutput.Peek() > -1)
+                    {
+                        output.Add(process.StandardOutput.ReadLine());
+                    }
+
+                    
                     exitCode = process.ExitCode;
                     Log.Debug("Time used to read results from console: {time} ms", w.ElapsedMilliseconds); w.Reset();
                 }
@@ -247,7 +354,6 @@ namespace FirstPythonComponent
                     exitCode = 1;
                 }
             }
-            string msg;
             if (exitCode == 0)
             {
                 return results;
@@ -256,7 +362,11 @@ namespace FirstPythonComponent
             {
                 return results;
             }
-            
+                */
+
+            }
+
+            return outputString;
         }
 
 

@@ -12,11 +12,13 @@ using System.Reflection;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using Grasshopper.Kernel.Special;
+using System.ComponentModel;
 
 namespace MatchingWrapper
 {
     public class BetaWrapper : GH_Component
-    {
+    {        
         /// <summary>
         /// Initializes a new instance of the BetaWrapper class.
         /// </summary>
@@ -25,6 +27,7 @@ namespace MatchingWrapper
               "Description",
               "Python", "Reuse")
         {
+            
         }
 
         /// <summary>
@@ -35,19 +38,18 @@ namespace MatchingWrapper
             pManager.AddGenericParameter("DemandData", "demand", "DataTree with demand elements. First branch should be column names", GH_ParamAccess.tree); // 0
             pManager.AddGenericParameter("SupplyData", "supply", "DataTree with demand elements. First branch should be column names", GH_ParamAccess.tree); // 1
             pManager.AddTextParameter("Parameter Names", "names", "List of names for each parameter used in the data trees", GH_ParamAccess.list); // 2
-            pManager.AddIntegerParameter("Method", "method", "Select the method to be used. Right click to see options", GH_ParamAccess.item, 1); //3
+            pManager.AddIntegerParameter("Method", "method", "Select the method to be used. Right click to see options", GH_ParamAccess.item); //3
             pManager.AddTextParameter("MatchingConstraints", "constraints", "Specify constraints to use during mapping", GH_ParamAccess.item); // 4
             pManager.AddTextParameter("FixedElements", "fixEls", "", GH_ParamAccess.list); //5
 
 
+            pManager[5].Optional = true;
             Param_Integer methodParam = pManager[3] as Param_Integer;
             methodParam.AddNamedValue("GreedyS", 0);
             methodParam.AddNamedValue("GreedyP", 1);
             methodParam.AddNamedValue("Bipartite", 2);
-            methodParam.AddNamedValue("MIP", 3);
+            methodParam.AddNamedValue("MIP", 3);            
 
-
-            pManager[5].Optional = true;
         }
 
         /// <summary>
@@ -63,8 +65,52 @@ namespace MatchingWrapper
         /// This is the method that actually does the work.
         /// </summary>
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
+        
+        private void CreateValueListString(GH_Component component, Dictionary<string, string> valueListDict, int inputNum)
+        {
+            //instantiate  new value list
+            var valueList = new Grasshopper.Kernel.Special.GH_ValueList(); // instantiate the new value list
+            valueList.CreateAttributes();
+
+
+            int inputCount = Params.Input[inputNum].SourceCount; // the input to connect to
+            if (inputCount != 0) { return; } // We do not want to create a new slider if it already exists.
+            //set the position of the ValueList in the canvas
+            valueList.Attributes.Pivot = new System.Drawing.PointF((float)Attributes.Pivot.X   - Attributes.Bounds.Width - valueList.Attributes.Bounds.Width - 30,
+                (float)Attributes.Pivot.Y);
+            
+            // populate value list with data from input dictionary
+            valueList.ListItems.Clear(); // clear the initial values
+            foreach (KeyValuePair<string,string> kvp in valueListDict)
+            {
+                var listItem = new GH_ValueListItem(kvp.Key, kvp.Value);
+                valueList.ListItems.Add(listItem); // add item to valueList
+            }
+
+            // Add ValueList to canvas
+            Grasshopper.Instances.ActiveCanvas.Document.AddObject(valueList, false); // set recompute to "true" to add the value slider before starting the rest of the MatchingWrapper
+
+            // connect slider to this component
+            Params.Input[inputNum].AddSource(valueList);
+            
+
+            
+
+        }
+
+        protected override void BeforeSolveInstance()
+        {
+            // Before running the component I add the value lists I need
+            var method_dict = new Dictionary<string, string>() { { "Greedy Single", "0" }, { "Greedy Plural", "1" }, { "MaxBM", "2" }, { "MILP", "3" } };
+            CreateValueListString(this, method_dict, 3);
+        }
+
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            
+            
+
+
             // -- input --
             GH_Structure<IGH_Goo> demandTree; // 0
             GH_Structure<IGH_Goo> supplyTree; // 1
@@ -73,20 +119,21 @@ namespace MatchingWrapper
             string constraints = ""; //4
             List<string> lockedPositions = new List<string>(); // 5
 
-            if (!DA.GetDataTree(0, out demandTree)) return; // 0
-            if (!DA.GetDataTree(1, out supplyTree)) return; // 1
-            if (!DA.GetDataList(2, names)) return; // 1
+            if(!DA.GetDataTree(0, out demandTree))return;// 0
+            if(!DA.GetDataTree(1, out supplyTree)); // 1
+            DA.GetDataList(2, names); // 1
             DA.GetData(3, ref methodInt); // 3
             if (!DA.GetData(4, ref constraints)) // 4
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "There need to be some constraints for the matching");
-                return;
             }
             DA.GetDataList(5, lockedPositions); // 5
 
 
-            // -- method --
             
+
+            // -- method --
+
             // convert trees to nested lists
             List<List<object>> demandList = HelperMethods.TreeToNestedList(demandTree);
             List<List<object>> supplyList = HelperMethods.TreeToNestedList(supplyTree);

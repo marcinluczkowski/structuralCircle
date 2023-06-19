@@ -82,9 +82,11 @@ write_path = '\\'.join(supply_json.split('\\')[:-1] + ['result.json']) # write t
 matching.pairs.to_json(write_path) # write the matching pairs back to the result file for use in Grasshopper
 
 # ------ OUTPUT -------
+# ------ OUTPUT -------
 hm.print_header("Matching complete")
 print(f"Matching problem solved using {parts[2]}")
 print(f"Total runtime: {round(matching.solution_time,2)} s.")
+print(f"Substituted {matching.pairs.Supply_id.str.contains('S').sum()}/{matching.pairs.Supply_id.count()} demand elements")
 print(f"Total score after running the matching problem: {matching.result}\n\
 From this, transportation contributed with {round(matching.result_transport, 2)}")
 print(f'Matching pairs written to {write_path}')

@@ -66,37 +66,7 @@ namespace MatchingWrapper
         /// </summary>
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         
-        private void CreateValueListString(GH_Component component, Dictionary<string, string> valueListDict, int inputNum)
-        {
-            //instantiate  new value list
-            var valueList = new Grasshopper.Kernel.Special.GH_ValueList(); // instantiate the new value list
-            valueList.CreateAttributes();
-
-
-            int inputCount = Params.Input[inputNum].SourceCount; // the input to connect to
-            if (inputCount != 0) { return; } // We do not want to create a new slider if it already exists.
-            //set the position of the ValueList in the canvas
-            valueList.Attributes.Pivot = new System.Drawing.PointF((float)Attributes.Pivot.X   - Attributes.Bounds.Width - valueList.Attributes.Bounds.Width - 30,
-                (float)Attributes.Pivot.Y);
-            
-            // populate value list with data from input dictionary
-            valueList.ListItems.Clear(); // clear the initial values
-            foreach (KeyValuePair<string,string> kvp in valueListDict)
-            {
-                var listItem = new GH_ValueListItem(kvp.Key, kvp.Value);
-                valueList.ListItems.Add(listItem); // add item to valueList
-            }
-
-            // Add ValueList to canvas
-            Grasshopper.Instances.ActiveCanvas.Document.AddObject(valueList, false); // set recompute to "true" to add the value slider before starting the rest of the MatchingWrapper
-
-            // connect slider to this component
-            Params.Input[inputNum].AddSource(valueList);
-            
-
-            
-
-        }
+        
 
         protected override void BeforeSolveInstance()
         {
@@ -120,8 +90,8 @@ namespace MatchingWrapper
             List<string> lockedPositions = new List<string>(); // 5
 
             if(!DA.GetDataTree(0, out demandTree))return;// 0
-            if(!DA.GetDataTree(1, out supplyTree)); // 1
-            DA.GetDataList(2, names); // 1
+            if (!DA.GetDataTree(1, out supplyTree)) return; // 1
+            if(DA.GetDataList(2, names))return; // 1
             DA.GetData(3, ref methodInt); // 3
             if (!DA.GetData(4, ref constraints)) // 4
             {
@@ -236,6 +206,43 @@ namespace MatchingWrapper
             // -- output --
             DA.SetDataList(0, matching_pairs);
             DA.SetDataList(1, String.Join("\n", resultString));
+        }
+        /// <summary>
+        /// Creates a ValueList for strings and connects it to the selected input.
+        /// </summary>
+        /// <param name="component">This Grasshopper component.</param>
+        /// <param name="valueListDict">A dictionary with the key used as the name, and value as the value in the ValueList</param>
+        /// <param name="inputNum">The index of the input to connect the ValueSlider to.</param>
+        private void CreateValueListString(GH_Component component, Dictionary<string, string> valueListDict, int inputNum)
+        {
+            //instantiate  new value list
+            var valueList = new Grasshopper.Kernel.Special.GH_ValueList(); // instantiate the new value list
+            valueList.CreateAttributes();
+
+
+            int inputCount = Params.Input[inputNum].SourceCount; // the input to connect to
+            if (inputCount != 0) { return; } // We do not want to create a new slider if it already exists.
+            //set the position of the ValueList in the canvas
+            valueList.Attributes.Pivot = new System.Drawing.PointF((float)Attributes.Pivot.X - Attributes.Bounds.Width - valueList.Attributes.Bounds.Width/2 - 3,
+                (float)Attributes.Pivot.Y);
+
+            // populate value list with data from input dictionary
+            valueList.ListItems.Clear(); // clear the initial values
+            foreach (KeyValuePair<string, string> kvp in valueListDict)
+            {
+                var listItem = new GH_ValueListItem(kvp.Key, kvp.Value);
+                valueList.ListItems.Add(listItem); // add item to valueList
+            }
+
+            // Add ValueList to canvas
+            Grasshopper.Instances.ActiveCanvas.Document.AddObject(valueList, false); // set recompute to "true" to add the value slider before starting the rest of the MatchingWrapper
+
+            // connect slider to this component
+            Params.Input[inputNum].AddSource(valueList);
+
+
+
+
         }
 
         /// <summary>

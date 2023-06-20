@@ -91,7 +91,7 @@ namespace MatchingWrapper
 
             if(!DA.GetDataTree(0, out demandTree))return;// 0
             if (!DA.GetDataTree(1, out supplyTree)) return; // 1
-            if(DA.GetDataList(2, names))return; // 1
+            if(!DA.GetDataList(2, names))return; // 1
             DA.GetData(3, ref methodInt); // 3
             if (!DA.GetData(4, ref constraints)) // 4
             {
@@ -253,9 +253,7 @@ namespace MatchingWrapper
             get
             {
                 //You can add image files to your project resources and access them like this:
-                return Properties.Resources.beta_wrap;
-                
-
+                return Properties.Resources.beta_wrap;               
             }
         }
 

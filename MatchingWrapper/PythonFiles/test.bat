@@ -61,9 +61,9 @@ if exist %environment% (
 :: echo %cd%
 :: First input is amplitude, seond is number of periods.
 :: Echo input
-echo $1
-echo $2
-echo $3
+echo %1
+echo %2
+echo %3
 echo %4
 python -u from_batch.py %1 %2 %3 %4
 

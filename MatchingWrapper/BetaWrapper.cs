@@ -44,12 +44,15 @@ namespace MatchingWrapper
 
 
             pManager[5].Optional = true;
+
+            /*
+            // Using the value sliders instead. 
             Param_Integer methodParam = pManager[3] as Param_Integer;
             methodParam.AddNamedValue("GreedyS", 0);
             methodParam.AddNamedValue("GreedyP", 1);
             methodParam.AddNamedValue("Bipartite", 2);
             methodParam.AddNamedValue("MIP", 3);            
-
+            */
         }
 
         /// <summary>
@@ -71,7 +74,8 @@ namespace MatchingWrapper
         protected override void BeforeSolveInstance()
         {
             // Before running the component I add the value lists I need
-            var method_dict = new Dictionary<string, string>() { { "Greedy Single", "0" }, { "Greedy Plural", "1" }, { "MaxBM", "2" }, { "MILP", "3" } };
+            var method_dict = new Dictionary<string, string>() { { "Greedy Single", "0" }, { "Greedy Plural", "1" }, { "MaxBM", "2" }, { "MILP", "3" },
+                {"MILP Google", "4" }, {"MaxBM Double", "5" }, {"MaxBM Loop", "6" } };
             CreateValueListString(this, method_dict, 3);
         }
 

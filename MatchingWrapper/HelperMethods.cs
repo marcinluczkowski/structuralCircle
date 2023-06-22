@@ -389,8 +389,7 @@ namespace MatchingWrapper
             {
                 var val = vals[kvp.Key].ToString();
                 var strList = val.Split(',').Select(x => x.Split(':')[1]).ToList();
-                strList[strList.Count - 1] = Regex.Replace(strList[strList.Count - 1], "[}]", string.Empty);
-                
+                strList[strList.Count - 1] = Regex.Replace(strList[strList.Count - 1], "[}]", string.Empty);                
             }
             */
 

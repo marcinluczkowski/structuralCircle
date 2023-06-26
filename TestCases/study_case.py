@@ -3,7 +3,8 @@ sys.path.append('./Matching')
 import matching
 from matching import run_matching # Matching
 import helper_methods as hm
-import LCA as lca
+import helper_methods_LCA as lca
+import helper_methods_PDF as hmpdf
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -32,10 +33,10 @@ constants = {
     "Include transportation": False,
     "Site latitude": "59.94161606",
     "Site longitude": "10.72994518",
-    #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
-    #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
-    "Demand file location": r"./CSV/bipartite_plural_demand.csv",
-    "Supply file location": r"./CSV/bipartite_plural_supply.csv",
+    #"Demand file location": r"./TestCases/Data/CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
+    #"Supply file location": r"./TestCases/Data/CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
+    "Demand file location": r"./TestCases/Data/CSV/bipartite_plural_demand.csv",
+    "Supply file location": r"./TestCases/Data/CSV/bipartite_plural_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -62,8 +63,8 @@ def generate_datasets(d_counts, s_counts):
 
     #GENERATE FILE
     #============
-    supply = hm.create_random_data_supply_pdf_reports(supply_count = s_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials)
+    supply = hmpdf.create_random_data_supply_pdf_reports(supply_count = s_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
+    demand = hmpdf.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials)
     supply.index = map(lambda text: "S" + str(text), supply.index)
     demand.index = map(lambda text: "D" + str(text), demand.index)
     return demand, supply
@@ -86,8 +87,8 @@ for d, s in zip(d_counts, s_counts):
     constraint_dict = constants["constraint_dict"]
     score_function_string = hm.generate_score_function_string(constants)
     #Add necessary columns to run the algorithm
-    supply = hm.add_necessary_columns_pdf(supply, constants)
-    demand = hm.add_necessary_columns_pdf(demand, constants)
+    supply = hmpdf.add_necessary_columns_pdf(supply, constants)
+    demand = hmpdf.add_necessary_columns_pdf(demand, constants)
     run_string = hm.generate_run_string(constants)
     result = eval(run_string)
     results.append(result)

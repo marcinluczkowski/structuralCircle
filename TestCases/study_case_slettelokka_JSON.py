@@ -2,7 +2,8 @@ import sys
 sys.path.append('./Matching')
 import helper_methods as hm
 from matching import run_matching # Matching
-import LCA as lca
+import helper_methods_LCA as lca
+import helper_methods_PDF as hmpdf
 
 import pandas as pd
 import numpy as np
@@ -32,11 +33,11 @@ constants = {
     "Include transportation": False,
     "Site latitude": "59.94161606",
     "Site longitude": "10.72994518",
-    #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
-    #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
-    "Demand file location": r"./CSV/bipartite_plural_demand.csv",
-    "Supply file location": r"./CSV/bipartite_plural_supply.csv",
-    "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
+    #"Demand file location": r"./TestCases/Data/CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
+    #"Supply file location": r"./TestCases/Data/CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
+    "Demand file location": r"./TestCases/Data/CSV/bipartite_plural_demand.csv",
+    "Supply file location": r"./TestCases/Data/CSV/bipartite_plural_supply.csv",
+    "constraint_dict": {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
 
@@ -44,9 +45,9 @@ constants = {
 hm.print_header("SLETTELØKKA MATCHING")
 
 
-DEMAND_JSON = r".\Data\Sample_JSON\sample_demand_input.json"
-SUPPLY_JSON = r".\Data\Sample_JSON\sample_supply_input.json"
-RESULT_FILE = r".\Data\Sample_JSON\result.csv"
+DEMAND_JSON = r".\TestCases\Data\Sample_JSON\sample_demand_input.json"
+SUPPLY_JSON = r".\TestCases\Data\Sample_JSON\sample_supply_input.json"
+RESULT_FILE = r".\TestCases\Data\Sample_JSON\result.csv"
 #read and clean demand df
 demand = pd.read_json(DEMAND_JSON)
 demand_header = demand.iloc[0]
@@ -57,7 +58,7 @@ demand.index = ['D' + str(num) for num in demand.index]
 
 demand.Length *=0.01
 demand.Area *=0.0001
-demand["Moment of Inertia"] *=0.00000001
+demand["Inertia_moment"] *=0.00000001
 demand.Height *=0.01
 
 
@@ -72,7 +73,7 @@ supply.index = ['S' + str(num) for num in supply.index]
 # scale input from mm to m
 supply.Length *=0.01
 supply.Area *=0.0001
-supply["Moment of Inertia"] *=0.00000001
+supply["Inertia_moment"] *=0.00000001
 supply.Height *=0.01
 
 #Add material to datasets, only concidering timber
@@ -82,8 +83,8 @@ demand["Material"] = "Timber"
 constraint_dict = constants["constraint_dict"]
 score_function_string = hm.generate_score_function_string(constants)
 #Add necessary columns to run the algorithm
-supply = hm.add_necessary_columns_pdf(supply, constants)
-demand = hm.add_necessary_columns_pdf(demand, constants)
+supply = hmpdf.add_necessary_columns_pdf(supply, constants)
+demand = hmpdf.add_necessary_columns_pdf(demand, constants)
 run_string = hm.generate_run_string(constants)
 result_slette = eval(run_string)
 slette_pairs = hm.extract_pairs_df(result_slette)

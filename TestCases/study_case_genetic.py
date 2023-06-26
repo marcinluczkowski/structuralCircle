@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('./Matching')
 import helper_methods as hm
+import helper_methods_PDF as hmpdf
 from matching import run_matching # Matching
-import LCA as lca
-import plotting as plot
+import helper_methods_LCA as lca
+import helper_methods_plotting as plot
 
 
 #########################################################################
@@ -36,8 +37,8 @@ constants = {
     "Include transportation": False,
     "Site latitude": "63.4154171",
     "Site longitude": "10.3994672",
-    "Demand file location": r"./CSV/genetic_demand.csv",
-    "Supply file location": r"./CSV/genetic_supply.csv",
+    "Demand file location": r"./TestCases/Data/CSV/genetic_demand.csv",
+    "Supply file location": r"./TestCases/Data/CSV/genetic_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 
@@ -66,8 +67,8 @@ def generate_datasets(d_counts, s_counts):
 
     #GENERATE FILE
     #============
-    supply = hm.create_random_data_supply_pdf_reports(supply_count = s_counts, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
-    demand = hm.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
+    supply = hmpdf.create_random_data_supply_pdf_reports(supply_count = s_counts, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials, supply_coords = supply_coords)
+    demand = hmpdf.create_random_data_demand_pdf_reports(demand_count = d_counts, length_min = 1.0, length_max = 10.0, area_min = 0.004, area_max = 0.04, materials = materials)
     supply.index = map(lambda text: "S" + str(text), supply.index)
     demand.index = map(lambda text: "D" + str(text), demand.index)
     return demand, supply
@@ -94,8 +95,8 @@ for d, s in zip(d_counts, s_counts):
     for i in range(internal_runs):
         demand, supply = generate_datasets(d, s)
         #Add necessary columns to run the algorithm
-        supply = hm.add_necessary_columns_pdf(supply, constants)
-        demand = hm.add_necessary_columns_pdf(demand, constants)
+        supply = hmpdf.add_necessary_columns_pdf(supply, constants)
+        demand = hmpdf.add_necessary_columns_pdf(demand, constants)
         result = eval(run_string)
         if dict_made == False:
             time_dict = {res[list(res.keys())[0]] : [] for res in result}

@@ -10,7 +10,8 @@ import numexpr as ne
 import pandas as pd
 import random
 import matplotlib.pyplot as plt
-import LCA as lca
+import helper_methods_LCA as lca
+import helper_methods_PDF as hmpdf
 
 #==========USER FILLS IN============#
 #Constants
@@ -36,10 +37,10 @@ constants = {
     "Include transportation": False,
     "Site latitude": "59.94161606",
     "Site longitude": "10.72994518",
-    #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
-    #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
-    "Demand file location": r"./CSV/bipartite_plural_demand.csv",
-    "Supply file location": r"./CSV/bipartite_plural_supply.csv",
+    #"Demand file location": r"./TestCases/Data/CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
+    #"Supply file location": r"./TestCases/Data/CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
+    "Demand file location": r"./TestCases/Data/CSV/bipartite_plural_demand.csv",
+    "Supply file location": r"./TestCases/Data/CSV/bipartite_plural_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -150,8 +151,8 @@ def plot_histograms(df):
     constraint_dict = constants["constraint_dict"]
     score_function_string = hm.generate_score_function_string(constants)
     #Add necessary columns to run the algorithm
-    supply = hm.add_necessary_columns_pdf(supply, constants)
-    demand = hm.add_necessary_columns_pdf(demand, constants)
+    supply = hmpdf.add_necessary_columns_pdf(supply, constants)
+    demand = hmpdf.add_necessary_columns_pdf(demand, constants)
     run_string = hm.generate_run_string(constants)
     result = eval(run_string)
     # Run the matching
@@ -303,7 +304,7 @@ def plot_bubble(demand, supply):
 if __name__ == "__main__":
     
     # Generate a set of unique trusses from CSV file:
-    PATH = "Data\\CSV files trusses\\truss_all_types_beta_4.csv"
+    PATH = "TestCases\\Data\\CSV files trusses\\truss_all_types_beta_4.csv"
     trusses = create_trusses_from_JSON(PATH)
     truss_elements = elements_from_trusses(trusses)
 
@@ -346,8 +347,8 @@ if __name__ == "__main__":
         constraint_dict = constants["constraint_dict"]
         score_function_string = hm.generate_score_function_string(constants)
         #Add necessary columns to run the algorithm
-        supply = hm.add_necessary_columns_pdf(supply, constants)
-        demand = hm.add_necessary_columns_pdf(demand, constants)
+        supply = hmpdf.add_necessary_columns_pdf(supply, constants)
+        demand = hmpdf.add_necessary_columns_pdf(demand, constants)
         run_string = hm.generate_run_string(constants)
         result = eval(run_string)
 

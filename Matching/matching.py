@@ -17,7 +17,7 @@ from ortools.sat.python import cp_model
 from scipy.optimize import milp, LinearConstraint, NonlinearConstraint, Bounds
 
 import helper_methods as hm
-import LCA as lca
+import helper_methods_LCA as lca
 import itertools
 from itertools import combinations
 
@@ -83,8 +83,8 @@ class Matching():
         self.solution_time = None
         self.solution_limit = solution_limit           
         #Create incidence and weight for the method
-        self.demand['Score'] = self.demand.eval(score_function_string)
-        self.supply['Score'] = self.supply.eval(score_function_string)
+        self.demand['Score'] = self.demand.eval(score_function_string)[0]
+        self.supply['Score'] = self.supply.eval(score_function_string)[0]
         self.incidence = self.evaluate_incidence()
         self.weights, self.weights_transport = self.evaluate_weights()
         logging.info("Matching object created with %s demand, and %s supply elements", len(demand), len(supply))

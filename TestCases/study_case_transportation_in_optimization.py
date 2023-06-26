@@ -4,7 +4,8 @@ import pandas as pd
 sys.path.append('./Matching')
 import helper_methods as hm
 from matching import run_matching
-import LCA as lca
+import helper_methods_LCA as lca
+import helper_methods_PDF as hmpdf
 
 #==========USER FILLS IN============#
 #Constants
@@ -30,10 +31,10 @@ constants = {
     "Include transportation": False,
     "Site latitude": "59.94161606",
     "Site longitude": "10.72994518",
-    #"Demand file location": r"./CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
-    #"Supply file location": r"./CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
-    "Demand file location": r"./CSV/transportation_demand.csv",
-    "Supply file location": r"./CSV/transportation_supply.csv",
+    #"Demand file location": r"./TestCases/Data/CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
+    #"Supply file location": r"./TestCases/Data/CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
+    "Demand file location": r"./TestCases/Data/CSV/transportation_demand.csv",
+    "Supply file location": r"./TestCases/Data/CSV/transportation_supply.csv",
     "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
 }
 #========================#
@@ -58,10 +59,10 @@ materials = ["Timber", "Steel"]
 
 #GENERATE FILE
 #============
-supply = hm.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
-demand = hm.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials)
-hm.export_dataframe_to_csv(supply, r"" + "./CSV/transportation_supply.csv")
-hm.export_dataframe_to_csv(demand, r"" + "./CSV/transportation_demand.csv")
+supply = hmpdf.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
+demand = hmpdf.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials)
+hm.export_dataframe_to_csv(supply, r"" + "./TestCases/Data/CSV/transportation_supply.csv")
+hm.export_dataframe_to_csv(demand, r"" + "./TestCases/Data/CSV/transportation_demand.csv")
 #========================================
 score_function_string = hm.generate_score_function_string(constants)
 supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
@@ -70,8 +71,8 @@ demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], 
 
 constraint_dict = constants["constraint_dict"]
 #Add necessary columns to run the algorithm
-supply = hm.add_necessary_columns_pdf(supply, constants)
-demand = hm.add_necessary_columns_pdf(demand, constants)
+supply = hmpdf.add_necessary_columns_pdf(supply, constants)
+demand = hmpdf.add_necessary_columns_pdf(demand, constants)
 run_string = hm.generate_run_string(constants)
 result_wo_transportation = eval(run_string)
 

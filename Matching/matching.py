@@ -195,8 +195,6 @@ class Matching():
         compare_array = ne.evaluate(f"{supply_val} {compare} demand_array")        
         return ne.evaluate("current_bool & compare_array")
 
-    
-            
     def evaluate_weights(self):
         """Return matrix of weights for elements in the incidence matrix. The lower the weight the better."""
         start = time.time()
@@ -266,7 +264,6 @@ class Matching():
         # if rows without pairing, remove those    
         local_pairs = self.pairs.dropna()
         #get the index of columns in weight df which are paired
-        #TODO Make the supply and demand id_s numerical 
         col_inds = local_pairs.Supply_id.apply(lambda label: self.weights.columns.get_loc(label))
         row_inds = list( map(lambda name: self.weights.index.get_loc(name), local_pairs.index) )
         #row_inds = np.arange(0, local_pairs.shape[0], 1) # the row inds are the same here and in the weights
@@ -317,7 +314,7 @@ class Matching():
         for i in range(sorted_weights.shape[0]):
             row_id = sorted_weights.iloc[[i]].index[0]
             vals = np.array(sorted_weights.iloc[[i]])[0]
-#            if np.any(vals):    # checks if not empty row (no matches)
+            # if np.any(vals):    # checks if not empty row (no matches)
             if sum(~np.isnan(vals)) > 0: # check if there it at least one element not np.nan
                 lowest = np.nanmin(vals)
                 col_id = sorted_weights.columns[np.where(vals == lowest)][0]
@@ -330,58 +327,6 @@ class Matching():
                 else:
                     # empty the column that was used
                     sorted_weights[col_id] = np.nan
-
-    # @_matching_decorator
-    # def match_greedy_DEPRECIATED(self, plural_assign=False):
-    #     """Algorithm that takes one best element at each iteration, based on sorted lists, not considering any alternatives."""
-    #     # TODO consider opposite sorting (as we did in Gh), small chance but better result my occur
-    #     demand_sorted = self.demand.copy(deep =True)
-    #     supply_sorted = self.supply.copy(deep =True)
-    #     #Change indices to integers for both demand and supply
-    #     demand_sorted.index = np.array(range(len(demand_sorted.index)))
-    #     supply_sorted.index = np.array(range(len(supply_sorted.index)))
-    #     #sort the supply and demand
-    #     #demand_sorted.sort_values(by=['Length', 'Area'], axis=0, ascending=False, inplace = True)
-    #     demand_sorted.sort_values(by=['Score'], axis=0, ascending=False, inplace = True)
-    #     #supply_sorted.sort_values(by=['Is_new', 'Length', 'Area'], axis=0, ascending=True, inplace = True)
-    #     supply_sorted.sort_values(by=['Is_new', 'Score'], axis=0, ascending=True, inplace = True) # FIXME Need to make this work "optimally"
-    #     incidence_np = self.incidence.copy(deep=True).values      
-    #     columns = self.supply.index.to_list()
-    #     rows = self.demand.index.to_list()
-    #     min_length = self.demand.Length.min() # the minimum lenght of a demand element
-    #     for demand_tuple in demand_sorted.itertuples():            
-    #         match=False
-    #         logging.debug("-- Attempt to find a match for %s", demand_tuple.Index)                
-    #         for supply_tuple in supply_sorted.itertuples():                 
-    #             if incidence_np[demand_tuple.Index,supply_tuple.Index]:           
-    #                 match=True
-    #                 self.add_pair(rows[demand_tuple.Index], columns[supply_tuple.Index])
-    #             if match:
-    #                 new_length = supply_tuple.Length - demand_tuple.Length
-    #                 if plural_assign and new_length >= min_length:                    
-    #                     # shorten the supply element:
-    #                     supply_sorted.loc[supply_tuple.Index, "Length"] = new_length
-    #                     temp_row = supply_sorted.loc[supply_tuple.Index].copy(deep=True)
-    #                     temp_row['LCA'] = temp_row.Length * temp_row.Area * lca.TIMBER_REUSE_GWP
-    #                     supply_sorted.drop(supply_tuple.Index, axis = 0, inplace = True)
-    #                     #new_ind = supply_sorted['LCA'].searchsorted([False ,temp_row['LCA']], side = 'left') #get index to insert new row into #TODO Can this be sorted also by 'Area' and any other constraint?
-    #                     new_ind = supply_sorted[supply_sorted['Is_new'] == False]['LCA'].searchsorted(temp_row['LCA'], side = 'left')
-    #                     part1 = supply_sorted[:new_ind].copy(deep=True)
-    #                     part2 = supply_sorted[new_ind:].copy(deep=True)
-    #                     supply_sorted = pd.concat([part1, pd.DataFrame(temp_row).transpose().infer_objects(), part2]) #TODO Can we make it simpler
-    #                     new_incidence_col = self.evaluate_column(new_length, "Length", self.constraints['Length'], incidence_np[:, supply_tuple.Index])
-    #                     #new_incidence_col = self.evaluate_column(supply_tuple.Index, new_length, "Length", self.constraints["Length"], incidence_np[:, supply_tuple.Index])
-    #                     #incidence__np[:, columns.index(supply_tuple.Index)] = new_incidence_col
-    #                     #incidence_copy.loc[:, columns[supply_tuple.Index]] = new_incidence_col #TODO If i get the indicies to work. Try using this as an np array instead of df.
-    #                     incidence_np[:,supply_tuple.Index] = new_incidence_col
-    #                     logging.debug("---- %s is a match, that results in %s m cut.", supply_tuple.Index, supply_tuple.Length)
-    #                 else:
-    #                     #self.result += calculate_lca(supply_row.Length, supply_row.Area, is_new=supply_row.Is_new)
-    #                     logging.debug("---- %s is a match and will be utilized fully.", supply_tuple.Index)
-    #                     supply_sorted.drop(supply_tuple.Index, inplace = True)
-    #                 break     
-    #         else:
-    #             logging.debug("---- %s is not matching.", supply_tuple.Index)
 
     @_matching_decorator
     def match_bipartite_graph(self):
@@ -397,12 +342,10 @@ class Matching():
         for match_edge in bipartite_matching.edges():
             self.add_pair(match_edge.source_vertex["label"], match_edge.target_vertex["label"])
 
-   
     @_matching_decorator
     def match_bipartite_plural(self):
         """Match using Maximum Bipartite Graphs. A maximum matching is a set of edges such that each vertex is
         incident on at most one matched edge and the weight of such edges in the set is as large as possible.
-        
         Runs Maximum Bipartite Matching once, cuts the matches if possible and runs Maximum Biparite Matching once more
         """
         self.add_graph()
@@ -669,164 +612,6 @@ class Matching():
             self.add_pair(index, row["Matches from genetic"])
 
     @_matching_decorator
-    def match_genetic_algorithm_DEPRECIATED(self):
-        """Match using Evolutionary/Genetic Algorithm"""
-        # TODO implement the method
-        # supply capacity - length:
-        capacity = self.supply['Length'].to_numpy()
-        lengths = self.demand['Length'].to_numpy()
-        # demand_mapping (column - demand):
-        initial_population = np.zeros((len(self.supply), len(self.demand)))
-        # for each column add one random 0/1.
-        for col in range(len(self.demand)):
-            row = random.randint(0, len(self.supply)-1)
-            initial_population[row, col] = random.randint(0, 1)
-        def fitness_func(solution, solution_idx):
-            # output = np.sum(solution*function_inputs) #score!
-            total_length = np.sum(solution*lengths)
-            if np.sum(total_length > capacity) != len(capacity):
-                output = 10e4  # penalty
-            elif np.argwhere(np.sum(solution, axis=0) > 1):
-                output = 10e4  # penalty
-            else:
-                # score:
-                output = np.sum(solution*self.demand['Length'])
-            fitness = 1.0 / output
-            return fitness
-        ga_instance = pygad.GA(
-            num_generations=30,
-            num_parents_mating=2,
-            fitness_func=fitness_func,
-            sol_per_pop=10,
-            num_genes=initial_population.size, #len(initial_population),
-            # binary representation of the problem with help from: https://blog.paperspace.com/working-with-different-genetic-algorithm-representations-python/
-            # (also possible with: gene_space=[0, 1])
-            init_range_low=0,
-            random_mutation_min_val=0,
-            init_range_high=2,   # upper bound exclusive, so only 0 and 1
-            random_mutation_max_val=2,   # upper bound exclusive, so only 0 and 1
-            mutation_by_replacement=True,
-            gene_type=int,
-            parent_selection_type="sss",    # steady_state_selection() https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            keep_parents=1,
-            crossover_type="single_point",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            mutation_type="random",  # https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#steady-state-selection
-            mutation_num_genes=1,
-            # mutation_percent_genes=10,
-            initial_population=initial_population
-            )
-        ga_instance.run()
-        logging.debug(ga_instance.initial_population)
-        logging.debug(ga_instance.population)
-        solution, solution_fitness, solution_idx = ga_instance.best_solution() 
-        logging.debug("Parameters of the best solution: %s", solution)
-        logging.debug("Fitness value of the best solution = %s", solution_fitness)
-        # TODO Don't use the method as it is :)
-        self.result += 1234 #calculate_score(supply_row.Length, supply_row.Area, is_new=supply_row.Is_new)
-
-    @_matching_decorator
-    def match_mixed_integer_programming_DEPRECIATED(self):
-        """Match using SCIP - Solving Constraint Integer Programs, branch-and-cut algorithm, type of mixed integer programming (MIP)"""
-        def constraint_inds():
-            """Construct the constraint array"""
-            rows = self.demand.shape[0]
-            cols = self.supply.shape[0]
-            bool_array = np.full((rows, cols), False)
-            # iterate through constraints
-            for key, val in self.constraints.items():
-                cond_list = []
-                for var in self.supply[key]:
-                    array = self.demand[key]
-                    col = ne.evaluate(f'array {val} var')
-                    cond_list.append(col) # add results to cond_list
-                conds = np.column_stack(cond_list) # create 2d array of tests
-                bool_array = np.logical_or(bool_array, conds)
-            constraint_inds = np.transpose(np.where(bool_array)) # convert to nested list if [i,j] indices
-            return constraint_inds
-        # --- Create the data needed for the solver ---        
-        data = {} # initiate empty dictionary
-        data['lengths'] = self.demand.Length.astype(float)
-        data['areas'] = self.demand.Area.astype(float)
-        assert len(data['lengths']) == len(data['areas']) # The same check is done indirectly in the dataframe
-        data['num_items'] = len(data['areas'])
-        data['all_items'] = range(data['num_items'])
-        data['all_items'] = range(data['num_items'])
-        data['bin_capacities'] = self.supply.Length # these would be the bins
-        data['num_bins'] = len(data['bin_capacities'])
-        data['all_bins'] = range(data['num_bins'])
-        #get constraint ids
-        c_inds = constraint_inds()
-        # create solver
-        solver = pywraplp.Solver.CreateSolver('SCIP')
-        if solver is None:
-            logging.debug('SCIP Solver is unavailable')
-            return
-        # --- Variables ---
-        # x[i,j] = 1 if item i is backed in bin j. 0 else
-        var_array = np.full((self.incidence.shape), 0)
-        x = {}
-        for i in data['all_items']:
-            for j in data['all_bins']:
-                x[i,j] = solver.BoolVar(f'x_{i}_{j}') 
-        logging.debug('Number of variables = %s', solver.NumVariables()) 
-        # --- Constraints ---
-        # each item can only be assigned to one bin
-        for i in data['all_items']:
-            solver.Add(sum(x[i,j] for j in data['all_bins']) <= 1)
-        # the amount packed in each bin cannot exceed its capacity.
-        for j in data['all_bins']:
-            solver.Add(
-                sum(x[i,j] * data['lengths'][i] for i in data['all_items'])
-                    <= data['bin_capacities'][j])
-        # fix the variables where the area of the element is too small to fit
-        for inds in c_inds:
-            i = int(inds[0])
-            j = int(inds[1])
-            solver.Add(x[i,j] == 0)
-        logging.debug('Number of contraints = %s', solver.NumConstraints())
-        # --- Objective ---
-        # maximise total value of packed items
-        # coefficients
-        coeff_array = self.weights.replace(np.nan, self.weights.max().max() * 1000).to_numpy() # play with different values here. 
-        objective = solver.Objective()
-        for i in data['all_items']:
-            for j in data['all_bins']:
-                objective.SetCoefficient(x[i,j], 1 / coeff_array[i,j]) # maximise the sum of 1/sum(weights)
-                #objective.SetCoefficient(x[i,j], float(data['areas'][i]))      
-        objective.SetMaximization()
-        #objective.SetMinimization()
-        status = solver.Solve()
-        logging.debug('Computation done')
-        if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
-            score = 0
-            for i in data['all_items']:
-                for j in data['all_bins']:
-                    if x[i,j].solution_value() > 0: 
-                        self.pairs.iloc[i] = j # add the matched pair. 
-                        score += coeff_array[i, j]
-                        continue # only one x[0, j] can be 1. the rest are 0. Continue
-            self.result = score           
-            results = {}
-            logging.debug('Solution found! \n ------RESULTS-------\n')
-            total_length = 0
-            for j in data['all_bins']:
-                results[j] = []
-                logging.debug('Bin %s', j)
-                bin_length = 0
-                bin_value = 0
-                for i in data['all_items']:
-                    if x[i, j].solution_value() > 0:
-                        results[j].append(i)
-                        logging.debug("Item %s Length: %s area: %s", i, data['lengths'][i], data['areas'][i])
-                        bin_length += data['lengths'][i]
-                        bin_value += data['areas'][i]
-                logging.debug('Packed bin lengths: %s', bin_length)
-                logging.debug('Packed bin value: %s', bin_value)
-                total_length += bin_length
-                logging.debug('Total packed Lenghtst: %s\n', total_length)
-        return [self.result, self.pairs]
-
-    @_matching_decorator
     def match_mixed_integer_programming(self):
         """This method is the same as the previous one, but uses a CP model instead of a MIP model in order to stop at a given number of 
         feasible solutions. """
@@ -986,11 +771,9 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
     if brute:
         matching.match_brute()
         matches.append({'Name': 'Brute Force Approach','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
-
     if bipartite_plural:
         matching.match_bipartite_plural()
         matches.append({'Name': 'MBM Plural','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
-
     if bipartite_plural_multiple:
         matching.match_bipartite_plural_multiple()
         matches.append({'Name': 'MBM Plural Multiple','Match object': copy(matching), 'Time': matching.solution_time, 'PercentNew': matching.pairs.isna().sum()})
@@ -998,12 +781,9 @@ def run_matching(demand, supply, score_function_string, constraints = None, add_
 
 
 if __name__ == "__main__":
-    #DEMAND_JSON = sys.argv[1]
-    #SUPPLY_JSON = sys.argv[2]
-    #RESULT_FILE = sys.argv[3]
-    DEMAND_JSON = r"MatchingAlgorithms\sample_demand_input.json"
-    SUPPLY_JSON = r"MatchingAlgorithms\sample_supply_input.json"
-    RESULT_FILE = r"MatchingAlgorithms\result.csv"
+    DEMAND_JSON = sys.argv[1]
+    SUPPLY_JSON = sys.argv[2]
+    RESULT_FILE = sys.argv[3]
     
     constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='} # dictionary of constraints to add to the method
     demand, supply = hm.create_random_data(demand_count=8, supply_count=8)

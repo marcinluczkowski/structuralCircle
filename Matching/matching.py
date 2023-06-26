@@ -6,6 +6,7 @@ import sys
 import time
 from itertools import compress, product
 from copy import copy, deepcopy
+
 import igraph as ig
 import numexpr as ne
 import numpy as np
@@ -14,6 +15,7 @@ import pygad
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
 from scipy.optimize import milp, LinearConstraint, NonlinearConstraint, Bounds
+
 import helper_methods as hm
 import LCA as lca
 

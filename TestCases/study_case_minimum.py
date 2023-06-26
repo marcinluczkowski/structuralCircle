@@ -1,28 +1,3 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7766875.svg)](https://doi.org/10.5281/zenodo.7766875)
-
-
-# structuralCircle
-
-The repository contains data, tests and solutions related to the research project at Norwegian University of Science and Technology (NTNU).
-
-The **structuralCircle** project is about aiding the design process with reclaimed building components. In particular, the algorithm is matching available products to the design intent, aiming at environmental impact minimization.  
-
-The solution is written in Python and for the ease of use wrapped into a Grasshopper nodes available for Rhino users. 
- 
-The implementation includes greedy algorithms, bipartite graphs, and mixed integer linear programming.
-
-Test data contains simulated sets of building elements. The aim of test cases is to compare score - reduction of embodied emissions, and speed of the calculation. 
-
-# How to run
-First, run the console and install the required packages from the list using:
-
-```
-pip install -r requirements.txt
-```
-
-Then, import the relevant packages and define the input data:
-
-```
 # import relevant packages
 import pandas as pd
 import sys
@@ -30,6 +5,7 @@ sys.path.append('./Matching')
 import helper_methods as hm
 from matching import run_matching
 import LCA as lca
+
 
 # Create two datasets with two elements in each - demand D and supply S:
 demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Gwp_factor'])
@@ -44,10 +20,7 @@ constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
 
 # create optimization formula
 score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
-```
 
-Finally, run the matching with desired methods and display the resultant pairs of elements:
-```
 # run the matching
 result_simple = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True)
 
@@ -55,4 +28,3 @@ result_simple = run_matching(demand, supply, score_function_string=score_functio
 print(hm.extract_pairs_df(result_simple))
 # display results - the score
 print(hm.extract_results_df(result_simple))
-```

@@ -17,11 +17,13 @@
   </ItemGroup>
 	
   <ItemGroup>
+    <None Remove="Resources\add_location.png" />
     <None Remove="Resources\beta_wrap.png" />
     <None Remove="Resources\matching_logo.png" />
   </ItemGroup>
 	
   <ItemGroup>
+    <EmbeddedResource Include="Resources\add_location.png" />
     <EmbeddedResource Include="Resources\beta_wrap.png" />
     <EmbeddedResource Include="Resources\matching_logo.png" />
   </ItemGroup>

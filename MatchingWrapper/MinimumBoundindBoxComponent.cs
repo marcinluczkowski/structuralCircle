@@ -46,10 +46,12 @@ namespace MatchingWrapper
             List<object> objects = new List<object>(); // 0
             if (!DA.GetDataList(0, objects)) return;
 
+
+            // iterate through each object from the input list
             foreach (object obj in objects) 
             {
                 
-                var type = obj.GetType();
+                var type = obj.GetType(); // Try to get the type of the object. 
 
                 Point3d point = new Point3d(); 
                 Brep brep = new Brep();
@@ -71,8 +73,15 @@ namespace MatchingWrapper
                 }
             }
 
+            // Remove duplicate points from point list:
+            List<Point3d> distinctPoints= points
+                .GroupBy(p => new { p.X, p.Y, p.Z })
+                .Select(g => g.First())
+                .ToList();
             // Calculate the bounding box
-            Box boundingBox = MinimumBoundindBox.GetMinimumBoundindBox(this, points); // Calculate the minimum bounding box
+            //TODO: This does not work with pipe elements defined by three surfaces and two points on a straight line. Try to add more points if
+            // it does not work?
+            Box boundingBox = MinimumBoundindBox.GetMinimumBoundindBox(this, distinctPoints); // Calculate the minimum bounding box
 
             // return the bounding box
             DA.SetData(0, boundingBox); // 0

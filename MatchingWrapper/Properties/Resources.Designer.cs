@@ -63,6 +63,16 @@ namespace MatchingWrapper.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap add_location {
+            get {
+                object obj = ResourceManager.GetObject("add_location", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap beta_wrap {
             get {
                 object obj = ResourceManager.GetObject("beta_wrap", resourceCulture);

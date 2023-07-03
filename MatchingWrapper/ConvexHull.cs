@@ -49,7 +49,12 @@ public class MinimumBoundindBox
             source.Add(box);
         }
 		// sort the bounding boxes by volume and return the smallest one
-        return ((IEnumerable<Box>)((IEnumerable<Box>)source).OrderBy((Func<Box, double>)(o => ((Box) o).Volume))).ToList<Box>()[0];
+		List<Box> sortedBoxes = source
+			.Where(b => b.IsValid)
+			.OrderBy(b => b.Volume)
+			.ToList();
+		return sortedBoxes[0];
+        //return ((IEnumerable<Box>)((IEnumerable<Box>)source).OrderBy((Func<Box, double>)(o => ((Box) o).Volume))).ToList<Box>()[0];
     }
 
 

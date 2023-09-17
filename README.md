@@ -58,3 +58,7 @@ print(hm.extract_pairs_df(result_simple))
 # display results - the score
 print(hm.extract_results_df(result_simple))
 ```
+
+# Read more
+
+You can read our journal paper called 'Matching algorithms to assist in designing with reclaimed building elements' here: https://iopscience.iop.org/article/10.1088/2634-4505/acf341

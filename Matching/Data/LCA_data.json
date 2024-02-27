@@ -1,0 +1,18 @@
+{
+    "_comment_GWP": "based on NEPD-3442-2053-EN",
+    "TIMBER_GWP": 28.9,
+    "_comment_REUSE_GWP": "0.0778*28.9=  2.25 based on Eberhardt",
+    "TIMBER_REUSE_GWP":  2.25,
+    "_comment_TRANSPORT": "kg/m3/t based on ????",
+    "TRANSPORT_GWP":  96.0,    
+    "_comment_DENSITY": "kg, based on NEPD-3442-2053-EN",
+    "TIMBER_DENSITY":  491.0,
+
+    "_comment_NEW_PRICE": "Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/",
+    "NEW_ELEMENT_PRICE_TIMBER": 435,
+    "REUSED_ELEMENT_PRICE_TIMBER": 100,
+    "_comment_GWP_PRICE": "#In kr:Per kg CO2, based on OECD",
+    "GWP_PRICE": 0.6, 
+    "_comment_TRANSPORT_PRICE": "Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB",
+    "PRICE_TRANSPORT":  3.78
+}

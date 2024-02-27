@@ -1,12 +1,18 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import rc
 import igraph as ig
 import logging
-import LCA as lca
-import seaborn as sns
+import helper_methods_LCA as lca
+import random
+from datetime import date
+import helper_methods_plotting as plot
 
+
+import json
+# Opening JSON file
+with open('Matching\Data\LCA_data.json') as json_file:
+    data = json.load(json_file)
 
 # ==== HELPER METHODS ====
 # This file contains various methods used for testing and development. 
@@ -24,32 +30,17 @@ def extract_pairs_df(dict_list):
     df.columns = cols
     return df
 
-def extract_results_df(dict_list):
+def extract_results_df(dict_list, column_name):
     """Creates a dataframe with the scores from each method"""
     sub_df = []
     cols = []
+    
     for run in dict_list:
         sub_df.append(run['Match object'].result)
         cols.append(run['Name'])
-    
     df = pd.DataFrame(sub_df, index= cols)    
-    df=df.rename(columns={0:"LCA"})
+    df=df.rename(columns={0: column_name})
     return df.round(3)
-
-def get_assignment_df(matching_pairs_df, supply_ids, only_old = True):
-    """Takes the matching pairs df and returns a new df with all supply element ids as index and the list of demand element
-    elements assigned to it in columns. One column per method used to match"""
-    df = pd.DataFrame(data = None, index = supply_ids, columns= matching_pairs_df.columns)
-    columns = matching_pairs_df.columns
-    for s in supply_ids:
-        new_row_lst = [matching_pairs_df[col].index[list(map(lambda s_id: s_id == s, matching_pairs_df[col]))].to_list() for col in columns]
-        df.loc[s, columns] = new_row_lst
-        # for col in columns:
-        #     bool_array = list(map(lambda s_id: s_id == s, matching_pairs_df[col]))
-        #     df.loc[s, col] = matching_pairs_df[col].index[bool_array].to_list()
-    if only_old: # remove new elements from df. 
-        df = df[df.index.str.contains('S')]
-    return df
 
 
 def remove_alternatives(x, y):
@@ -58,250 +49,178 @@ def remove_alternatives(x, y):
     else:
         return x
 
-# def extract_LCA_new(dict_list):
-#     matchobj=dict_list[0]["Match object"]
-#     sum=matchobj.demand["LCA"].sum()
-#     return sum
+def transform_weights(weights):
+    """Transform the weight matrix to only contain one column with new elements in stead of one column for each new element
 
+    Args:
+        DataFrame: weight matrix
 
-### ADD PLOTS
+    Returns:
+        DataFrame: weight matrix
+    """
+    weights = weights.copy(deep = True)
+    cols=list(weights.columns)[-len(weights):]
+    weights["N"]=weights[cols].sum(axis=1)
+    weights = weights.drop(columns=cols)
+    return weights
 
-def plot_histograms(df, save_fig = False, **kwargs):
-    
-    # csfont = {'fontname':'Times New Roman'}
-    # plt.rcParams.update({'font.size': 22}) # must set in top
-    plt.rcParams['font.size'] = 12
-    plt.rcParams["font.family"] = "Times New Roman"
-
-    ### List unique values of width/height:
-    # TODO redo the histogram so that names are displayed, not area.
-    df['Cross-sections'] = df['Width'].astype(str) + "x" + df['Height'].astype(str)
-    
-    ### Plot the histogram of truss elements:
-    df.hist(column=['Length', 'Area'], bins=20)
- 
-    # plt.Axes.set_axisbelow(b=True)
-    plt.title('Area')
-
-    if save_fig:
-        f_name = 'histogram'
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
-
-    plt.show()
-
-
-def plot_scatter(df, **kwargs):
-    ### Scatter plot of all elements width/height:
-    df.plot.scatter(x='Width', y='Height')
-    plt.xlabel('Width')
-    plt.ylabel('Height')
-    plt.show()
-
-
-
-def plot_hexbin(df, style = 'ticks', font_scale = 1.1, save_fig = False,  **kwargs):
-    # Based on https://seaborn.pydata.org/examples/hexbin_marginals.html
-    #plt.figure()    
-    # TODO Sverre, try with section names: sns.jointplot(x=df['Length'], y=df['Section'], kind="hex", color="#4CB391")
-    
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    g = sns.jointplot(x=df['Length'], y=df['Area'], kind="hex", color="#4CB391")
-    
-    #g.set_axis_labels(**kwargs)
-    # sns.jointplot(x=supply['Length'], y=supply['Area'], kind="hex", color="#eb4034")
-        
-    if save_fig:
-        f_name = 'hexbin'
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400, transparent = True)
-
-    plt.show()
-
-def plot_hexbin_remap(df, unique_values, style = 'ticks', font_scale = 1.0, save_fig = False, 
-                        show_fig = False,  **kwargs):
-    """Plot the Cross Section and length histogram using remapped values"""
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs) # set styling configuration
-    
-    # get all unique areas
-    cross_secs = ['(36x36)', '(36x48)', '(36x148)', '(36x198)', '(48x148)', '(48x198)', '(61x198)', '(73x198)', '(73x223)']
-     
-    map_dict = {a:cs for a, cs in zip(sorted(unique_values), cross_secs)}
-    map_dict2 = {a:(i+1) for i, a in enumerate(sorted(unique_values))}
-    df['Cross Sections [mm]'] = df.Area.map(map_dict2).astype(int)
-    g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hex", color="#4CB391", bins = 2*len(cross_secs))
-    #g = sns.jointplot(x=df['Length'], y=df['Cross Sections [mm]'], kind="hist", color="#4CB391")
-    g.ax_joint.set_yticks(list(map_dict2.values()))
-    g.ax_joint.set_yticklabels(cross_secs)
-
-    x_ticks = np.arange(df.Length.min()+1, df.Length.max()+2, 2)
-    g.ax_joint.set_xticks(x_ticks)
-    g.ax_joint.set_xticklabels(map(int, x_ticks))
-
-    if save_fig:
-        f_name = 'hexbin_mapped'
-        plt.tight_layout()
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
-    if show_fig:
-        plt.show()
-
-def barplot_sns(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
-                show_fig = False, **kwargs):
-    """Add docstring""" 
-    if normalize:
-        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
-    
-    # Setting for the plot    
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-
-    fig, ax = plt.suplots(1,1)
-
-
-def plot_savings(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
-                show_fig = False, ratio_amount = 'ratio', xlabel = 'Elements (Demand:Supply)', **kwargs):
-    """Add docstring"""
-    #plt.figure()
-    if normalize: # normalize the dataframe according to best score in each row
-        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
-
-    # Setting for the plot    
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    fig, ax = plt.subplots(1,1)
-    # data = pd.DataFrame(result_list, columns=['GreedyS','GreedyP','MaxBM','MIP'])
-    sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True, ax = ax)
-    ax.set(xlabel= xlabel, ylabel='Score saved')
-    plt.xticks(rotation=30)
-
-    if save_fig:
-        f_name = f"score saved {ratio_amount}"
-        plt.tight_layout()
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
-    if show_fig:
-        plt.show()
-
-def plot_old(result_df, normalize = True, style = 'ticks', font_scale = 1.1, save_fig = False,
-                show_fig = False, ratio_amount = 'ratio', xlabel = 'Elements (Demand:Supply)', **kwargs):
-    "Add docstring"
-    fig, ax = plt.subplots(1,1)
-    if normalize: # normalize the dataframe according to best score in each row
-        result_df = result_df.div(result_df.max(axis = 1), axis = 0).mul(100).round(2)
-
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True, ax = ax)
-    ax.set(xlabel= xlabel, ylabel='% of elements substituted by reuse')
-    plt.xticks(rotation=30)
-
-    if save_fig:
-        f_name = f'reused elements {ratio_amount}'
-        plt.tight_layout()
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
-
-    if show_fig:
-        plt.show()
-
-def plot_time(result_df, style = 'ticks', font_scale = 1.1, save_fig = False,
-            show_fig = False, ratio_amount = 'ratio', xlabel = 'Elements (Demand:Supply)', **kwargs):
-    """Add docstring"""
-    #plt.figure()
-    fig, ax = plt.subplots(1,1)
-    sns.set_theme(style = style, font_scale = font_scale, rc = kwargs)
-    sns.lineplot(data=result_df, palette="tab10", linewidth=2.5, markers=True, ax = ax)
-    ax.set(yscale="log", xlabel = xlabel, ylabel='Time [s]')
-    plt.xticks(rotation=30)
-    if save_fig:
-        f_name = f'time plot {ratio_amount}'
-        plt.tight_layout()
-        plt.savefig(f'Results\\Figures\\{f_name}.png', dpi = 400)
-    if show_fig:
-        plt.show()
-
-def plot_bubble(demand, supply, **kwargs):
-
-    # if close to one another, don't add but increase size:
-    demand_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
-    tolerance_length = 2.5
-    tolerance_area = 0.002
-    dot_size = 70
-
-    for index, row in demand.iterrows():
-        if demand_chart.empty:
-            # add first bubble
-            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        # check if similiar bubble already present:
-        elif demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].empty:
-            # not, so add new bubble
-            demand_chart = pd.concat([demand_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        else:
-            # already present, so increase the bubble size:
-            ind = demand_chart.loc[  (abs(demand_chart['Length'] - row['Length']) < tolerance_length) & (abs(demand_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
-            demand_chart.at[ind,'dot_size'] = demand_chart.at[ind,'dot_size'] +1
-
-    demand_chart['dot_size_scaled'] = dot_size * (demand_chart['dot_size']**0.5)
-
-    supply_chart = pd.DataFrame(columns = ['Length', 'Area', 'dot_size'])
-    for index, row in supply.iterrows():
-        if supply_chart.empty:
-            # add first bubble
-            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        # check if similiar bubble already present:
-        elif supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].empty:
-            # not, so add new bubble
-            supply_chart = pd.concat([supply_chart, pd.DataFrame({'Length': row['Length'], 'Area': row['Area'], 'dot_size': 1}, index=[index])])
-        else:
-            # already present, so increase the bubble size:
-            ind = supply_chart.loc[  (abs(supply_chart['Length'] - row['Length']) < tolerance_length) & (abs(supply_chart['Area'] - row['Area']) < tolerance_area) ].index[0]
-            supply_chart.at[ind,'dot_size'] = supply_chart.at[ind,'dot_size'] +1
-
-    supply_chart['dot_size_scaled'] = dot_size * (supply_chart['dot_size']**0.5)
-
-    plt.scatter(demand_chart.Length, demand_chart.Area, s=list(demand_chart.dot_size_scaled), c='b', alpha=0.5, label='Demand')
-    plt.scatter(supply_chart.Length, supply_chart.Area, s=list(supply_chart.dot_size_scaled), c='g', alpha=0.5, label='Supply')
-
-    lgnd = plt.legend(loc="lower right")
-    lgnd.legendHandles[0]._sizes = [50]
-    lgnd.legendHandles[1]._sizes = [50]
-
-    plt.xlabel("Length", size=16)
-    plt.ylabel("Area", size=16)
-
-    for i, row in demand_chart.iterrows():
-        if row['dot_size'] < 10:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
-        else:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
-    for i, row in supply_chart.iterrows():
-        if row['dot_size'] < 10:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.19, row['Area']-0.0002))
-        else:
-           plt.annotate(str(row['dot_size']), (row['Length']-0.34, row['Area']-0.0002))
-
-    plt.show()
-
-
-
-def create_random_data(demand_count, supply_count, demand_gwp=lca.TIMBER_GWP, supply_gwp=lca.TIMBER_REUSE_GWP, length_min = 4, length_max = 15.0, area_min = 0.15, area_max = 0.25):
+def create_random_data_demand(demand_count, demand_lat, demand_lon, new_lat, new_lon, demand_gwp=data["TIMBER_GWP"],gwp_price=data["GWP_PRICE"],new_price=data["NEW_ELEMENT_PRICE_TIMBER"], length_min = 1, length_max = 15.0, area_min = 0.15, area_max = 0.15):
     """Create two dataframes for the supply and demand elements used to evaluate the different matrices"""
     np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
     demand = pd.DataFrame()
-    supply = pd.DataFrame()
+   
     # create element lenghts
     demand['Length'] = ((length_max/2 + 1) - length_min) * np.random.random_sample(size = demand_count) + length_min
-    supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
     # create element areas independent of the length. Can change this back to Artur's method later, but I want to see the effect of even more randomness. 
     demand['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = demand_count) + area_min
-    supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
     # intertia moment
-    demand['Inertia_moment'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
-    supply['Inertia_moment'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    demand['Moment of Inertia'] = demand.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
     # height - assuming square cross sections
-    demand['Height'] = np.power(demand['Area'], 0.5)
-    supply['Height'] = np.power(supply['Area'], 0.5)
+    #demand['Height'] = np.power(demand['Area'], 0.5)
     # gwp_factor
+
+    #TODO: Must be moved to matching script:
     demand['Gwp_factor'] = demand_gwp
-    supply['Gwp_factor'] = supply_gwp
+    #################################
+    demand["Demand_lat"]=demand_lat
+    demand["Demand_lon"]=demand_lon
+    demand["Supply_lat"]=new_lat
+    demand["Supply_lon"]=new_lon
+
+    #TODO: Must be integrated in the matching script
+    demand["Price"]=new_price
+    demand["Gwp_price"]=gwp_price
+    ##############################
+
     # Change index names
     demand.index = map(lambda text: 'D' + str(text), demand.index)
-    supply.index = map(lambda text: 'S' + str(text), supply.index)
-    return demand.round(2), supply.round(2)
+    return demand.round(4)
 
+def create_random_data_supply(supply_count,demand_lat, demand_lon,supply_coords,supply_gwp=data["TIMBER_REUSE_GWP"],gwp_price=data["GWP_PRICE"],reused_price=data["REUSED_ELEMENT_PRICE_TIMBER"], length_min = 1, length_max = 15.0, area_min = 0.15, area_max = 0.15):
+    np.random.RandomState(2023) #TODO not sure if this is the right way to do it. Read documentation
+    supply = pd.DataFrame()
+    supply['Length'] = ((length_max + 1) - length_min) * np.random.random_sample(size = supply_count) + length_min
+    supply['Area'] = ((area_max + .001) - area_min) * np.random.random_sample(size = supply_count) + area_min
+    supply['Moment of Inertia'] = supply.apply(lambda row: row['Area']**(2)/12, axis=1)   # derived from area assuming square section
+    supply['Height'] = np.power(supply['Area'], 0.5)
+    supply['Gwp_factor'] = supply_gwp
+    supply["Demand_lat"]=demand_lat
+    supply["Demand_lon"]=demand_lon
+    supply["Location"]=0
+    supply["Supply_lat"]=0
+    supply["Supply_lon"]=0
+    supply["Price"]=reused_price
+    supply["Gwp_price"]=gwp_price
+    
+    for row in range(len(supply)):
+        lokasjon=random.randint(0, len(supply_coords)-1)
+        supply.loc[row,"Supply_lat"]=supply_coords.loc[lokasjon,"Lat"]
+        supply.loc[row,"Supply_lon"]=supply_coords.loc[lokasjon,"Lon"]
+        supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Place"]
+    supply.index = map(lambda text: 'S' + str(text), supply.index)
+
+    return supply.round(4)
+
+
+def create_random_data_demand_conference(requested_tonnes, length_min, length_max):
+    """Generates a demand dataset that has approximately the requested number of tonnes of steel
+
+    Args:
+        requested_tonnes (float): desired total number of tonnes steel in the dataset
+        length_min (float): minimum element length
+        length_max (float): maxmimum element length
+
+    Returns:
+        DataFrame: demand dataset
+    """
+    #Available steel sections with corresponding area and moment of inertia
+    steel_cs = {"CHS 457x40": (5.2402e-2, 1.149e-3, 0.4114),# (area, moment of inertia, mass [tonne/m])
+                "CHS 508x30": (3.7935e-2, 1.109e-3, 0.3536), 
+                "CHS 610x30": (5.4664e-2, 2.305e-3, 0.4291),
+                "CHS 813x30": (7.3789e-2, 5.664e-3, 0.5793),
+                "CHS 1067x25": (8.1838e-2, 1.111e-2, 0.6424),
+                "CHS 1219x25": (9.3777e-2, 1.6720e-2, 0.7361)
+    }
+
+    demand = pd.DataFrame(columns = ["Length", "Area", "Moment of Inertia", "Material", "Manufacturer", "Latitude", "Longitude"])
+    material = "Steel"
+    manufacturer = 0
+    lat = 0
+    lon = 0
+    #Add random data
+    tonne_used = 0.0
+    while tonne_used < requested_tonnes:
+        print(tonne_used)
+        steel_idx = random.choice(list(steel_cs.keys()))
+        length = np.random.uniform(length_min, length_max)
+        area = steel_cs[steel_idx][0]
+        moment = steel_cs[steel_idx][1]
+        tonne = steel_cs[steel_idx][2] * length
+        demand.loc[len(demand.index)] = [length, area, moment, material, manufacturer, lat, lon]
+        tonne_used += tonne
+    return demand
+
+def create_random_data_supply_conference(requested_tonnes, length_min, length_max, supply_coords):
+    """Generates a supply dataset that has approximately the requested number of tonnes of steel
+
+    Args:
+        requested_tonnes (float): desired total number of tonnes steel in the dataset
+        length_min (float): minimum element length
+        length_max (float): maxmimum element length
+        supply_cords (DataFrame): contains the location name, latitude and longitude of the supply elements
+
+    Returns:
+        DataFrame: supply dataset
+    """
+    #Available steel sections with corresponding area and moment of inertia
+    steel_cs = {"CHS 457x40": (5.2402e-2, 1.149e-3, 0.4114),# (area, moment of inertia, mass [tonne/m])
+                "CHS 508x30": (3.7935e-2, 1.109e-3, 0.3536), 
+                "CHS 610x30": (5.4664e-2, 2.305e-3, 0.4291),
+                "CHS 813x30": (7.3789e-2, 5.664e-3, 0.5793),
+                "CHS 1067x25": (8.1838e-2, 1.111e-2, 0.6424),
+                "CHS 1219x25": (9.3777e-2, 1.6720e-2, 0.7361)
+    }
+
+    supply = pd.DataFrame(columns = ["Length", "Area", "Moment of Inertia", "Material", "Location", "Latitude", "Longitude"])
+    material = "Steel"
+    #Add random data
+    tonne_used = 0.0
+    while tonne_used < requested_tonnes:
+        steel_idx = random.choice(list(steel_cs.keys()))
+        loc_idx = lokasjon=random.randint(0, len(supply_coords)-1)
+        loc = supply_coords.loc[loc_idx,"Location"]
+        lat = supply_coords.loc[loc_idx,"Latitude"]
+        lon = supply_coords.loc[lokasjon,"Longitude"]
+        length = np.random.uniform(length_min, length_max)
+        area = steel_cs[steel_idx][0]
+        moment = steel_cs[steel_idx][1]
+        tonne = steel_cs[steel_idx][2] * length
+        supply.loc[len(supply.index)] = [length, area, moment, material, loc, lat, lon]
+        tonne_used += tonne
+    return supply
+
+def extract_brute_possibilities(incidence_matrix):
+    """Extracts all matching possibilities based on the incidence matrix.
+
+    Args:
+        Dataframe: incidence matrix
+
+    Returns:
+        list: three-dimensional list
+    """
+
+    binary_incidence = incidence_matrix*1 #returnes incidence matrix with 1 and 0 instead od True/False
+    three_d_list=[]
+    incidence_list=binary_incidence.values.tolist()
+    for row in incidence_list:
+        rowlist=[]
+        for i in range(len(row)):
+            if row[i]==1:
+                newlist=[0]*len(row)
+                newlist[i]=1
+                rowlist.append(newlist)
+        three_d_list.append(rowlist)
+    return three_d_list 
 
 def display_graph(matching, graph_type='rows', show_weights=True, show_result=True):
     """Plot the graph and matching result"""
@@ -358,5 +277,251 @@ def display_graph(matching, graph_type='rows', show_weights=True, show_result=Tr
             edge_curved=0.15
         )
         plt.show()
+
+def extract_genetic_solution(weights, best_solution, number_of_demand_elements):
+    """Converts the best solution into a column containing the supply matches for each demand element. 
+    This column is added to the weight-matrix in order to visually check if the matching makes sense
+
+    Args:
+        weights (DataFrame): weight matrix
+        best_solution (list): list of integers containing the best solution from genetic algorithm
+        number_of_demand_elements (int): number of demand elements
+
+    Returns:
+        DataFrame: The weight matrix with a new column containing the matches for each demand element
+    """
+    result = weights.copy(deep = True)
+    buckets = np.array_split(best_solution, number_of_demand_elements)
+    weight_cols = weights.columns.values.tolist()
+    match_column = []
+    for i in range(len(buckets)):
+        index = np.where(buckets[i] == 1)[0] #Finding matches
+        if len(index) == 0 or len(index) > 1: #This happens either if a match is not found or multiple supply-elements are matched with the same demand elemend => invalid solution
+            match = f"N{i}" #Set match to New element. 
+            if len(index) > 1:
+                logging.info("OBS: Multiple supply matched with one demand")
+        else:
+            weight_match = weights.loc[f"D{i}"][index[0]]
+            match = weight_cols[index[0]]
+            if match == "N" or np.isnan(weight_match): #New element is assigned if match is "N" or if the match is not allowed
+                match = f"N{i}"
+        match_column.append(match)
+    result["Matches from genetic"] = match_column
+    return result
+
+def print_genetic_solution(weights, best_solution, number_of_demand_elements):
+    """Prints the genetic solution in a readable way to visually evaluate if the solution makes sence. Used for debugging
+
+    Args:
+        weights (DataFrame): weight matrix
+        best_solution (list): list of integers containing the best solution from genetic algorithm
+        number_of_demand_elements (int): number of demand elements
+
+    Returns:
+        DataFrame: The weight matrix with a new column containing the matches for each demand element
+    """
+    result = weights.copy(deep = True)
+    buckets = np.array_split(best_solution, number_of_demand_elements)
+    weight_cols = weights.columns.values.tolist()
+    weight_cols = list(map(lambda x: x.replace("N0", "N"), weight_cols))
+    weight_cols.append("N0")
+    match_column = []
+    for i in range(len(buckets)):
+        index = np.where(buckets[i] == 1)[0] #Finding matches
+        if len(index) == 0:
+            match = ["No match"]
+        else:
+            match = [weight_cols[x] for x in index]
+        match_column.append(match)
+    result["Matches from genetic"] = match_column
+    return result
+
+
+def export_dataframe_to_xlsx(dataframe, file_location):
+    """Exports a dataframe to a csv file
+
+    Args:
+        dataframe (DataFrame): dataframe
+        file_location (string): location of the new file
+    """
+    dataframe.to_excel(file_location)
+
+def export_dataframe_to_csv(dataframe, file_location):
+    """Exports a dataframe to a csv file
+
+    Args:
+        dataframe (DataFrame): dataframe
+        file_location (string): location of the new file
+    """
+    dataframe.to_csv(file_location)
+
+def import_dataframe_from_file(file_location, index_replacer):
+    """Creates a DataFrame from a file
+
+    Args:
+        file_location (string): filepath
+        index_replacer (string): string to replace the index with, either "S" or "D"
+
+    Returns:
+        DataFrame: DataFrame generated from the file
+    """
+
+    if "xlsx" in file_location: #Excel file
+        dataframe = pd.read_excel(file_location)
+    else: #CSV file
+        dataframe = pd.read_csv(file_location)
+    if "Column1" in list(dataframe.columns):
+        dataframe.drop(columns=["Column1"], inplace = True)
+    if "Unnamed: 0" in list(dataframe.columns):
+        dataframe.drop(columns=["Unnamed: 0"], inplace = True)
+    dataframe.index = map(lambda text: index_replacer + str(text), dataframe.index)
+    new_columns = {col: col.split('[')[0].strip() for col in dataframe.columns}
+    dataframe = dataframe.rename(columns = new_columns)
+    dataframe = dataframe.fillna(0.0) #Fill NaN-values with zeros
+    return dataframe
+
+
+
+def add_graph_plural(demand_matrix, supply_matrix, weight_matrix, incidence_matrix):
+    """Add a graph notation based on incidence matrix
+    
+    THIS METHOD WAS NEVER USED
+    """
+    vertices = [0]*len(demand_matrix.index) + [1]*len(supply_matrix.index)
+    num_rows = len(demand_matrix.index)
+    edges = np.transpose(np.where(incidence_matrix))
+    edges = [[edge[0], edge[1]+num_rows] for edge in edges]
+    edge_weights = weight_matrix.to_numpy().reshape(-1,)
+    edge_weights = edge_weights[~np.isnan(edge_weights)]
+    # We need to reverse the weights, so that the higher the better. Because of this edge weights are initial score minus the replacement score:
+    edge_weights = (np.array([demand_matrix.Score[edge[0]] for edge in edges ])+0.0000001) - edge_weights 
+    # assemble graph
+    graph = ig.Graph.Bipartite(vertices, edges)
+    graph.es["label"] = edge_weights
+    graph.vs["label"] = list(demand_matrix.index)+list(supply_matrix.index) #vertice names
+    return graph
+
+
+def count_matches(matches, algorithm):
+    """Counts the number of plural matches for each supply element
+
+    Args:
+        matches (Pandas Dataframe): return dataframe of hm.extract_pairs_df()
+        algorithm (str): Name of algorithm in "matches"
+
+    Returns:
+        Pandas Dataframe: A count for each supply element
+    """
+    return matches.pivot_table(index = [algorithm], aggfunc = 'size')
+
+
+def format_float(num):
+    """
+    Formats a float into a string with comma-separated thousands.
+    Args:
+        num (float): The number to format.
+    Returns:
+        str: The formatted string.
+    """
+    if isinstance(num, float):
+        num = str(int(num)) if num.is_integer() else str(num)
+    else:
+        num = str(num)
+    if len(num) <= 3:
+        return num
+    result = []
+    for i, char in enumerate(reversed(num)):
+        if i % 3 == 0 and i != 0:
+            result.append(' ')
+        result.append(char)
+    return ''.join(reversed(result))
+
+def generate_score_function_string(constants):
+    """Generating the score function string for the matching
+
+    Args:
+        constants (dictionary): constants to use in the matching tool
+
+    Returns:
+        string: the score function string for evaluation of the weight matrix
+    """
+    metric = constants["Metric"]
+    transportation = constants["Include transportation"]
+    if metric == "GWP":
+        score_function_string = f"@lca.calculate_lca(length=Length, area=Area, include_transportation={transportation}, distance = Distance, gwp_factor=Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, density = Density)"
+    elif metric == "Combined":
+        score_function_string = f"@lca.calculate_score(length=Length, area=Area, include_transportation = {transportation}, distance = Distance, gwp_factor = Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, price = Price, priceGWP = {constants['VALUATION_GWP']}, density = Density, price_transport = {constants['PRICE_TRANSPORTATION']})"
+    elif metric == "Price":
+        score_function_string = f"@lca.calculate_price(length=Length, area =Area, include_transportation = {transportation}, distance = Distance, price = Price, density = Density, price_transport= {constants['PRICE_TRANSPORTATION']})"
+    return score_function_string
+
+def fill_closest_manufacturer(dataframe, constants):
+    """Fill the dataframe with the colsets manufacturer depending on the material
+
+    Args:
+        dataframe (DataFrame): dataframe (supply or demand)
+        constants (dictionary): constants to use in the matching tool
+
+    Returns:
+        DataFrame: updated dataframe with coordinates of the closest manufacturer
+    """
+
+    manufacturers_df=pd.read_excel(r"./Data/CSV/manufacturers_locations.xlsx")
+
+    shortest_distance_tree=10**10
+    shortest_distance__steel=10**10
+
+    shortest_tree={
+        "Manufacturer": "place",
+        "Latitude": "XX.XXX",
+        "Longitude":"YY.YYY"
+    }
+    shortest_steel={
+        "Manufacturer": "place",
+        "Latitude": "XX.XXX",
+        "Longitude":"YY.YYY"
+    }
+    for index,row in manufacturers_df.iterrows():
+        driving_distance=lca.calculate_driving_distance(str(row["Latitude"]),str(row["Longitude"]),constants["Site latitude"],constants["Site longitude"])
+
+        if str(row["Material"]) == "Timber" and driving_distance < shortest_distance_tree:
+            shortest_distance_tree = driving_distance
+            shortest_tree["Manufacturer"]=str(row["Manufacturer"])
+            shortest_tree["Latitude"]=row["Latitude"]
+            shortest_tree["Longitude"]=row["Longitude"]
+
+        elif str(row["Material"])=="Steel" and driving_distance<shortest_distance__steel:
+            shortest_distance__steel=driving_distance
+            shortest_steel["Manufacturer"]=str(row["Manufacturer"])
+            shortest_steel["Latitude"]=str(row["Latitude"])
+            shortest_steel["Longitude"]=str(row["Longitude"])
+
+    mask_tree=(dataframe["Material"]=="Timber") & (dataframe["Manufacturer"] == 0)
+    dataframe.loc[mask_tree,["Manufacturer","Latitude","Longitude"]]=[shortest_tree["Manufacturer"],shortest_tree["Latitude"],shortest_tree["Longitude"]]
+    mask_steel=(dataframe["Material"]=="Steel") & (dataframe["Manufacturer"] == 0)
+    dataframe.loc[mask_steel,["Manufacturer","Latitude","Longitude"]]=[shortest_steel["Manufacturer"],shortest_steel["Latitude"],shortest_steel["Longitude"]]
+    
+    dataframe = dataframe.astype({'Latitude': float, 'Longitude': float})
+
+    return dataframe
+
+
+def generate_run_string(constants):
+    """Generate the run-string required to use the method run_matching in matching.py
+
+    Args:
+        constants (dictionary): constants to use in the matching tool
+
+    Returns:
+        string: runstring
+    """
+    algorithms = constants["Algorithms"]
+    run_string = "run_matching(demand, supply, score_function_string, constraints = constraint_dict, add_new = True"
+    #Adding the user-selected algorithms to the run-string    
+    if len(algorithms) != 0:
+        for algorithm in algorithms:
+            run_string += f", {algorithm} = True"
+    run_string += ")"
+    return run_string
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

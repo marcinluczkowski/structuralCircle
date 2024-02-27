@@ -5,57 +5,82 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('./Matching')
 import helper_methods as hm
+import helper_methods_PDF as hmpdf
 from matching import run_matching # Matching
-import LCA as lca
+import helper_methods_LCA as lca
 
-### Test with just few elements
+#==========USER FILLS IN============#
+#Constants
+#TODO: FIND ALL DEFAULT VALUES FOR CONSTANTS, especially for price
+constants = {
+    "TIMBER_GWP": 28.9,       # based on NEPD-3442-2053-EN
+    "TIMBER_REUSE_GWP": 2.25,        # 0.0778*28.9 = 2.25 based on Eberhardt
+    "TRANSPORT_GWP": 96.0,    # TODO kg/m3/t based on ????
+    "TIMBER_DENSITY": 491.0,  # kg, based on NEPD-3442-2053-EN
+    "STEEL_GWP": 800, #Random value
+    "STEEL_REUSE_GWP": 4, #Random value
+    "VALUATION_GWP": 0.6, #In kr:Per kg CO2, based on OECD
+    "TIMBER_PRICE": 435, #Per m^3 https://www.landkredittbank.no/blogg/2021/prisen-pa-sagtommer-okte-20-prosent/
+    "TIMBER_REUSE_PRICE" : 100, #Per m^3, Random value
+    "STEEL_PRICE": 500, #Per m^2, Random value
+    "STEEL_REUSE_PRICE": 200, #Per m^2, Random value
+    "PRICE_TRANSPORTATION": 3.78, #Price per km per tonn. Derived from 2011 numbers on scaled t0 2022 using SSB
+    "STEEL_DENSITY": 7850,
+    ########################
+    "Project name": "Sognsveien 17",
+    "Metric": "GWP",
+    "Algorithms": ["bipartite", "greedy_plural", "bipartite_plural", "bipartite_plural_multiple"],
+    "Include transportation": False,
+    "Site latitude": "59.94161606",
+    "Site longitude": "10.72994518",
+    #"Demand file location": r"./TestCases/Data/CSV/DEMAND_DATAFRAME_SVERRE.xlsx",
+    #"Supply file location": r"./TestCases/Data/CSV/SUPPLY_DATAFRAME_SVERRE.xlsx",
+    "Demand file location": r"./TestCases/Data/CSV/basic_study_demand.csv",
+    "Supply file location": r"./TestCases/Data/CSV/basic_study_supply.csv",
+    "constraint_dict": {'Area' : '>=', 'Moment of Inertia' : '>=', 'Length' : '>=', 'Material': '=='}
+}
+#========================#
+#Generating dataset
+#===================
+supply_coords = pd.DataFrame(columns = ["Location", "Latitude", "Longitude"])
 
-demand = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Gwp_factor'])
-supply = pd.DataFrame(columns = ['Length', 'Area', 'Inertia_moment', 'Height', 'Gwp_factor'])
+tiller = ["Tiller", "63.3604", "10.4008"]
+gjovik = ["Gjovik", "60.8941", "10.5001"]
+orkanger = ["Orkanger", "63.3000", "9.8468"]
+storlien = ["Storlien", "63.3160", "12.1018"]
 
-# Add a perfect matching pair
-demand.loc['D1'] = {'Material': 1, 'Length': 7.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Gwp_factor':lca.TIMBER_GWP}
-supply.loc['S1'] = {'Material': 1, 'Length': 7.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Gwp_factor':lca.TIMBER_REUSE_GWP}
+supply_coords.loc[len(supply_coords)] = tiller
+supply_coords.loc[len(supply_coords)] = gjovik
+supply_coords.loc[len(supply_coords)] = orkanger
+supply_coords.loc[len(supply_coords)] = storlien
 
-# Add non-matchable demand
-# demand.loc['D2'] = {'Material': 1, 'Length': 13.00, 'Area': 0.001, 'Inertia_moment':0.00001, 'Height': 0.05}
-# TODO new inertia moment
-demand.loc['D2'] = {'Material': 1, 'Length': 13.00, 'Area': 0.02, 'Inertia_moment':0.00001, 'Height': 0.05, 'Gwp_factor':lca.TIMBER_GWP}
 
-# Add non-matchable supply
-# supply.loc['R2'] = {'Material': 1, 'Length': 0.1, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Is_new':False}
-supply.loc['S2'] = {'Material': 1, 'Length': 1.2, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Gwp_factor':lca.TIMBER_REUSE_GWP}
 
-# Add element with two good matches, where second slighlty better
-demand.loc['D3'] = {'Material': 1, 'Length': 5.00, 'Area': 0.04, 'Inertia_moment':0.00013, 'Height': 0.20, 'Gwp_factor':lca.TIMBER_GWP}
-supply.loc['S3'] = {'Material': 1, 'Length': 5.20, 'Area': 0.042, 'Inertia_moment':0.00015, 'Height': 0.22, 'Gwp_factor':lca.TIMBER_REUSE_GWP}
-supply.loc['S4'] = {'Material': 1, 'Length': 5.10, 'Area': 0.041, 'Inertia_moment':0.00014, 'Height': 0.21, 'Gwp_factor':lca.TIMBER_REUSE_GWP}
 
-# Add element with much bigger match
-demand.loc['D4'] = {'Material': 1, 'Length': 8.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50, 'Gwp_factor':lca.TIMBER_GWP}
-supply.loc['S5'] = {'Material': 1, 'Length': 12.00, 'Area': 0.2, 'Inertia_moment':0.0008, 'Height': 0.8, 'Gwp_factor':lca.TIMBER_REUSE_GWP}
+materials = ["Timber", "Steel"]
 
-# Add supply that can after cut fits perfectly
-#demand.loc['D5'] = {'Material': 1, 'Length': 3.50, 'Area': 0.19, 'Inertia_moment':0.0008, 'Height': 0.80, 'Gwp_factor':lca.TIMBER_GWP}
-#demand.loc['D6'] = {'Material': 1, 'Length': 5.50, 'Area': 0.18, 'Inertia_moment':0.00076, 'Height': 0.75, 'Gwp_factor':lca.TIMBER_GWP}
-#supply.loc['R6'] = {'Material': 1, 'Length': 9.00, 'Area': 0.20, 'Inertia_moment':0.0008, 'Height': 0.8, 'Gwp_factor':lca.TIMBER_REUSE_GWP}
+#GENERATE FILE
+#============
+supply = hmpdf.create_random_data_supply_pdf_reports(supply_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials, supply_coords = supply_coords)
+demand = hmpdf.create_random_data_demand_pdf_reports(demand_count = 10, length_min = 1.0, length_max = 10.0, area_min = 0.15, area_max = 0.30, materials = materials)
+hm.export_dataframe_to_csv(supply, r"" + "./TestCases/Data/CSV/basic_study_supply.csv")
+hm.export_dataframe_to_csv(demand, r"" + "./TestCases/Data/CSV/basic_study_demand.csv")
+#========================================
+score_function_string = hm.generate_score_function_string(constants)
+supply = hm.import_dataframe_from_file(r"" + constants["Supply file location"], index_replacer = "S")
+demand = hm.import_dataframe_from_file(r"" + constants["Demand file location"], index_replacer = "D")
 
-# Add element that fits the cut from D4 when allowing multiple assignment
-demand.loc['D5'] = {'Material': 1, 'Length': 4.00, 'Area': 0.1, 'Inertia_moment':0.0005, 'Height': 0.50, 'Gwp_factor':lca.TIMBER_GWP}
+#hm.create_graph(supply, demand, "Length", number_of_intervals= 2, save_filename = r"C:\Users\sigur\Downloads\test.png")
 
-# create constraint dictionary
-constraint_dict = {'Area' : '>=', 'Inertia_moment' : '>=', 'Length' : '>='}
-# TODO add 'Material': '=='
-
-hm.print_header('Simple Study Case')
-
-score_function_string = "@lca.calculate_lca(length=Length, area=Area, gwp_factor=Gwp_factor, include_transportation=False)"
-result_simple = run_matching(demand, supply, score_function_string=score_function_string, constraints = constraint_dict, add_new = True, sci_milp=False, milp=False, greedy_single=True, bipartite=True)
-
-#FIXME When testing with new elements. Why are the scores (LCA) identical even though we have different matching DataFrames. 
+constraint_dict = constants["constraint_dict"]
+#Add necessary columns to run the algorithm
+supply = hmpdf.add_necessary_columns_pdf(supply, constants)
+demand = hmpdf.add_necessary_columns_pdf(demand, constants)
+run_string = hm.generate_run_string(constants)
+result_simple = eval(run_string)
 
 simple_pairs = hm.extract_pairs_df(result_simple)
-simple_results = hm.extract_results_df(result_simple)
+simple_results = hm.extract_results_df(result_simple, constants["Metric"])
 
 print("Simple pairs:")
 print(simple_pairs)
@@ -65,11 +90,9 @@ print("Simple results")
 print(simple_results)
 
 # Calculate volumes
+print("\nRatios\n")
 dem = result_simple[0]['Match object'].demand
 sup = result_simple[0]['Match object'].supply
-
-assignment_summary_df = hm.get_assignment_df(simple_pairs, sup.index) # create overview of element assignments
-
 
 indices = list(dem.index)
 simple_el_ids = simple_pairs.mask(simple_pairs.isna(), indices, axis = 0) # replace NaN values with the intital index.

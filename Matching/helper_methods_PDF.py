@@ -93,7 +93,7 @@ def extract_results_df_pdf(dict_list, constants):
     results_dict["Constants used"] = used_constants
     return results_dict
 
-def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, area_min, area_max, materials, supply_coords):
+def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, width_min, width_max, height_min, height_max, area_min, area_max, materials, supply_coords):
     """Creates random data for the case studies in the master thesis
 
     Args:
@@ -122,6 +122,8 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
     np.random.RandomState(2023)
     supply = pd.DataFrame()
     supply['Length'] = np.round((length_max - length_min) * np.random.random_sample(size = supply_count) + length_min, 2)
+    supply['Width'] = np.round((width_max - width_min) * np.random.random_sample(size = supply_count) + width_min, 2)
+    supply['Height'] = np.round((height_max - height_min) * np.random.random_sample(size = supply_count) + height_min, 2)
     supply['Area'] = 0 
     supply['Moment of Inertia'] = 0
     supply['Material'] = ""
@@ -149,7 +151,7 @@ def create_random_data_supply_pdf_reports(supply_count, length_min, length_max, 
         supply.loc[row,"Location"]=supply_coords.loc[lokasjon,"Location"]
     return supply
 
-def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, area_min, area_max, materials):
+def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, width_min, width_max, height_min, height_max, area_min, area_max, materials):
     """Creates random data for the case studies in the master thesis
 
     Args:
@@ -175,6 +177,8 @@ def create_random_data_demand_pdf_reports(demand_count, length_min, length_max, 
     np.random.RandomState(2023)
     demand = pd.DataFrame()
     demand['Length'] = np.round((length_max - length_min) * np.random.random_sample(size = demand_count) + length_min, 2)
+    demand['Width'] = np.round((width_max - width_min) * np.random.random_sample(size = demand_count) + width_min, 2)
+    demand['Height'] = np.round((height_max - height_min) * np.random.random_sample(size = demand_count) + height_min, 2)
     demand['Area'] = 0
     demand['Moment of Inertia'] = 0
     demand['Material'] = ""
@@ -538,7 +542,11 @@ def add_necessary_columns_pdf(dataframe, constants):
     dataframe["Density"] = 0
     dataframe["Site_lat"] = constants["Site latitude"]
     dataframe["Site_lon"] = constants["Site longitude"]
+    dataframe["Gwp_factor"] = 0 
+    dataframe["Price"] = 0
 
+
+    """    
     if metric == "GWP":
         dataframe["Gwp_factor"] = 0 
     elif metric == "Combined":
@@ -546,6 +554,8 @@ def add_necessary_columns_pdf(dataframe, constants):
         dataframe["Price"] = 0
     elif metric == "Price":
         dataframe["Price"] = 0
+    """   
+
 
     #If dataframe is demand, fill in the location and corresponding coordinates and to the closet manufacturer.
     if element_type=="D" and constants["Include transportation"]:
@@ -553,13 +563,24 @@ def add_necessary_columns_pdf(dataframe, constants):
 
     #Adding necessary columns based on the chosen metric
     for row in range(len(dataframe)):
-        material = dataframe.iloc[row][dataframe.columns.get_loc("Material")].split()[0] #NOTE: Assumes that material-column has the material name as the first word, e.g. "Timber C14" or "Steel ASTM A992"
+        #material = dataframe.iloc[row][dataframe.columns.get_loc("Material")].split()[0] #NOTE: Assumes that material-column has the material name as the first word, e.g. "Timber C14" or "Steel ASTM A992"
+        material = dataframe.iloc[row][dataframe.columns.get_loc("Material")]
         dataframe.iloc[row, dataframe.columns.get_loc("Density")] = constants[f"{material.upper()}_DENSITY"]
 
         if element_type == "S":
             constant_name = f"{material.upper()}_REUSE"
         else:
             constant_name = f"{material.upper()}"
+
+        
+        dataframe.iloc[row, dataframe.columns.get_loc("Gwp_factor")] = constants[constant_name + "_GWP"]
+        if material.upper() == "STEEL":
+            price = constants[constant_name + "_PRICE"] * constants[f"{material.upper()}_DENSITY"]
+        else:
+            price = constants[constant_name + "_PRICE"]
+        dataframe.iloc[row, dataframe.columns.get_loc("Price")] = price
+        
+        """
 
         if metric == "GWP" or metric == "Combined":
                 dataframe.iloc[row, dataframe.columns.get_loc("Gwp_factor")] = constants[constant_name + "_GWP"]
@@ -569,6 +590,7 @@ def add_necessary_columns_pdf(dataframe, constants):
                 else:
                     price = constants[constant_name + "_PRICE"]
                 dataframe.iloc[row, dataframe.columns.get_loc("Price")] = price
+        """
     return dataframe
 
 print_header = lambda matching_name: print("\n"+"="*(len(matching_name)+8) + "\n*** " + matching_name + " ***\n" + "="*(len(matching_name)+8) + "\n")

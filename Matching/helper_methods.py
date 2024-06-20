@@ -11,7 +11,7 @@ import helper_methods_plotting as plot
 
 import json
 # Opening JSON file
-with open('Matching\Data\LCA_data.json') as json_file:
+with open('app\matchingTool\src\Matching\Data\LCA_data.json') as json_file:
     data = json.load(json_file)
 
 # ==== HELPER METHODS ====
@@ -453,6 +453,25 @@ def generate_score_function_string(constants):
         score_function_string = f"@lca.calculate_score(length=Length, area=Area, include_transportation = {transportation}, distance = Distance, gwp_factor = Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, price = Price, priceGWP = {constants['VALUATION_GWP']}, density = Density, price_transport = {constants['PRICE_TRANSPORTATION']})"
     elif metric == "Price":
         score_function_string = f"@lca.calculate_price(length=Length, area =Area, include_transportation = {transportation}, distance = Distance, price = Price, density = Density, price_transport= {constants['PRICE_TRANSPORTATION']})"
+    return score_function_string
+
+def generate_score_function_string_2d(constants):
+    """Generating the score function string for the matching
+
+    Args:
+        constants (dictionary): constants to use in the matching tool
+
+    Returns:
+        string: the score function string for evaluation of the weight matrix
+    """
+    metric = constants["Metric"]
+    transportation = constants["Include transportation"]
+    if metric == "GWP":
+        score_function_string = f"@lca.calculate_lca_2d(height = Height, width = Width, include_transportation={transportation}, distance = Distance, gwp_factor=Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, density = Density)"
+    elif metric == "Combined":
+        score_function_string = f"@lca.calculate_score_2d(height = Height, width = Width, include_transportation = {transportation}, distance = Distance, gwp_factor = Gwp_factor, transport_gwp = {constants['TRANSPORT_GWP']}, price = Price, priceGWP = {constants['VALUATION_GWP']}, density = Density, price_transport = {constants['PRICE_TRANSPORTATION']})"
+    elif metric == "Price":
+        score_function_string = f"@lca.calculate_price_2d(height = Height, width = Width, include_transportation = {transportation}, distance = Distance, price = Price, density = Density, price_transport= {constants['PRICE_TRANSPORTATION']})"
     return score_function_string
 
 def fill_closest_manufacturer(dataframe, constants):

@@ -3,7 +3,7 @@ import requests
 
 import json
 # Opening JSON file
-with open('Matching\Data\LCA_data.json') as json_file:
+with open('app\matchingTool\src\Matching\Data\LCA_data.json') as json_file:
     data = json.load(json_file)
 
 def calculate_lca(length, area, gwp_factor, include_transportation=False, distance=100, transport_gwp=100, density=100):
@@ -96,6 +96,101 @@ def calculate_price(length, area, include_transportation, distance, price, densi
 
     if include_transportation:
         transportation_score = calcultate_price_transport(volume,density,distance, price_transport)
+        score += transportation_score
+    
+    return score, transportation_score
+
+
+def calculate_lca_2d(height, width, gwp_factor, include_transportation=False, distance=100, transport_gwp=100, density=100):
+    """ Calculates the GWP of the elements
+
+    Args:
+        length (float): length of element
+        area (float): area of element
+        include_transportation (boolean): if transportation should be included
+        distance (float): driving distance to the construction site
+        gwp_factor (float): GWP factor for the element
+        transport_gwp (float): GWP factor for transportation
+        density (float): density of the element
+
+    Returns:
+        lca (float): the GWP of the element
+        transportation_LCA (float): the GWP of transporting the element
+    """
+    area = height * width
+    lca = area * gwp_factor
+    transportation_LCA = lca.copy()
+    transportation_LCA[:] = 0
+    if include_transportation:
+        transportation_LCA = calculate_transportation_LCA(area, density, distance, transport_gwp)
+        lca += transportation_LCA
+    return lca, transportation_LCA
+
+
+def calculate_score_2d(height, width, include_transportation, distance, gwp_factor, transport_gwp, price, priceGWP, density, price_transport):
+    """ Method for evaluatating the scores corresponding to the "Combined" metric (both price and GWP)
+
+    Args:
+        length (float): length of element
+        area (float): area of element
+        include_transportation (boolean): if transportation should be included
+        distance (float): driving distance to the construction site
+        gwp_factor (float): GWP factor for the element
+        transport_gwp (float): GWP factor for transportation
+        price (float): price of the element
+        priceGWP (float): price factor for GWP
+        density (float): density of the element
+        price_transport (float): price factor for transportation
+
+    Returns:
+        score (float): the score of the element concidering both GWP and Price (combined)
+        transportation_score (float): the score of transporting the element
+    """
+    area = height * width
+    score = area * gwp_factor
+    transportation_score = score.copy()
+    transportation_score[:] = 0
+  
+    if not include_transportation:
+        score=score*priceGWP
+
+    if include_transportation:
+        transportation_LCA = calculate_transportation_LCA(area, density, distance, transport_gwp)
+        transportation_cost= calcultate_price_transport(area,density,distance, price_transport)
+        logging.debug(f"Transportation LCA:", transportation_LCA)
+        score += transportation_LCA
+        score=score*priceGWP
+        score+=transportation_cost
+        transportation_score += transportation_LCA*priceGWP + transportation_cost
+   
+    price_element=area*price
+    score+=price_element
+    
+    return score, transportation_score
+
+def calculate_price_2d(heigth, width, include_transportation, distance, price, density, price_transport):
+    """ Method for evaluatating the price of an element
+
+    Args:
+        length (float): length of element
+        area (float): area of element
+        include_transportation (boolean): if transportation should be included
+        distance (float): driving distance to the construction site
+        price (float): price of the element
+        density (float): density of the element
+        price_transport (float): price factor for transportation
+
+    Returns:
+        score (float): the price of the element 
+        transportation_score (float): the price of transporting the element
+    """
+    area = heigth * width
+    score = area * price #In kr
+    transportation_score = score.copy()
+    transportation_score[:] = 0
+
+    if include_transportation:
+        transportation_score = calcultate_price_transport(area,density,distance, price_transport)
         score += transportation_score
     
     return score, transportation_score

@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\sverremh\\source\\repos\\FirstPythonComponent\\FirstPythonComponent\\FirstPythonComponent.csproj": {}
+    "C:\\Users\\kollb\\Master\\Master-Thesis-NTNU\\app\\matchingTool\\src\\GrasshopperSolution\\C#_Python_Component\\FirstPythonComponent\\FirstPythonComponent.csproj": {}
   },
   "projects": {
-    "C:\\Users\\sverremh\\source\\repos\\FirstPythonComponent\\FirstPythonComponent\\FirstPythonComponent.csproj": {
+    "C:\\Users\\kollb\\Master\\Master-Thesis-NTNU\\app\\matchingTool\\src\\GrasshopperSolution\\C#_Python_Component\\FirstPythonComponent\\FirstPythonComponent.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\sverremh\\source\\repos\\FirstPythonComponent\\FirstPythonComponent\\FirstPythonComponent.csproj",
+        "projectUniqueName": "C:\\Users\\kollb\\Master\\Master-Thesis-NTNU\\app\\matchingTool\\src\\GrasshopperSolution\\C#_Python_Component\\FirstPythonComponent\\FirstPythonComponent.csproj",
         "projectName": "FirstPythonComponent",
-        "projectPath": "C:\\Users\\sverremh\\source\\repos\\FirstPythonComponent\\FirstPythonComponent\\FirstPythonComponent.csproj",
-        "packagesPath": "C:\\Users\\sverremh\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\sverremh\\source\\repos\\FirstPythonComponent\\FirstPythonComponent\\obj\\",
+        "projectPath": "C:\\Users\\kollb\\Master\\Master-Thesis-NTNU\\app\\matchingTool\\src\\GrasshopperSolution\\C#_Python_Component\\FirstPythonComponent\\FirstPythonComponent.csproj",
+        "packagesPath": "C:\\Users\\kollb\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\kollb\\Master\\Master-Thesis-NTNU\\app\\matchingTool\\src\\GrasshopperSolution\\C#_Python_Component\\FirstPythonComponent\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\sverremh\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\kollb\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -62,7 +62,7 @@
               "version": "[5.0.0, )"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.102\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.101\\RuntimeIdentifierGraph.json"
         }
       }
     }

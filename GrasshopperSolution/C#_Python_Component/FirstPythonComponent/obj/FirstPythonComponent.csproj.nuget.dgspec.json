@@ -1,20 +1,24 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\sverremh\\source\\repos\\FirstPythonComponent\\FirstPythonComponent\\FirstPythonComponent.csproj": {}
+    "C:\\Users\\marcinl\\source\\repos\\structuralCircleNTNU\\GrasshopperSolution\\C#_Python_Component\\FirstPythonComponent\\FirstPythonComponent.csproj": {}
   },
   "projects": {
-    "C:\\Users\\sverremh\\source\\repos\\FirstPythonComponent\\FirstPythonComponent\\FirstPythonComponent.csproj": {
+    "C:\\Users\\marcinl\\source\\repos\\structuralCircleNTNU\\GrasshopperSolution\\C#_Python_Component\\FirstPythonComponent\\FirstPythonComponent.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\sverremh\\source\\repos\\FirstPythonComponent\\FirstPythonComponent\\FirstPythonComponent.csproj",
+        "projectUniqueName": "C:\\Users\\marcinl\\source\\repos\\structuralCircleNTNU\\GrasshopperSolution\\C#_Python_Component\\FirstPythonComponent\\FirstPythonComponent.csproj",
         "projectName": "FirstPythonComponent",
-        "projectPath": "C:\\Users\\sverremh\\source\\repos\\FirstPythonComponent\\FirstPythonComponent\\FirstPythonComponent.csproj",
-        "packagesPath": "C:\\Users\\sverremh\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\sverremh\\source\\repos\\FirstPythonComponent\\FirstPythonComponent\\obj\\",
+        "projectPath": "C:\\Users\\marcinl\\source\\repos\\structuralCircleNTNU\\GrasshopperSolution\\C#_Python_Component\\FirstPythonComponent\\FirstPythonComponent.csproj",
+        "packagesPath": "C:\\Users\\marcinl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\marcinl\\source\\repos\\structuralCircleNTNU\\GrasshopperSolution\\C#_Python_Component\\FirstPythonComponent\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\sverremh\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\marcinl\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -22,6 +26,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -34,7 +39,13 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
         "net48": {
@@ -62,7 +73,7 @@
               "version": "[5.0.0, )"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.102\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201\\RuntimeIdentifierGraph.json"
         }
       }
     }

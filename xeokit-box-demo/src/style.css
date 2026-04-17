@@ -448,6 +448,88 @@ body {
   user-select: none;
 }
 
+.hover-info {
+  position: absolute;
+  z-index: 6;
+  max-width: min(21rem, 40vw);
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #45617f;
+  background: rgba(12, 18, 28, 0.92);
+  color: #d9e8f6;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.hover-info__title {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.hover-info__meta {
+  color: #a9c7e1;
+  margin-bottom: 0.2rem;
+}
+
+.hover-info__kv {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.05rem 0.5rem;
+  justify-content: start;
+}
+
+.hover-info__kv span:first-child {
+  color: #94b7d5;
+}
+
+.hover-info__divider {
+  height: 1px;
+  background: #27405a;
+  margin: 0.3rem 0;
+}
+
+.hover-geo {
+  width: 128px;
+  height: 72px;
+  margin-top: 0.3rem;
+  margin-bottom: 0.1rem;
+  border: 1px solid #2f4863;
+  border-radius: 4px;
+  background: #0d1522;
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.hover-geo__supply,
+.hover-geo__demand {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  border-radius: 2px;
+}
+
+.hover-geo__supply {
+  border: 1px solid #76c2f2;
+  background: rgba(118, 194, 242, 0.14);
+}
+
+.hover-geo__demand {
+  border: 1px solid #ffd766;
+  background: rgba(255, 215, 102, 0.2);
+}
+
+.hover-geo__legend {
+  margin-top: 0.1rem;
+  font-size: 0.63rem;
+  color: #a8c3da;
+}
+
 @media (max-width: 760px) {
   .top-bar {
     flex-direction: column;

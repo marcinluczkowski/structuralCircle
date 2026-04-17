@@ -1,6 +1,7 @@
 using System;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Components.Constructors
@@ -22,7 +23,7 @@ namespace StructuralCircleNTNU.Components.Constructors
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
-            pManager.AddBrepParameter  ("Brep",     "B",   "Closed or open Brep; meshed internally for analysis.", GH_ParamAccess.item);
+            pManager.AddBrepParameter  ("Brep",     "B",   "Closed or open Brep; surface-sampled internally for analysis.", GH_ParamAccess.item);
             pManager.AddGenericParameter("Material", "Mat", "Material for the element.",                            GH_ParamAccess.item);
         }
 
@@ -44,10 +45,12 @@ namespace StructuralCircleNTNU.Components.Constructors
             if (!DA.GetData(0, ref brep)) return;
             if (!DA.GetData(1, ref rawMat)) return;
 
-            var material = rawMat as Material;
+            var material = GrasshopperUnpack.AsMaterial(rawMat);
             if (material == null)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Material input must be a Material.");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                    "Material must be a StructuralCircleNTNU Material (e.g. from Construct Material). " +
+                    "Generic wires wrap data; use the plugin Material output, not Rhino’s render Material.");
                 return;
             }
 

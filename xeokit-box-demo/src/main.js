@@ -71,6 +71,7 @@ const matchingSummary = document.getElementById("matching-summary");
 const matchingTableBody = document.getElementById("matching-table-body");
 const matchingViz = document.getElementById("matching-viz");
 const canvasEl = document.getElementById("xeokit_canvas");
+const hoverInfo = document.getElementById("hover-info");
 
 /** @type {"materials" | "building" | "matching"} */
 let previewMode = "materials";
@@ -81,10 +82,13 @@ let demandMeshes = [];
 let demandSizes = [];
 /** @type {{ id: string; type: string; name: string; w: number; h: number; l: number; vol: number }[]} */
 let ifcDemandSizes = [];
+const materialInfoById = new Map();
+const ifcInfoById = new Map();
 let selectedMaterialIndex = -1;
 let selectedIfcObjectId = null;
 /** @type {{ demandId: string; demand: { id: string; type: string; name: string; w: number; h: number; l: number; vol: number }; candidates: { materialIndex: number; w: number; h: number; l: number; waste: number; volDiffPct: number; similarityScore: number; rotated: boolean }[] } | null} */
 let activeMatch = null;
+const bestCandidateByDemandId = new Map();
 
 /** @type {{ minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number } | null} */
 let sceneBounds = null;
@@ -356,6 +360,34 @@ function clearMaterialHighlight() {
   selectedMaterialIndex = -1;
 }
 
+function hideHoverInfo() {
+  if (!hoverInfo) return;
+  hoverInfo.hidden = true;
+}
+
+function positionHoverInfo(clientX, clientY) {
+  if (!hoverInfo || !canvasEl) return;
+  const rect = canvasEl.getBoundingClientRect();
+  const x = Math.min(rect.width - 12, Math.max(8, clientX - rect.left + 12));
+  const y = Math.min(rect.height - 12, Math.max(8, clientY - rect.top + 12));
+  hoverInfo.style.left = `${x}px`;
+  hoverInfo.style.top = `${y}px`;
+}
+
+function showHoverInfoText(clientX, clientY, text) {
+  if (!hoverInfo) return;
+  positionHoverInfo(clientX, clientY);
+  hoverInfo.textContent = text;
+  hoverInfo.hidden = false;
+}
+
+function showHoverInfoNode(clientX, clientY, node) {
+  if (!hoverInfo) return;
+  positionHoverInfo(clientX, clientY);
+  hoverInfo.replaceChildren(node);
+  hoverInfo.hidden = false;
+}
+
 function clearIfcHighlight() {
   if (selectedIfcObjectId) {
     const prev = viewer.scene.objects?.[selectedIfcObjectId];
@@ -409,6 +441,105 @@ function buildCandidatesForDemand(demand) {
     return a.waste - b.waste;
   });
   return candidates;
+}
+
+function getBestCandidateForDemand(demand) {
+  const cached = bestCandidateByDemandId.get(demand.id);
+  if (cached !== undefined) return cached;
+  const best = buildCandidatesForDemand(demand)[0] || null;
+  bestCandidateByDemandId.set(demand.id, best);
+  return best;
+}
+
+function createKeyValueRow(key, value) {
+  const k = document.createElement("span");
+  k.textContent = key;
+  const v = document.createElement("span");
+  v.textContent = value;
+  return [k, v];
+}
+
+function createHoverMatchCard(demand, best) {
+  const card = document.createElement("div");
+
+  const title = document.createElement("div");
+  title.className = "hover-info__title";
+  title.textContent = demand.type;
+  card.appendChild(title);
+
+  const meta = document.createElement("div");
+  meta.className = "hover-info__meta";
+  meta.textContent = demand.name;
+  card.appendChild(meta);
+
+  const kv = document.createElement("div");
+  kv.className = "hover-info__kv";
+  kv.append(...createKeyValueRow("Demand ID", demand.id));
+  kv.append(
+    ...createKeyValueRow(
+      "Demand",
+      `${demand.w.toFixed(2)}×${demand.h.toFixed(2)}×${demand.l.toFixed(2)} m`,
+    ),
+  );
+  kv.append(...createKeyValueRow("Demand vol", `${demand.vol.toFixed(3)} m³`));
+  card.appendChild(kv);
+
+  const divider = document.createElement("div");
+  divider.className = "hover-info__divider";
+  card.appendChild(divider);
+
+  if (!best) {
+    const none = document.createElement("div");
+    none.textContent = "No suitable supply element found.";
+    card.appendChild(none);
+    return card;
+  }
+
+  const supplyVol = best.w * best.h * best.l;
+  const supplyW = best.rotated ? best.h : best.w;
+  const supplyH = best.rotated ? best.w : best.h;
+
+  const kv2 = document.createElement("div");
+  kv2.className = "hover-info__kv";
+  kv2.append(...createKeyValueRow("Best supply", `#${best.materialIndex + 1}`));
+  kv2.append(
+    ...createKeyValueRow(
+      "Supply",
+      `${supplyW.toFixed(2)}×${supplyH.toFixed(2)}×${best.l.toFixed(2)} m`,
+    ),
+  );
+  kv2.append(...createKeyValueRow("Supply vol", `${supplyVol.toFixed(3)} m³`));
+  kv2.append(...createKeyValueRow("Δvol", `${best.volDiffPct.toFixed(1)}%`));
+  kv2.append(...createKeyValueRow("Score", `${best.similarityScore.toFixed(1)}%`));
+  card.appendChild(kv2);
+
+  const geo = document.createElement("div");
+  geo.className = "hover-geo";
+  const maxW = Math.max(demand.w, supplyW) || 1;
+  const maxH = Math.max(demand.h, supplyH) || 1;
+  const sizeW = 104;
+  const sizeH = 56;
+
+  const supplyRect = document.createElement("div");
+  supplyRect.className = "hover-geo__supply";
+  supplyRect.style.width = `${Math.max(10, (supplyW / maxW) * sizeW)}px`;
+  supplyRect.style.height = `${Math.max(8, (supplyH / maxH) * sizeH)}px`;
+
+  const demandRect = document.createElement("div");
+  demandRect.className = "hover-geo__demand";
+  demandRect.style.width = `${Math.max(10, (demand.w / maxW) * sizeW)}px`;
+  demandRect.style.height = `${Math.max(8, (demand.h / maxH) * sizeH)}px`;
+
+  geo.appendChild(supplyRect);
+  geo.appendChild(demandRect);
+  card.appendChild(geo);
+
+  const legend = document.createElement("div");
+  legend.className = "hover-geo__legend";
+  legend.textContent = "Blue=supply cross-section, Yellow=demand";
+  card.appendChild(legend);
+
+  return card;
 }
 
 function countMatchableDemandObjects() {
@@ -480,6 +611,9 @@ function buildIfcDemandFromModel() {
     "IfcSpace",
   ]);
 
+  ifcInfoById.clear();
+  bestCandidateByDemandId.clear();
+
   /** @type {{ id: string; type: string; name: string; w: number; h: number; l: number; vol: number }[]} */
   const rows = [];
   for (const id of objectIds) {
@@ -500,7 +634,7 @@ function buildIfcDemandFromModel() {
     if (![w, h, l].every(Number.isFinite)) continue;
     if (w <= 0 || h <= 0 || l <= 0) continue;
 
-    rows.push({
+    const row = {
       id,
       type,
       name: meta?.name || id,
@@ -508,7 +642,9 @@ function buildIfcDemandFromModel() {
       h,
       l,
       vol: w * h * l,
-    });
+    };
+    rows.push(row);
+    ifcInfoById.set(id, row);
   }
 
   rows.sort((a, b) => b.vol - a.vol);
@@ -781,6 +917,7 @@ function setPreviewMode(mode) {
   }
 
   previewMode = mode;
+  hideHoverInfo();
   previewMaterialsBtn.classList.toggle("toggle-btn--active", mode === "materials");
   previewBuildingBtn.classList.toggle("toggle-btn--active", mode === "building");
   previewMatchingBtn.classList.toggle("toggle-btn--active", mode === "matching");
@@ -801,6 +938,8 @@ function rebuildLayout() {
   const visibleCount = selectedCount();
 
   destroyDemandMeshesOnly();
+  materialInfoById.clear();
+  bestCandidateByDemandId.clear();
   selectedMaterialIndex = -1;
   activeMatch = null;
   sceneBounds = null;
@@ -836,6 +975,7 @@ function rebuildLayout() {
       scale: [w / 2, h / 2, l / 2],
     });
     demandMeshes.push(mesh);
+    materialInfoById.set(mesh.id, { w, h, l, vol: w * h * l, rowIndex: index + 1 });
 
     minX = Math.min(minX, cx - w / 2);
     maxX = Math.max(maxX, cx + w / 2);
@@ -892,6 +1032,7 @@ async function loadFromCsvFiles(files) {
   }
 
   demandSizes = merged;
+  bestCandidateByDemandId.clear();
   countSlider.min = "1";
   countSlider.max = String(demandSizes.length);
   countSlider.value = String(Math.min(demandSizes.length, 60));
@@ -944,6 +1085,8 @@ async function loadIfcFromFile(file) {
       ifcModel.destroy();
       ifcModel = null;
       ifcDemandSizes = [];
+      ifcInfoById.clear();
+      bestCandidateByDemandId.clear();
       activeMatch = null;
     }
 
@@ -958,6 +1101,8 @@ async function loadIfcFromFile(file) {
     ifcModel.on("error", (err) => {
       const details = toErrorText(err);
       ifcDemandSizes = [];
+      ifcInfoById.clear();
+      bestCandidateByDemandId.clear();
       activeMatch = null;
       setStatus(`IFC failed: ${details}`);
       console.error("IFC load error:", err);
@@ -977,6 +1122,8 @@ async function loadIfcFromFile(file) {
   } catch (e) {
     const details = toErrorText(e);
     ifcDemandSizes = [];
+    ifcInfoById.clear();
+    bestCandidateByDemandId.clear();
     activeMatch = null;
     setStatus(`IFC load failed: ${details}`);
     console.error("IFC setup/load failed:", e);
@@ -991,6 +1138,7 @@ async function loadBundledCsv() {
     const text = await res.text();
 
     demandSizes = parseDemandCsv(text);
+    bestCandidateByDemandId.clear();
     countSlider.min = "1";
     countSlider.max = String(demandSizes.length);
     countSlider.value = String(Math.min(demandSizes.length, 40));
@@ -1048,6 +1196,46 @@ canvasEl?.addEventListener("click", (event) => {
   const objectId = pickResult?.entity?.id;
   if (!objectId) return;
   selectDemandForMatching(objectId);
+});
+
+canvasEl?.addEventListener("mousemove", (event) => {
+  const rect = canvasEl.getBoundingClientRect();
+  const pickResult = viewer.scene.pick({
+    pickSurface: false,
+    canvasPos: [event.clientX - rect.left, event.clientY - rect.top],
+  });
+  const objectId = pickResult?.entity?.id;
+  if (!objectId) {
+    hideHoverInfo();
+    return;
+  }
+
+  if (previewMode === "materials") {
+    const info = materialInfoById.get(objectId);
+    if (!info) {
+      hideHoverInfo();
+      return;
+    }
+    showHoverInfoText(
+      event.clientX,
+      event.clientY,
+      `Material #${info.rowIndex}\nW ${info.w.toFixed(3)} m\nH ${info.h.toFixed(3)} m\nL ${info.l.toFixed(3)} m\nVol ${info.vol.toFixed(3)} m³`,
+    );
+    return;
+  }
+
+  const ifcInfo = ifcInfoById.get(objectId);
+  if (!ifcInfo) {
+    hideHoverInfo();
+    return;
+  }
+  const best = getBestCandidateForDemand(ifcInfo);
+  const card = createHoverMatchCard(ifcInfo, best);
+  showHoverInfoNode(event.clientX, event.clientY, card);
+});
+
+canvasEl?.addEventListener("mouseleave", () => {
+  hideHoverInfo();
 });
 
 materialTableBody?.addEventListener("click", (event) => {

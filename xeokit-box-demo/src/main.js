@@ -59,13 +59,20 @@ const pickFolderBtn = document.getElementById("pick-folder");
 const pickIfcBtn = document.getElementById("pick-ifc");
 const previewMaterialsBtn = document.getElementById("preview-materials");
 const previewBuildingBtn = document.getElementById("preview-building");
+const previewMatchingBtn = document.getElementById("preview-matching");
 const dashboardContext = document.getElementById("dashboard-context");
 const materialSummary = document.getElementById("material-summary");
 const materialTableBody = document.getElementById("material-table-body");
 const ifcSummary = document.getElementById("ifc-summary");
 const ifcTableBody = document.getElementById("ifc-table-body");
+const matchingPanel = document.getElementById("matching-panel");
+const matchingStatus = document.getElementById("matching-status");
+const matchingSummary = document.getElementById("matching-summary");
+const matchingTableBody = document.getElementById("matching-table-body");
+const matchingViz = document.getElementById("matching-viz");
+const canvasEl = document.getElementById("xeokit_canvas");
 
-/** @type {"materials" | "building"} */
+/** @type {"materials" | "building" | "matching"} */
 let previewMode = "materials";
 
 /** @type {Mesh[]} */
@@ -76,6 +83,8 @@ let demandSizes = [];
 let ifcDemandSizes = [];
 let selectedMaterialIndex = -1;
 let selectedIfcObjectId = null;
+/** @type {{ demandId: string; demand: { id: string; type: string; name: string; w: number; h: number; l: number; vol: number }; candidates: { materialIndex: number; w: number; h: number; l: number; waste: number; volDiffPct: number; similarityScore: number; rotated: boolean }[] } | null} */
+let activeMatch = null;
 
 /** @type {{ minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number } | null} */
 let sceneBounds = null;
@@ -363,6 +372,87 @@ function flyToAABB(aabb) {
   }
 }
 
+function materialFitsDemand(material, demand) {
+  const direct = material.w >= demand.w && material.h >= demand.h;
+  const rotated = material.w >= demand.h && material.h >= demand.w;
+  if (!direct && !rotated) return { fits: false, rotated: false };
+  if (material.l < demand.l) return { fits: false, rotated: false };
+  return { fits: true, rotated: !direct && rotated };
+}
+
+function buildCandidatesForDemand(demand) {
+  /** @type {{ materialIndex: number; w: number; h: number; l: number; waste: number; volDiffPct: number; similarityScore: number; rotated: boolean }[]} */
+  const candidates = [];
+  for (let i = 0; i < demandSizes.length; i++) {
+    const material = demandSizes[i];
+    const fit = materialFitsDemand(material, demand);
+    if (!fit.fits) continue;
+    const supplyVol = material.w * material.h * material.l;
+    const waste = supplyVol - demand.vol;
+    const volDiffPct = demand.vol > 0 ? (100 * waste) / demand.vol : 0;
+    const similarityScore = Math.max(0, 100 - volDiffPct);
+    candidates.push({
+      materialIndex: i,
+      w: material.w,
+      h: material.h,
+      l: material.l,
+      waste,
+      volDiffPct,
+      similarityScore,
+      rotated: fit.rotated,
+    });
+  }
+  candidates.sort((a, b) => {
+    if (b.similarityScore !== a.similarityScore) {
+      return b.similarityScore - a.similarityScore;
+    }
+    return a.waste - b.waste;
+  });
+  return candidates;
+}
+
+function countMatchableDemandObjects() {
+  if (demandSizes.length === 0 || ifcDemandSizes.length === 0) return 0;
+  let count = 0;
+  for (const demand of ifcDemandSizes) {
+    let found = false;
+    for (let i = 0; i < demandSizes.length; i++) {
+      if (materialFitsDemand(demandSizes[i], demand).fits) {
+        found = true;
+        break;
+      }
+    }
+    if (found) count += 1;
+  }
+  return count;
+}
+
+function selectDemandForMatching(objectId) {
+  const demand = ifcDemandSizes.find((row) => row.id === objectId);
+  if (!demand) {
+    setStatus("Clicked object is not in demand bank.");
+    return;
+  }
+  const entity = viewer.scene.objects?.[objectId];
+  if (!entity) {
+    setStatus(`IFC object not found in scene: ${objectId}`);
+    return;
+  }
+
+  clearMaterialHighlight();
+  clearIfcHighlight();
+  selectedIfcObjectId = objectId;
+  entity.highlighted = true;
+  flyToAABB(entity.aabb);
+
+  activeMatch = {
+    demandId: objectId,
+    demand,
+    candidates: buildCandidatesForDemand(demand),
+  };
+  renderMatchingPanel();
+}
+
 function buildIfcDemandFromModel() {
   if (!ifcModel) return [];
 
@@ -559,6 +649,9 @@ function renderDashboard() {
     dashboardContext.textContent = ifcModel
       ? "Canvas: building (IFC). Material table shows supply bank slice; IFC table shows demand bank objects from the loaded model."
       : "Canvas: building (IFC). Load an IFC file to populate the demand bank table.";
+  } else if (previewMode === "matching") {
+    dashboardContext.textContent =
+      "Canvas: matching mode. Click IFC elements in the viewer to see all usable material-bank candidates on the right.";
   } else {
     dashboardContext.textContent =
       "Canvas: material bank. Left table shows material elements; second table shows IFC demand bank when loaded.";
@@ -566,6 +659,106 @@ function renderDashboard() {
 
   renderMaterialTable();
   renderIfcTable();
+  renderMatchingPanel();
+}
+
+function renderMatchingPanel() {
+  if (!matchingPanel || !matchingStatus || !matchingSummary || !matchingTableBody || !matchingViz) return;
+
+  matchingPanel.classList.toggle("matching-panel--active", previewMode === "matching");
+  clearEl(matchingSummary);
+  matchingTableBody.replaceChildren();
+  matchingViz.replaceChildren();
+
+  const matchableCount = countMatchableDemandObjects();
+  const demandCount = ifcDemandSizes.length;
+  const coverage = demandCount > 0 ? (100 * matchableCount) / demandCount : 0;
+  appendSummaryRow(matchingSummary, "material elements", String(demandSizes.length));
+  appendSummaryRow(matchingSummary, "demand elements", String(demandCount));
+  appendSummaryRow(matchingSummary, "matchable demand", `${matchableCount} (${coverage.toFixed(1)}%)`);
+
+  if (!ifcModel) {
+    matchingStatus.textContent = "Load an IFC file to start matching.";
+    return;
+  }
+  if (demandSizes.length === 0) {
+    matchingStatus.textContent = "Load material bank CSV to calculate candidates.";
+    return;
+  }
+  if (!activeMatch) {
+    matchingStatus.textContent =
+      "Click an IFC element in the viewer or in the demand bank table to show possible material-bank elements.";
+    return;
+  }
+
+  const { demand, candidates } = activeMatch;
+  matchingStatus.textContent =
+    `${demand.type} · ${demand.name} · target ${demand.w.toFixed(2)}×${demand.h.toFixed(2)}×${demand.l.toFixed(2)} m`;
+  appendSummaryRow(
+    matchingSummary,
+    "selected demand",
+    `${demand.w.toFixed(2)} × ${demand.h.toFixed(2)} × ${demand.l.toFixed(2)} m`,
+  );
+  appendSummaryRow(matchingSummary, "candidates", String(candidates.length));
+
+  const shown = Math.min(candidates.length, 300);
+  const vizShown = Math.min(candidates.length, 60);
+  appendSummaryRow(matchingSummary, "shown", `${shown} / ${candidates.length}`);
+  appendSummaryRow(matchingSummary, "sorted by", "score (highest first)");
+
+  const maxLength = Math.max(
+    demand.l,
+    ...candidates.slice(0, vizShown).map((row) => row.l),
+  );
+  for (let i = 0; i < vizShown; i++) {
+    const row = candidates[i];
+    const line = document.createElement("div");
+    line.className = "match-line";
+
+    const rank = document.createElement("div");
+    rank.className = "match-line__rank";
+    rank.textContent = `#${i + 1}`;
+
+    const track = document.createElement("div");
+    track.className = "match-line__track";
+
+    const bar = document.createElement("div");
+    bar.className = "match-line__bar";
+    const widthPct = maxLength > 0 ? (100 * row.l) / maxLength : 0;
+    bar.style.width = `${Math.max(3, widthPct)}%`;
+    bar.style.opacity = `${0.45 + 0.55 * Math.max(0, Math.min(1, row.similarityScore / 100))}`;
+
+    const demandMarker = document.createElement("div");
+    demandMarker.className = "match-line__demand";
+
+    track.appendChild(bar);
+    track.appendChild(demandMarker);
+    line.appendChild(rank);
+    line.appendChild(track);
+    line.title = `mat#${row.materialIndex + 1} · L=${row.l.toFixed(2)}m · score ${row.similarityScore.toFixed(1)}%`;
+    matchingViz.appendChild(line);
+  }
+
+  for (let i = 0; i < shown; i++) {
+    const row = candidates[i];
+    const tr = document.createElement("tr");
+    tr.title = row.rotated ? "width/height matched via 90-degree swap" : "direct width/height match";
+    for (const text of [
+      String(i + 1),
+      String(row.materialIndex + 1),
+      row.w.toFixed(2),
+      row.h.toFixed(2),
+      row.l.toFixed(2),
+      `${row.similarityScore.toFixed(1)}%`,
+      `${row.volDiffPct.toFixed(1)}%`,
+      row.waste.toFixed(3),
+    ]) {
+      const td = document.createElement("td");
+      td.textContent = text;
+      tr.appendChild(td);
+    }
+    matchingTableBody.appendChild(tr);
+  }
 }
 
 function syncSceneVisibility() {
@@ -574,15 +767,15 @@ function syncSceneVisibility() {
     mesh.visible = showBoxes;
   }
   if (ifcModel) {
-    ifcModel.visible = previewMode === "building";
+    ifcModel.visible = previewMode === "building" || previewMode === "matching";
   }
 }
 
 /**
- * @param {"materials" | "building"} mode
+ * @param {"materials" | "building" | "matching"} mode
  */
 function setPreviewMode(mode) {
-  if (mode === "building" && !ifcModel) {
+  if ((mode === "building" || mode === "matching") && !ifcModel) {
     setStatus("Load an IFC file first, then switch to building preview.");
     return;
   }
@@ -590,6 +783,7 @@ function setPreviewMode(mode) {
   previewMode = mode;
   previewMaterialsBtn.classList.toggle("toggle-btn--active", mode === "materials");
   previewBuildingBtn.classList.toggle("toggle-btn--active", mode === "building");
+  previewMatchingBtn.classList.toggle("toggle-btn--active", mode === "matching");
 
   syncSceneVisibility();
 
@@ -608,6 +802,7 @@ function rebuildLayout() {
 
   destroyDemandMeshesOnly();
   selectedMaterialIndex = -1;
+  activeMatch = null;
   sceneBounds = null;
 
   if (demandSizes.length === 0 || visibleCount === 0) {
@@ -749,6 +944,7 @@ async function loadIfcFromFile(file) {
       ifcModel.destroy();
       ifcModel = null;
       ifcDemandSizes = [];
+      activeMatch = null;
     }
 
     const ifcArrayBuffer = await file.arrayBuffer();
@@ -762,6 +958,7 @@ async function loadIfcFromFile(file) {
     ifcModel.on("error", (err) => {
       const details = toErrorText(err);
       ifcDemandSizes = [];
+      activeMatch = null;
       setStatus(`IFC failed: ${details}`);
       console.error("IFC load error:", err);
       renderDashboard();
@@ -769,6 +966,7 @@ async function loadIfcFromFile(file) {
 
     ifcModel.on("loaded", () => {
       ifcDemandSizes = buildIfcDemandFromModel();
+      activeMatch = null;
       syncSceneVisibility();
       setStatus(`IFC loaded: ${file.name} · ${ifcDemandSizes.length} demand objects`);
       if (previewMode === "building") {
@@ -779,6 +977,7 @@ async function loadIfcFromFile(file) {
   } catch (e) {
     const details = toErrorText(e);
     ifcDemandSizes = [];
+    activeMatch = null;
     setStatus(`IFC load failed: ${details}`);
     console.error("IFC setup/load failed:", e);
     renderDashboard();
@@ -819,6 +1018,7 @@ pickIfcBtn.addEventListener("click", (e) => {
 
 previewMaterialsBtn.addEventListener("click", () => setPreviewMode("materials"));
 previewBuildingBtn.addEventListener("click", () => setPreviewMode("building"));
+previewMatchingBtn.addEventListener("click", () => setPreviewMode("matching"));
 
 fileInput.addEventListener("change", () => {
   const list = fileInput.files ? Array.from(fileInput.files) : [];
@@ -836,6 +1036,18 @@ ifcInput.addEventListener("change", () => {
   const f = ifcInput.files?.[0];
   ifcInput.value = "";
   if (f) loadIfcFromFile(f);
+});
+
+canvasEl?.addEventListener("click", (event) => {
+  if (previewMode !== "matching" || !ifcModel) return;
+  const rect = canvasEl.getBoundingClientRect();
+  const pickResult = viewer.scene.pick({
+    pickSurface: true,
+    canvasPos: [event.clientX - rect.left, event.clientY - rect.top],
+  });
+  const objectId = pickResult?.entity?.id;
+  if (!objectId) return;
+  selectDemandForMatching(objectId);
 });
 
 materialTableBody?.addEventListener("click", (event) => {
@@ -858,6 +1070,11 @@ ifcTableBody?.addEventListener("click", (event) => {
   if (!row) return;
   const objectId = row.dataset.objectId;
   if (!objectId) return;
+
+  if (previewMode === "matching") {
+    selectDemandForMatching(objectId);
+    return;
+  }
 
   if (ifcModel) setPreviewMode("building");
   clearMaterialHighlight();

@@ -48,6 +48,7 @@
             material bank
           </button>
           <button type="button" id="preview-building" class="toggle-btn">building (ifc)</button>
+          <button type="button" id="preview-matching" class="toggle-btn">matching</button>
         </div>
         <div class="btn-row">
           <button type="button" id="zoom-extents" class="btn-clear">zoom extents</button>
@@ -108,9 +109,40 @@
         <div class="viewport-header">preview</div>
         <main class="viewport">
           <canvas id="xeokit_canvas"></canvas>
-          <div class="viewer-version">Version_0.0.02</div>
+          <div class="viewer-version">Version_0.3</div>
         </main>
       </div>
+      <aside id="matching-panel" class="matching-panel" aria-label="Matching candidates">
+        <h2 class="dashboard__title">matching v0.3</h2>
+        <p id="matching-status" class="dashboard__context">
+          Select matching mode, then click an IFC element in the viewer.
+        </p>
+        <dl id="matching-summary" class="dashboard-summary"></dl>
+        <div class="dashboard__table-head">
+          <span>candidate length lines (right-aligned)</span>
+        </div>
+        <div id="matching-viz" class="matching-viz"></div>
+        <div class="dashboard__table-head">
+          <span>available material elements for selected demand element</span>
+        </div>
+        <div class="dashboard__table-wrap">
+          <table class="dashboard-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>mat#</th>
+                <th>W</th>
+                <th>H</th>
+                <th>L</th>
+                <th>score</th>
+                <th>Δvol%</th>
+                <th>waste</th>
+              </tr>
+            </thead>
+            <tbody id="matching-table-body"></tbody>
+          </table>
+        </div>
+      </aside>
     </div>
 
     <script type="module" src="/src/main.js"></script>

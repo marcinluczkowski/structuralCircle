@@ -12,7 +12,7 @@ namespace StructuralCircleNTNU.Classes
     ///
     /// Format A - Material List (auto-detect beam vs plate):
     ///   MaterialType,Width,Height,Length,Quantity
-    ///   Width and Height in mm, Length in m, Quantity = number of identical pieces.
+    ///   All geometry columns (Width, Height, Length) use the same CSV length unit (mm, cm, or m) and are converted to metres.
     ///   Element type is inferred from the material name:
     ///     - "Limtre", "GL", "KVH", "C24" narrow section → Beam
     ///     - "X-LAM", "CLT", "Mass timber", wide Width (≥ 300mm) → Plate
@@ -23,11 +23,33 @@ namespace StructuralCircleNTNU.Classes
     /// </summary>
     public static class CsvParser
     {
+        /// <summary>
+        /// Converts a CSV length unit string to a multiplier (value × scale → metres).
+        /// Accepts mm, cm, m (case-insensitive). Unknown values default to m (scale 1) with optional warning.
+        /// </summary>
+        public static double LengthScaleToMetres(string unit, GH_Component component = null)
+        {
+            if (string.IsNullOrWhiteSpace(unit))
+                return 1.0;
+
+            switch (unit.Trim().ToLowerInvariant())
+            {
+                case "mm": return 0.001;
+                case "cm": return 0.01;
+                case "m": return 1.0;
+                default:
+                    component?.AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+                        $"Unknown length unit '{unit}'. Use mm, cm, or m. Assuming metres.");
+                    return 1.0;
+            }
+        }
+
         // ─────────────────────────────────────────────────────────────────
         // Format A: MaterialType,Width,Height,Length,Quantity
+        // All geometry columns use the same <paramref name="lengthUnit"/> (scaled to metres).
         // ─────────────────────────────────────────────────────────────────
 
-        public static List<Element> ParseMaterialList(string filePath, GH_Component component)
+        public static List<Element> ParseMaterialList(string filePath, GH_Component component, string lengthUnit = "mm")
         {
             var elements = new List<Element>();
             string[] lines = File.ReadAllLines(filePath);
@@ -56,6 +78,7 @@ namespace StructuralCircleNTNU.Classes
                 return null;
             }
 
+            double scale = LengthScaleToMetres(lengthUnit, component);
             int globalId = 0;
 
             for (int row = 1; row < lines.Length; row++)
@@ -68,27 +91,27 @@ namespace StructuralCircleNTNU.Classes
                 try
                 {
                     string matType   = GetString(cols, headerMap, "MaterialType", "Unknown");
-                    double widthMm   = GetDouble(cols, headerMap, "Width");
-                    double heightMm  = GetDouble(cols, headerMap, "Height");
-                    double lengthM   = GetDouble(cols, headerMap, "Length");
+                    double widthRaw  = GetDouble(cols, headerMap, "Width");
+                    double heightRaw = GetDouble(cols, headerMap, "Height");
+                    double lengthRaw = GetDouble(cols, headerMap, "Length");
                     int    quantity  = hasQuantity ? GetInt(cols, headerMap, "Quantity", 1) : 1;
 
-                    // Convert mm → m
-                    double widthM  = widthMm  / 1000.0;
-                    double heightM = heightMm / 1000.0;
+                    double widthM  = widthRaw * scale;
+                    double heightM = heightRaw * scale;
+                    double lengthM = lengthRaw * scale;
 
-                    bool isPlate = DetectPlate(matType, widthMm, heightMm);
+                    bool isPlate = DetectPlate(matType, widthM, heightM);
 
                     var material = new Material(globalId, matType);
 
                     for (int q = 0; q < quantity; q++, globalId++)
                     {
-                        string elemName = $"{matType}_{widthMm:0}x{heightMm:0}_{lengthM:F3}_{globalId}";
+                        string elemName = $"{matType}_{widthRaw:0}x{heightRaw:0}_{lengthM:F3}_{globalId}";
 
                         if (isPlate)
                         {
                             // For CLT/X-LAM: Width = panel width, Height = thickness
-                            var section = new PlateSection(globalId, $"T{heightMm:0}", heightM);
+                            var section = new PlateSection(globalId, $"T{heightRaw:0}", heightM);
                             var plate = new Plate(globalId, elemName, "", material, section, null);
                             plate.AxisLine = new Line(Point3d.Origin, new Point3d(lengthM, 0, 0));
                             elements.Add(plate);
@@ -96,7 +119,7 @@ namespace StructuralCircleNTNU.Classes
                         else
                         {
                             // For Glulam/Beam: Width x Height cross-section
-                            var section = new BeamSection(globalId, $"{widthMm:0}x{heightMm:0}", widthM, heightM);
+                            var section = new BeamSection(globalId, $"{widthRaw:0}x{heightRaw:0}", widthM, heightM);
                             var axis    = new Line(Point3d.Origin, new Point3d(lengthM, 0, 0));
                             var beam    = new Beam(globalId, elemName, "", material, section, axis);
                             elements.Add(beam);
@@ -119,13 +142,15 @@ namespace StructuralCircleNTNU.Classes
         ///  2. Width ≥ 500 mm AND Width > Height → Plate (wide flat panel)
         ///  3. Otherwise → Beam
         /// </summary>
-        static bool DetectPlate(string matType, double widthMm, double heightMm)
+        /// <param name="widthM">Section width in metres.</param>
+        /// <param name="heightM">Section height/thickness in metres.</param>
+        static bool DetectPlate(string matType, double widthM, double heightM)
         {
             string upper = matType.ToUpperInvariant();
             if (upper.Contains("X-LAM") || upper.Contains("XLAM") || upper.Contains("CLT") || upper.Contains("KERTO-Q"))
                 return true;
 
-            if (widthMm >= 500 && widthMm > heightMm)
+            if (widthM >= 0.5 && widthM > heightM)
                 return true;
 
             return false;
@@ -135,10 +160,11 @@ namespace StructuralCircleNTNU.Classes
         // Format B: explicit type passed by component
         // ─────────────────────────────────────────────────────────────────
 
-        public static List<Element> ParseElements(string filePath, string type, GH_Component component)
+        public static List<Element> ParseElements(string filePath, string type, GH_Component component, string lengthUnit = "m")
         {
             var elements = new List<Element>();
             string[] lines = File.ReadAllLines(filePath);
+            double scale = LengthScaleToMetres(lengthUnit, component);
 
             if (lines.Length < 2)
             {
@@ -162,12 +188,12 @@ namespace StructuralCircleNTNU.Classes
                 {
                     if (type.Equals("Beam", StringComparison.OrdinalIgnoreCase))
                     {
-                        var elem = ParseBeamRow(cols, headerMap, row);
+                        var elem = ParseBeamRow(cols, headerMap, row, scale);
                         if (elem != null) elements.Add(elem);
                     }
                     else if (type.Equals("Plate", StringComparison.OrdinalIgnoreCase))
                     {
-                        var elem = ParsePlateRow(cols, headerMap, row);
+                        var elem = ParsePlateRow(cols, headerMap, row, scale);
                         if (elem != null) elements.Add(elem);
                     }
                     else
@@ -186,15 +212,15 @@ namespace StructuralCircleNTNU.Classes
             return elements;
         }
 
-        static Beam ParseBeamRow(string[] cols, Dictionary<string, int> headers, int rowIndex)
+        static Beam ParseBeamRow(string[] cols, Dictionary<string, int> headers, int rowIndex, double lengthScaleToM)
         {
             int    id       = GetInt(cols, headers, "Id", rowIndex);
             string name     = GetString(cols, headers, "Name", $"Beam_{rowIndex}");
             string location = GetString(cols, headers, "Location", "");
             string matName  = GetString(cols, headers, "Material", "Timber");
-            double width    = GetDouble(cols, headers, "Width");
-            double height   = GetDouble(cols, headers, "Height");
-            double length   = GetDouble(cols, headers, "Length");
+            double width    = GetDouble(cols, headers, "Width") * lengthScaleToM;
+            double height   = GetDouble(cols, headers, "Height") * lengthScaleToM;
+            double length   = GetDouble(cols, headers, "Length") * lengthScaleToM;
 
             var material = new Material(id, matName);
             BeamSection section;
@@ -209,17 +235,31 @@ namespace StructuralCircleNTNU.Classes
                             new Line(Point3d.Origin, new Point3d(length, 0, 0)));
         }
 
-        static Plate ParsePlateRow(string[] cols, Dictionary<string, int> headers, int rowIndex)
+        static Plate ParsePlateRow(string[] cols, Dictionary<string, int> headers, int rowIndex, double lengthScaleToM)
         {
             int    id        = GetInt(cols, headers, "Id", rowIndex);
             string name      = GetString(cols, headers, "Name", $"Plate_{rowIndex}");
             string location  = GetString(cols, headers, "Location", "");
             string matName   = GetString(cols, headers, "Material", "Timber");
-            double thickness = GetDouble(cols, headers, "Thickness");
+            double thickness = GetDouble(cols, headers, "Thickness") * lengthScaleToM;
 
             var material = new Material(id, matName);
-            var section  = new PlateSection(id, $"T={thickness}", thickness);
-            return new Plate(id, name, location, material, section, null);
+            PlateSection section;
+            if (headers.ContainsKey("Width"))
+            {
+                double w = GetDouble(cols, headers, "Width") * lengthScaleToM;
+                section = new PlateSection(id, $"T={thickness}", thickness, w);
+            }
+            else
+                section = new PlateSection(id, $"T={thickness}", thickness);
+
+            double axisLen = headers.ContainsKey("Length")
+                ? GetDouble(cols, headers, "Length") * lengthScaleToM
+                : 0;
+            var plate = new Plate(id, name, location, material, section, null);
+            if (axisLen > 1e-9)
+                plate.AxisLine = new Line(Point3d.Origin, new Point3d(axisLen, 0, 0));
+            return plate;
         }
 
         // ─────────────────────────────────────────────────────────────────

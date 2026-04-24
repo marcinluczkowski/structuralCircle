@@ -10,7 +10,9 @@ namespace StructuralCircleNTNU.Components
     {
         public Method_MatchingAlgorithm()
           : base("Matching Algorithm", "Match",
-              "Match supply to demand: mode 0=Greedy, 1=BruteForce (subset + combination cap), 2=MLP (stub). " +
+              "Match supply to demand. Mode 0=Greedy, 1=BruteForce (subset + combination cap), " +
+              "2=MILP (bipartite LP via Hungarian = LP optimum), 3=GreedyPacking (cut-from-stock, " +
+              "multiple demand per supply), 4=MilpPacking (BFD + local search). " +
               "Connect Run to a Button or True to execute; when False the component skips work so Grasshopper stays responsive.",
               "StructuralCircleNTNU", "Matching")
         { }
@@ -20,7 +22,11 @@ namespace StructuralCircleNTNU.Components
             pManager.AddGenericParameter("SupplyBank", "SB", "Supply Bank of available elements", GH_ParamAccess.item);
             pManager.AddGenericParameter("DemandBank", "DB", "Demand Bank of required elements", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Mode", "M",
-                "0 = Greedy (fast). 1 = BruteForce (exact on a limited demand subset). 2 = MLP (not implemented).",
+                "0 = Greedy (fast one-pass). " +
+                "1 = BruteForce (exact on a limited demand subset). " +
+                "2 = MILP (Mixed-Integer LP bipartite matching; Hungarian = LP optimum). " +
+                "3 = GreedyPacking (FFD cutting-stock; multiple demand per supply). " +
+                "4 = MilpPacking (BFD + local-search packing).",
                 GH_ParamAccess.item, 1);
             pManager.AddBooleanParameter("Run", "Run",
                 "If False, matching is skipped (no CPU load). If this input is not wired, behaves as True for backward compatibility. Connect a Button for a run trigger.",
@@ -30,6 +36,11 @@ namespace StructuralCircleNTNU.Components
                 GH_ParamAccess.item, 0.1);
             pManager.AddIntegerParameter("MaxDemand", "kD",
                 "BruteForce only: if > 0, maximum number of leading demand elements in the search; overrides DemandSubset. 0 = use DemandSubset.",
+                GH_ParamAccess.item, 0);
+            pManager.AddIntegerParameter("PackingMode", "PM",
+                "Packing modes (3 and 4) only: 0 = Auto (1D for beams, 2D for plates, 3D otherwise), " +
+                "1 = 1D cutting stock along length, 2 = 2D shelf packing on plate area, " +
+                "3 = 3D BBox volume packing, 4 = Brep (falls back to 3D BBox).",
                 GH_ParamAccess.item, 0);
 
             pManager[3].Optional = true;
@@ -69,6 +80,12 @@ namespace StructuralCircleNTNU.Components
 
             int maxDemand = 0;
             DA.GetData(5, ref maxDemand);
+
+            int packingModeInt = 0;
+            DA.GetData(6, ref packingModeInt);
+            PackingMode packingMode = Enum.IsDefined(typeof(PackingMode), packingModeInt)
+                ? (PackingMode)packingModeInt
+                : PackingMode.Auto;
 
             if (supply == null || demand == null)
             {
@@ -130,12 +147,23 @@ namespace StructuralCircleNTNU.Components
                     else if (!string.IsNullOrEmpty(result.Note))
                         AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, result.Note);
                     break;
-                case (int)MatchingAlgorithmMode.Mlp:
-                    result = MatchingEngine.MlpMatch(demand, supply);
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, result.Note);
+                case (int)MatchingAlgorithmMode.Milp:
+                    result = MatchingEngine.MilpMatch(demand, supply);
+                    if (!string.IsNullOrEmpty(result.Note))
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, result.Note);
+                    break;
+                case (int)MatchingAlgorithmMode.GreedyPacking:
+                    result = MatchingEngine.GreedyPackingMatch(demand, supply, packingMode);
+                    if (!string.IsNullOrEmpty(result.Note))
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, result.Note);
+                    break;
+                case (int)MatchingAlgorithmMode.MilpPacking:
+                    result = MatchingEngine.MilpPackingMatch(demand, supply, packingMode);
+                    if (!string.IsNullOrEmpty(result.Note))
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, result.Note);
                     break;
                 default:
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"Mode {mode} is not defined (use 0–2). Using Greedy.");
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"Mode {mode} is not defined (use 0–4). Using Greedy.");
                     result = MatchingEngine.GreedyMatch(demand, supply);
                     break;
             }

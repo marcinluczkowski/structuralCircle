@@ -4,50 +4,59 @@ using Rhino.Geometry;
 namespace StructuralCircleNTNU.Classes
 {
     /// <summary>
-    /// Bank preview: elements in a common layout frame — member along +World Y (axis projected to XY),
-    /// cross-section shorter along X, longer along +Z, stacked along Y with stride from bbox.
+    /// Bank preview frame (world axes):
+    /// Member axis along +Z, shorter cross-section side along ±X, longer cross-section side along ±Y.
+    /// Elements are stacked along +World Y in <see cref="Components.Preview.Preview_Bank"/> using
+    /// <see cref="GetStrideAlongY"/> (Y-extent of the preview box).
     /// </summary>
     public static class PreviewBankLayout
     {
-        /// <summary>Extent along +Y used for spacing (member length in the preview frame).</summary>
+        /// <summary>Advance along +Y between stacked elements (Y-extent of the preview box).</summary>
         public static double GetStrideAlongY(Element element)
         {
-            if (TryGetPreviewBox(element, out _, out double stride) && stride > 1e-9)
-                return stride;
+            if (TryGetPreviewBox(element, out Box box, out _) && box.IsValid)
+            {
+                var bb = box.BoundingBox;
+                double dy = bb.Max.Y - bb.Min.Y;
+                if (dy > 1e-9) return dy;
+            }
+
             if (element.AxisLine.IsValid && element.AxisLine.Length > 1e-9)
-                return element.AxisLine.Length;
+                return Math.Max(0.05, element.AxisLine.Length * 0.05);
+
             return 0.05;
         }
 
-        /// <summary>Stride along Y and vertical extent along Z for label placement.</summary>
-        public static bool TryGetLayoutExtents(Element element, out double strideY, out double depthZ)
+        /// <summary>Stride along stacking Y and member length along +Z (for labels / connectors).</summary>
+        public static bool TryGetLayoutExtents(Element element, out double strideAlongY, out double memberLengthZ)
         {
-            strideY = 0;
-            depthZ = 0;
-            if (TryGetPreviewBox(element, out Box box, out strideY) && box.IsValid && strideY > 1e-9)
+            strideAlongY = 0;
+            memberLengthZ = 0;
+            if (TryGetPreviewBox(element, out Box box, out _) && box.IsValid)
             {
                 var bb = box.BoundingBox;
-                depthZ = Math.Max(bb.Max.Z - bb.Min.Z, 1e-9);
+                strideAlongY = Math.Max(bb.Max.Y - bb.Min.Y, 1e-9);
+                memberLengthZ = Math.Max(bb.Max.Z - bb.Min.Z, 1e-9);
                 return true;
             }
 
             if (element.AxisLine.IsValid && element.AxisLine.Length > 1e-9)
             {
-                strideY = element.AxisLine.Length;
-                depthZ = 0.05;
+                strideAlongY = 0.05;
+                memberLengthZ = element.AxisLine.Length;
                 return true;
             }
 
             return false;
         }
 
-        /// <summary>Label point in world space after geometry is placed at <paramref name="placement"/>.</summary>
-        public static Point3d GetLabelPoint(Point3d placement, double lengthY, double dimZ)
+        /// <summary>Label anchor: centre of member in Z, centre of section in XY at placement origin.</summary>
+        public static Point3d GetLabelPoint(Point3d placement, double memberLengthZ)
         {
-            return new Point3d(placement.X, placement.Y + 0.5 * lengthY, placement.Z + 0.5 * dimZ);
+            return new Point3d(placement.X, placement.Y, placement.Z + 0.5 * memberLengthZ);
         }
 
-        /// <summary>Builds preview geometry in canonical layout (origin at foot; use <see cref="Transform.Translation"/> to place).</summary>
+        /// <summary>Preview geometry in canonical layout at origin (translate to world with placement).</summary>
         public static GeometryBase BuildGeometry(Element element)
         {
             if (TryGetPreviewBox(element, out Box box, out _))
@@ -58,7 +67,7 @@ namespace StructuralCircleNTNU.Classes
 
             if (element.AxisLine.IsValid && element.AxisLine.Length > 1e-9)
             {
-                var ln = new Line(Point3d.Origin, new Point3d(0, element.AxisLine.Length, 0));
+                var ln = new Line(Point3d.Origin, new Point3d(0, 0, element.AxisLine.Length));
                 return new LineCurve(ln);
             }
 
@@ -79,7 +88,7 @@ namespace StructuralCircleNTNU.Classes
                     double shortDim = Math.Min(bs.Width, bs.Height);
                     double longDim = Math.Max(bs.Width, bs.Height);
                     box = CanonicalSectionBox(L, shortDim, longDim);
-                    strideAlongY = L;
+                    strideAlongY = longDim;
                     return true;
                 }
 
@@ -97,7 +106,7 @@ namespace StructuralCircleNTNU.Classes
                     double shortDim = Math.Min(w, t);
                     double longDim = Math.Max(w, t);
                     box = CanonicalSectionBox(L, shortDim, longDim);
-                    strideAlongY = L;
+                    strideAlongY = longDim;
                     return true;
                 }
 
@@ -111,13 +120,15 @@ namespace StructuralCircleNTNU.Classes
             return false;
         }
 
-        /// <summary>WorldXY box: X = shorter cross-section, Y = member length [0,L], Z = longer section [0,long].</summary>
-        static Box CanonicalSectionBox(double lengthAlongY, double shortCrossX, double longAlongZ)
+        /// <summary>
+        /// WorldXY-based box: plane X = min section side, plane Y = max section side, plane Z = member length (+Z).
+        /// </summary>
+        static Box CanonicalSectionBox(double memberLengthZ, double shortCrossX, double longCrossY)
         {
             return new Box(Plane.WorldXY,
                 new Interval(-0.5 * shortCrossX, 0.5 * shortCrossX),
-                new Interval(0, lengthAlongY),
-                new Interval(0, longAlongZ));
+                new Interval(-0.5 * longCrossY, 0.5 * longCrossY),
+                new Interval(0, memberLengthZ));
         }
 
         static bool TrySortedWorldBox(Brep brep, out Box box, out double strideAlongY)
@@ -140,7 +151,7 @@ namespace StructuralCircleNTNU.Classes
             double shortDim = a;
             double longDim = Math.Max(b, 1e-6);
             box = CanonicalSectionBox(L, shortDim, longDim);
-            strideAlongY = L;
+            strideAlongY = longDim;
             return true;
         }
     }

@@ -297,13 +297,19 @@ namespace StructuralCircleNTNU.Classes
         }
 
         /// <summary>
-        /// MLP-inspired matching: feature-based pair scoring (normalised excess ratios through sigmoid
-        /// activations — mimicking the output layer of a trained MLP) combined with the Hungarian
-        /// algorithm for globally optimal assignment.
-        /// Reference: Luczkowski et al., "Matching reclaimed structural members", IOP Environ. Res.
-        /// Infrastruct. Sustain. 3 (2023).
+        /// MILP bipartite matching (Mixed-Integer Linear Programming, one-to-one):
+        ///     min  Σ c_ij x_ij
+        ///     s.t. Σ_j x_ij ≤ 1   ∀i  (each demand used at most once)
+        ///          Σ_i x_ij ≤ 1   ∀j  (each supply used at most once)
+        ///          x_ij ∈ {0, 1},  x_ij = 0 if incidence[i,j] = false
+        /// The bipartite-matching LP has a totally-unimodular constraint matrix, so the LP
+        /// relaxation has an integer optimum — which the Hungarian algorithm produces in O(n³).
+        /// This matches the Python structuralCircle "bipartite LP" formulation
+        /// (<see href="https://github.com/marcinluczkowski/structuralCircle"/>) without pulling in an external LP solver.
+        /// Weights follow the same volume/length LCA proxy used by Greedy / BruteForce so results
+        /// are directly comparable across modes.
         /// </summary>
-        public static MatchResult MlpMatch(DemandBank demand, SupplyBank supply)
+        public static MatchResult MilpMatch(DemandBank demand, SupplyBank supply)
         {
             var demandElems = demand.Elements;
             var supplyElems = supply.Elements;
@@ -316,18 +322,21 @@ namespace StructuralCircleNTNU.Classes
                 {
                     UnmatchedSupply = new List<Element>(supplyElems),
                     TotalScore = 0,
-                    Method = "MLP"
+                    Method = "MILP"
                 };
             }
 
-            double[,] scoreMtx = new double[nD, nS];
+            bool[,] incidence = EvaluateIncidence(demandElems, supplyElems);
+            double[,] weights = EvaluateWeights(demandElems, supplyElems);
+
+            const double INF = 2e18;
+            var cost = new double[nD, nS];
             for (int d = 0; d < nD; d++)
                 for (int s = 0; s < nS; s++)
-                    scoreMtx[d, s] = MlpPairScore(demandElems[d], supplyElems[s]);
+                    cost[d, s] = incidence[d, s] ? weights[d, s] : INF;
 
-            int[] assignment = RunHungarian(scoreMtx, nD, nS);
+            int[] assignment = RunHungarian(cost, nD, nS);
 
-            const double InfThreshold = 1e17;
             var pairs = new List<MatchPair>();
             var unmatchedDemand = new List<Element>();
             var usedSupply = new bool[nS];
@@ -335,9 +344,9 @@ namespace StructuralCircleNTNU.Classes
             for (int d = 0; d < nD; d++)
             {
                 int s = assignment[d];
-                if (s >= 0 && scoreMtx[d, s] < InfThreshold)
+                if (s >= 0 && cost[d, s] < INF / 2)
                 {
-                    pairs.Add(new MatchPair(demandElems[d], supplyElems[s], scoreMtx[d, s]));
+                    pairs.Add(new MatchPair(demandElems[d], supplyElems[s], cost[d, s]));
                     usedSupply[s] = true;
                 }
                 else
@@ -352,56 +361,192 @@ namespace StructuralCircleNTNU.Classes
                 UnmatchedDemand = unmatchedDemand,
                 UnmatchedSupply = unmatchedSupply,
                 TotalScore = pairs.Sum(p => p.Score),
-                Method = "MLP",
-                Note = "Feature-based MLP scoring (sigmoid of normalised excess ratios) + Hungarian optimal assignment."
+                Method = "MILP",
+                Note = "Bipartite LP one-to-one matching (Hungarian = LP optimum via total unimodularity)."
+            };
+        }
+
+        // ── Packed matching (multiple demand elements per supply) ─────────────────────
+
+        /// <summary>
+        /// Greedy + packing: every demand element that fits inside a supply's remaining capacity
+        /// is cut from it (cutting stock / bin packing). Simple form uses axis-aligned BBox of the
+        /// demand; <paramref name="mode"/> selects 1D (length, beams), 2D (area, plates) or 3D
+        /// (BBox volume) packing. <see cref="PackingMode.Brep"/> falls back to 3D BBox — a
+        /// dedicated Brep-fitting solver (SAT / mesh-boolean) can be plugged in later.
+        /// </summary>
+        public static MatchResult GreedyPackingMatch(DemandBank demand, SupplyBank supply, PackingMode mode)
+        {
+            return PackedMatchInternal(demand, supply, mode, useBestFit: false, methodLabel: "GreedyPacking");
+        }
+
+        /// <summary>
+        /// MILP-style packing match: Best-Fit-Decreasing (tightest-remaining-leftover) heuristic
+        /// followed by local-search swaps that reduce the total score.
+        /// Produces integer assignments that respect capacity constraints of the generalized
+        /// assignment problem (NP-hard in general; this is a standard practical heuristic).
+        /// </summary>
+        public static MatchResult MilpPackingMatch(DemandBank demand, SupplyBank supply, PackingMode mode)
+        {
+            return PackedMatchInternal(demand, supply, mode, useBestFit: true, methodLabel: "MilpPacking");
+        }
+
+        static MatchResult PackedMatchInternal(
+            DemandBank demand,
+            SupplyBank supply,
+            PackingMode mode,
+            bool useBestFit,
+            string methodLabel)
+        {
+            var demandElems = demand.Elements;
+            var supplyElems = supply.Elements;
+            int nD = demandElems.Count;
+            int nS = supplyElems.Count;
+
+            if (nD == 0)
+            {
+                return new MatchResult
+                {
+                    UnmatchedSupply = new List<Element>(supplyElems),
+                    TotalScore = 0,
+                    Method = methodLabel
+                };
+            }
+
+            PackingMode resolvedMode = ResolvePackingMode(mode, demandElems, supplyElems);
+
+            bool[,] incidence = EvaluateIncidence(demandElems, supplyElems);
+            double[,] weights = EvaluateWeights(demandElems, supplyElems);
+
+            Func<int, int, bool> feasible = (d, s) => incidence[d, s];
+            Func<int, int, double> score = (d, s) => weights[d, s];
+
+            PackingEngine.PackingResult packing;
+            switch (resolvedMode)
+            {
+                case PackingMode.Length1D:
+                    {
+                        double[] sup = supplyElems.Select(PackingEngine.GetLength).ToArray();
+                        double[] dem = demandElems.Select(PackingEngine.GetLength).ToArray();
+                        packing = useBestFit
+                            ? PackingEngine.Pack1D_BFD(sup, dem, feasible, score)
+                            : PackingEngine.Pack1D_FFD(sup, dem, feasible);
+                        break;
+                    }
+                case PackingMode.Area2D:
+                    {
+                        var sup = supplyElems.Select(PackingEngine.GetPlateRect).ToArray();
+                        var dem = demandElems.Select(PackingEngine.GetPlateRect).ToArray();
+                        packing = PackingEngine.Pack2D_Shelf(sup, dem, feasible);
+                        break;
+                    }
+                default: // Bbox3D or Brep (fallback)
+                    {
+                        var sup = supplyElems.Select(PackingEngine.GetBbox).ToArray();
+                        var dem = demandElems.Select(PackingEngine.GetBbox).ToArray();
+                        packing = PackingEngine.Pack3D_BBoxFFD(sup, dem, feasible);
+                        break;
+                    }
+            }
+
+            var pairs = new List<MatchPair>();
+            foreach (var item in packing.Items)
+            {
+                var p = new MatchPair(
+                    demandElems[item.DemandIndex],
+                    supplyElems[item.SupplyIndex],
+                    weights[item.DemandIndex, item.SupplyIndex])
+                {
+                    Placement = item.Placement
+                };
+                pairs.Add(p);
+            }
+
+            if (useBestFit)
+                LocalSearchImprove(pairs, weights, incidence, resolvedMode, demandElems, supplyElems);
+
+            var matchedDemandIdx = new HashSet<int>(packing.Items.Select(i => i.DemandIndex));
+            var unmatchedDemand = demandElems.Where((_, i) => !matchedDemandIdx.Contains(i)).ToList();
+            var unmatchedSupply = supplyElems.Where((_, i) => !packing.TouchedSupply.Contains(i)).ToList();
+
+            string note =
+                $"Packing mode: {resolvedMode}. {pairs.Count}/{nD} demand packed across " +
+                $"{packing.TouchedSupply.Count}/{nS} supply elements.";
+            if (resolvedMode == PackingMode.Brep)
+                note += " Brep-exact fitting not implemented — falling back to 3D BBox.";
+
+            return new MatchResult
+            {
+                Pairs = pairs,
+                UnmatchedDemand = unmatchedDemand,
+                UnmatchedSupply = unmatchedSupply,
+                TotalScore = pairs.Sum(p => p.Score),
+                Method = methodLabel,
+                Note = note
             };
         }
 
         /// <summary>
-        /// Pair score for MLP mode.
-        /// For feasible pairs: sum of sigmoid activations on the normalised excess in each
-        /// structural property (Length, Area, Iy, Iz for beams; Thickness [+Length] for plates).
-        /// Lower score = tighter fit = better match.
-        /// Infeasible pairs return a large sentinel value.
+        /// Local-search swaps: for each pair of currently packed demands, try swapping their
+        /// supplies if both remain feasible after swap and the total score strictly decreases.
+        /// Keeps the BFD skeleton, escapes bad local minima cheaply (O(n² · k) passes).
         /// </summary>
-        static double MlpPairScore(Element demand, Element supply)
+        static void LocalSearchImprove(
+            List<MatchPair> pairs,
+            double[,] weights,
+            bool[,] incidence,
+            PackingMode mode,
+            List<Element> demandElems,
+            List<Element> supplyElems)
         {
-            const double Inf = 2e18;
-            if (!CheckConstraints(demand, supply)) return Inf;
+            if (pairs.Count < 2) return;
 
-            if (demand is Beam dBeam && supply is Beam sBeam)
+            var demandIdxOf = new Dictionary<Element, int>(demandElems.Count);
+            for (int i = 0; i < demandElems.Count; i++) demandIdxOf[demandElems[i]] = i;
+            var supplyIdxOf = new Dictionary<Element, int>(supplyElems.Count);
+            for (int i = 0; i < supplyElems.Count; i++) supplyIdxOf[supplyElems[i]] = i;
+
+            bool improved = true;
+            int safety = 0;
+            while (improved && safety++ < 3)
             {
-                double dL  = Math.Max(dBeam.Length, 1e-9);
-                double dA  = Math.Max(dBeam.Section?.Area ?? 1e-9, 1e-9);
-                double dIy = Math.Max(dBeam.Section?.Iy   ?? 1e-9, 1e-9);
-                double dIz = Math.Max(dBeam.Section?.Iz   ?? 1e-9, 1e-9);
+                improved = false;
+                for (int a = 0; a < pairs.Count; a++)
+                {
+                    for (int b = a + 1; b < pairs.Count; b++)
+                    {
+                        var pa = pairs[a];
+                        var pb = pairs[b];
+                        int dA = demandIdxOf[pa.Demand];
+                        int dB = demandIdxOf[pb.Demand];
+                        int sA = supplyIdxOf[pa.Supply];
+                        int sB = supplyIdxOf[pb.Supply];
 
-                double eL  = (sBeam.Length              - dL)  / dL;
-                double eA  = ((sBeam.Section?.Area  ?? 0) - dA)  / dA;
-                double eIy = ((sBeam.Section?.Iy    ?? 0) - dIy) / dIy;
-                double eIz = ((sBeam.Section?.Iz    ?? 0) - dIz) / dIz;
+                        if (sA == sB) continue;
+                        if (!incidence[dA, sB] || !incidence[dB, sA]) continue;
 
-                return Sigmoid(eL) + Sigmoid(eA) + Sigmoid(eIy) + Sigmoid(eIz);
+                        double before = weights[dA, sA] + weights[dB, sB];
+                        double after = weights[dA, sB] + weights[dB, sA];
+                        if (after + 1e-12 < before)
+                        {
+                            pairs[a] = new MatchPair(pa.Demand, pb.Supply, weights[dA, sB]) { Placement = pa.Placement };
+                            pairs[b] = new MatchPair(pb.Demand, pa.Supply, weights[dB, sA]) { Placement = pb.Placement };
+                            improved = true;
+                        }
+                    }
+                }
             }
-
-            if (demand is Plate dPlate && supply is Plate sPlate)
-            {
-                double dT = Math.Max(dPlate.Section?.Thickness ?? 1e-9, 1e-9);
-                double eT = ((sPlate.Section?.Thickness ?? 0) - dT) / dT;
-                double score = Sigmoid(eT);
-
-                double dL = dPlate.Length;
-                double sL = sPlate.Length;
-                if (dL > 1e-9 && sL > 1e-9)
-                    score += Sigmoid((sL - dL) / dL);
-
-                return score;
-            }
-
-            return Inf;
         }
 
-        static double Sigmoid(double x) => 1.0 / (1.0 + Math.Exp(-x));
+        static PackingMode ResolvePackingMode(PackingMode mode, List<Element> dem, List<Element> sup)
+        {
+            if (mode != PackingMode.Auto) return mode;
+            bool allBeams = dem.All(e => e is Beam) && sup.All(e => e is Beam);
+            if (allBeams) return PackingMode.Length1D;
+            bool allPlates = dem.All(e => e is Plate) && sup.All(e => e is Plate);
+            if (allPlates) return PackingMode.Area2D;
+            return PackingMode.Bbox3D;
+        }
 
         /// <summary>
         /// Kuhn-Munkres / Hungarian algorithm, O(n³).

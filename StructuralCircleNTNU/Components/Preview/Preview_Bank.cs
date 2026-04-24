@@ -17,7 +17,7 @@ namespace StructuralCircleNTNU.Components.Preview
 
         public Preview_Bank()
             : base("Preview Bank", "PrevBank",
-                   "Lay out bank elements along +World Y: member along Y (axis notion in XY), cross-section shorter on X and longer on +Z, footprint in XY. Spacing uses each element's extent along Y plus optional Gap.",
+                   "Lay out bank elements along +World Y. Each element: member axis +Z, shorter section side on ±X, longer section side on ±Y. Spacing = Y-extent of preview box + optional Gap.",
                    "StructuralCircleNTNU", "Preview") { }
 
         public override Guid ComponentGuid => new Guid("8a531674-03b5-43d9-af82-8cad5f6e7b12");
@@ -91,8 +91,8 @@ namespace StructuralCircleNTNU.Components.Preview
                 if (showLabels)
                 {
                     _labels.Add(elem.Name ?? elem.Id.ToString());
-                    if (PreviewBankLayout.TryGetLayoutExtents(elem, out double lenY, out double dimZ))
-                        _labelPts.Add(PreviewBankLayout.GetLabelPoint(placement, lenY, dimZ));
+                    if (PreviewBankLayout.TryGetLayoutExtents(elem, out _, out double memberZ))
+                        _labelPts.Add(PreviewBankLayout.GetLabelPoint(placement, memberZ));
                     else
                         _labelPts.Add(placement);
                 }

@@ -11,7 +11,8 @@ namespace StructuralCircleNTNU.Components.Banks
     {
         public CreateSupplyBank_FromCSV()
           : base("Supply Bank (CSV)", "SBankCSV",
-              "Create a Supply Bank by reading beam/plate data from a CSV file",
+              "Create a Supply Bank by reading beam/plate data from a CSV file. " +
+              "Length unit (mm, cm, m) scales Width, Height, Length, Thickness to metres.",
               "StructuralCircleNTNU", "Banks")
         { }
 
@@ -19,6 +20,7 @@ namespace StructuralCircleNTNU.Components.Banks
         {
             pManager.AddTextParameter("FilePath", "F", "Path to CSV file", GH_ParamAccess.item);
             pManager.AddTextParameter("Type", "T", "Element type: 'Beam' or 'Plate'", GH_ParamAccess.item, "Beam");
+            pManager.AddTextParameter("Unit", "U", "Length unit of CSV geometry columns: mm, cm, or m (default m).", GH_ParamAccess.item, "m");
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
@@ -30,8 +32,10 @@ namespace StructuralCircleNTNU.Components.Banks
         {
             string filePath = "";
             string type = "Beam";
+            string unit = "m";
             DA.GetData(0, ref filePath);
             DA.GetData(1, ref type);
+            DA.GetData(2, ref unit);
 
             if (!File.Exists(filePath))
             {
@@ -39,7 +43,7 @@ namespace StructuralCircleNTNU.Components.Banks
                 return;
             }
 
-            var elements = CsvParser.ParseElements(filePath, type, this);
+            var elements = CsvParser.ParseElements(filePath, type, this, unit);
             if (elements == null) return;
 
             var bank = new SupplyBank(elements);

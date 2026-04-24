@@ -10,8 +10,8 @@ namespace StructuralCircleNTNU.Components.Preview
 {
     /// <summary>
     /// Visualises a MatchResult: demand elements in the left column, supply in the right column,
-    /// both laid out using the same canonical PreviewBankLayout (member along +Y, shorter
-    /// cross-section dim on ±X, longer on +Z). Matched pairs are connected with amber lines.
+    /// both laid out using the same canonical PreviewBankLayout (member along +Z, shorter
+    /// cross-section dim on ±X, longer on ±Y). Matched pairs are connected with amber lines.
     /// Color legend:
     ///   Blue   – matched demand
     ///   Red    – unmatched demand
@@ -32,7 +32,8 @@ namespace StructuralCircleNTNU.Components.Preview
         public Preview_MatchResult()
             : base("Preview Match Result", "PrevMatch",
                    "Visualise matching results: demand (left) and supply (right) side by side, " +
-                   "connected matched pairs with lines. " +
+                   "connected matched pairs with lines. Supplies with packed placements are drawn once; " +
+                   "match lines land on the cut offset inside each supply. " +
                    "Colour: blue=matched demand, red=unmatched demand, green=matched supply, grey=unmatched supply.",
                    "StructuralCircleNTNU", "Preview") { }
 
@@ -94,27 +95,60 @@ namespace StructuralCircleNTNU.Components.Preview
             var unmatchedSupply = result.UnmatchedSupply ?? new List<Element>();
             int nPairs          = pairs.Count;
 
-            // Matched elements first so index < nPairs means "matched" in the parallel lists.
+            // Matched demand in pair order, then unmatched (parallel list to _demandMatched).
             var allDemand = pairs.Select(p => p.Demand).Concat(unmatchedDemand).ToList();
-            var allSupply = pairs.Select(p => p.Supply).Concat(unmatchedSupply).ToList();
+
+            // Deduplicate supplies: one row per unique supply element (packing → many demand share one supply).
+            var uniqueMatchedSupply = new List<Element>();
+            var supplyRowOf         = new Dictionary<Element, int>();
+            foreach (var p in pairs)
+            {
+                if (p.Supply == null) continue;
+                if (!supplyRowOf.ContainsKey(p.Supply))
+                {
+                    supplyRowOf[p.Supply] = uniqueMatchedSupply.Count;
+                    uniqueMatchedSupply.Add(p.Supply);
+                }
+            }
+            var allSupply = uniqueMatchedSupply.Concat(unmatchedSupply).ToList();
+            int nMatchedSupply = uniqueMatchedSupply.Count;
 
             double demandX = origin.X;
             double supplyX = origin.X + colGap;
 
             var demandCenters = PlaceColumn(allDemand, demandX, origin.Y, origin.Z, elemGap,
-                                            showLabels, _demandGeoms, _labels, _labelPts);
+                                            showLabels, _demandGeoms, _labels, _labelPts,
+                                            out var demandRowStartY, out var demandMemberZ);
             for (int i = 0; i < allDemand.Count; i++)
                 _demandMatched.Add(i < nPairs);
 
             var supplyCenters = PlaceColumn(allSupply, supplyX, origin.Y, origin.Z, elemGap,
-                                            showLabels, _supplyGeoms, _labels, _labelPts);
+                                            showLabels, _supplyGeoms, _labels, _labelPts,
+                                            out var supplyRowStartY, out var supplyMemberZ);
             for (int i = 0; i < allSupply.Count; i++)
-                _supplyMatched.Add(i < nPairs);
+                _supplyMatched.Add(i < nMatchedSupply);
 
             for (int i = 0; i < nPairs; i++)
             {
-                if (i >= demandCenters.Count || i >= supplyCenters.Count) break;
-                _matchLines.Add(new Line(demandCenters[i], supplyCenters[i]));
+                if (i >= demandCenters.Count) break;
+                int supplyRow = supplyRowOf.TryGetValue(pairs[i].Supply, out var r) ? r : -1;
+                if (supplyRow < 0 || supplyRow >= supplyCenters.Count) continue;
+
+                Point3d dEnd = demandCenters[i];
+                Point3d sEnd = supplyCenters[supplyRow];
+
+                // Packed placement: shift the supply-side endpoint along the supply's +Z axis
+                // by the cut offset (the demand is placed starting at Placement.From.X inside the supply).
+                if (pairs[i].HasPlacement && supplyRow < supplyMemberZ.Count)
+                {
+                    double cutOffset = pairs[i].Placement.From.X;
+                    double cutLength = pairs[i].Placement.To.X - pairs[i].Placement.From.X;
+                    double supplyBaseZ = origin.Z;
+                    double zCenter = supplyBaseZ + cutOffset + 0.5 * Math.Max(cutLength, 0);
+                    sEnd = new Point3d(supplyX, supplyRowStartY[supplyRow], zCenter);
+                }
+
+                _matchLines.Add(new Line(dEnd, sEnd));
             }
 
             DA.SetDataList(0, _demandGeoms.Select(g => g));
@@ -125,7 +159,9 @@ namespace StructuralCircleNTNU.Components.Preview
         /// <summary>
         /// Builds one column of elements.
         /// Elements are stacked along +Y from (colX, startY, startZ).
-        /// Returns mid-point (centroid Y + half depthZ) for each element — used for line endpoints.
+        /// Returns a point on the member mid-height (centre in Z) at column X and row Y — for match lines.
+        /// <paramref name="rowStartYOut"/> and <paramref name="memberZOut"/> are parallel lists
+        /// with the Y cursor at row start and the member length along Z (used for packed placements).
         /// </summary>
         static List<Point3d> PlaceColumn(
             List<Element> elements,
@@ -133,9 +169,13 @@ namespace StructuralCircleNTNU.Components.Preview
             bool showLabels,
             List<GeometryBase> geomOut,
             List<string>       labelsOut,
-            List<Point3d>      labelPtsOut)
+            List<Point3d>      labelPtsOut,
+            out List<double>   rowStartYOut,
+            out List<double>   memberZOut)
         {
             var centers   = new List<Point3d>();
+            rowStartYOut  = new List<double>();
+            memberZOut    = new List<double>();
             double cursor = 0;
 
             foreach (var elem in elements)
@@ -152,16 +192,17 @@ namespace StructuralCircleNTNU.Components.Preview
                 else
                     geomOut.Add(null);
 
-                PreviewBankLayout.TryGetLayoutExtents(elem, out double lenY, out double dimZ);
+                PreviewBankLayout.TryGetLayoutExtents(elem, out _, out double memberZ);
                 double stride = PreviewBankLayout.GetStrideAlongY(elem);
 
-                // Line endpoint: horizontal face of element (X = colX, Y at mid-length, Z at mid-depth)
-                centers.Add(new Point3d(colX, startY + cursor + stride * 0.5, startZ + dimZ * 0.5));
+                rowStartYOut.Add(startY + cursor);
+                memberZOut.Add(memberZ);
+                centers.Add(new Point3d(colX, startY + cursor, startZ + 0.5 * memberZ));
 
                 if (showLabels)
                 {
                     labelsOut.Add(elem.Name ?? elem.Id.ToString());
-                    labelPtsOut.Add(PreviewBankLayout.GetLabelPoint(placement, lenY, dimZ));
+                    labelPtsOut.Add(PreviewBankLayout.GetLabelPoint(placement, memberZ));
                 }
 
                 cursor += stride + extraGap;

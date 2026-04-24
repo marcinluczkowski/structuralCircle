@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Rhino.Geometry;
 
 namespace StructuralCircleNTNU.Classes
 {
@@ -10,6 +11,18 @@ namespace StructuralCircleNTNU.Classes
         public Element Demand { get; set; }
         public Element Supply { get; set; }
         public double Score { get; set; }
+
+        /// <summary>
+        /// Optional placement of the demand element inside the supply (packing / cutting-stock).
+        /// 1D cutting stock → a line along the member axis, start at the cut offset, end at cut offset + demand length.
+        /// 2D shelf packing  → a line from (x0, y0, 0) to (x0 + demandWidth, y0 + demandHeight, 0).
+        /// 3D BBox packing   → a line from the min corner to the max corner of the demand BBox inside supply.
+        /// Line.Unset (default) when packing is not used (plain one-to-one match).
+        /// </summary>
+        public Line Placement { get; set; } = Line.Unset;
+
+        /// <summary>True when <see cref="Placement"/> encodes a packing position.</summary>
+        public bool HasPlacement => Placement.IsValid;
 
         public MatchPair(Element demand, Element supply, double score)
         {
@@ -20,7 +33,10 @@ namespace StructuralCircleNTNU.Classes
 
         public override string ToString()
         {
-            return $"{Demand.Name} -> {Supply.Name} (score: {Score:F4})";
+            string place = HasPlacement
+                ? $" @ [{Placement.FromX:F3}, {Placement.FromY:F3}, {Placement.FromZ:F3}]"
+                : "";
+            return $"{Demand.Name} -> {Supply.Name}{place} (score: {Score:F4})";
         }
     }
 

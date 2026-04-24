@@ -12,7 +12,7 @@ namespace StructuralCircleNTNU.Components.Banks
         public CreateDemandBank_FromMaterialList()
           : base("Demand Bank (Material List)", "DBankML",
               "Create a Demand Bank from a material-list CSV with columns:\n" +
-              "  MaterialType, Width [mm], Height [mm], Length [m], Quantity\n" +
+              "  MaterialType, Width, Height, Length, Quantity (all lengths in the chosen Unit, converted to m)\n" +
               "Element type (Beam / Plate) is inferred automatically:\n" +
               "  'Limtre', 'GL*'         → Beam\n" +
               "  'X-LAM', 'CLT', wide-W  → Plate\n" +
@@ -23,6 +23,7 @@ namespace StructuralCircleNTNU.Components.Banks
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
             pManager.AddTextParameter("FilePath", "F", "Path to material list CSV file", GH_ParamAccess.item);
+            pManager.AddTextParameter("Unit", "U", "Length unit of Width, Height, Length in CSV: mm, cm, or m (default mm).", GH_ParamAccess.item, "mm");
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
@@ -37,7 +38,9 @@ namespace StructuralCircleNTNU.Components.Banks
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             string filePath = "";
+            string unit = "mm";
             if (!DA.GetData(0, ref filePath)) return;
+            DA.GetData(1, ref unit);
 
             if (!File.Exists(filePath))
             {
@@ -45,7 +48,7 @@ namespace StructuralCircleNTNU.Components.Banks
                 return;
             }
 
-            var elements = CsvParser.ParseMaterialList(filePath, this);
+            var elements = CsvParser.ParseMaterialList(filePath, this, unit);
             if (elements == null) return;
 
             var bank   = new DemandBank(elements);

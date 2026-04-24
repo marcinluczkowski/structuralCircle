@@ -32,6 +32,9 @@ namespace StructuralCircleNTNU.Classes
         public double TotalScore { get; set; }
         public string Method { get; set; }
 
+        /// <summary>Optional note when matching was skipped, aborted, or not implemented.</summary>
+        public string Note { get; set; }
+
         public MatchResult()
         {
             Pairs = new List<MatchPair>();
@@ -43,6 +46,8 @@ namespace StructuralCircleNTNU.Classes
         {
             var sb = new StringBuilder();
             sb.AppendLine($"MatchResult ({Method}): {Pairs.Count} pairs, score={TotalScore:F4}");
+            if (!string.IsNullOrEmpty(Note))
+                sb.AppendLine($"  Note: {Note}");
             sb.AppendLine($"  Unmatched demand: {UnmatchedDemand.Count}, Unmatched supply: {UnmatchedSupply.Count}");
             foreach (var pair in Pairs)
                 sb.AppendLine($"  {pair}");

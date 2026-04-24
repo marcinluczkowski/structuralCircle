@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Grasshopper.Kernel;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Deconstructors
@@ -33,8 +34,17 @@ namespace StructuralCircleNTNU.Deconstructors
             object raw = null;
             if (!DA.GetData(0, ref raw)) return;
 
-            var bank = raw as SupplyBank;
-            if (bank == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input is not a SupplyBank."); return; }
+            var bank = GrasshopperUnpack.AsSupplyBank(raw);
+            if (bank == null)
+            {
+                if (GrasshopperUnpack.AsDemandBank(raw) != null)
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                        "Input is a DemandBank. Use the Deconstruct Demand Bank component.");
+                else
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                        "Input is not a SupplyBank (Grasshopper may wrap it; if the wire is correct, try re-internalizing the upstream component).");
+                return;
+            }
 
             DA.SetDataList(0, bank.Elements);
             DA.SetDataList(1, bank.Beams);

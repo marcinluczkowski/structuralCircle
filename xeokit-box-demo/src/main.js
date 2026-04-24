@@ -65,6 +65,7 @@ const materialSummary = document.getElementById("material-summary");
 const materialTableBody = document.getElementById("material-table-body");
 const ifcSummary = document.getElementById("ifc-summary");
 const ifcTableBody = document.getElementById("ifc-table-body");
+const openDemandBankWindowBtn = document.getElementById("open-demand-bank-window");
 const matchingPanel = document.getElementById("matching-panel");
 const matchingStatus = document.getElementById("matching-status");
 const matchingSummary = document.getElementById("matching-summary");
@@ -92,6 +93,12 @@ const bestCandidateByDemandId = new Map();
 
 /** @type {{ minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number } | null} */
 let sceneBounds = null;
+
+/** Max IFC demand rows listed in tables (same cap as before). */
+const IFC_DEMAND_TABLE_MAX_ROWS = 800;
+
+/** @type {Window | null} */
+let demandBankPopupWindow = null;
 
 /** @type {WebIFCLoaderPlugin | null} */
 let ifcLoader = null;
@@ -651,6 +658,262 @@ function buildIfcDemandFromModel() {
   return rows;
 }
 
+/**
+ * @returns
+ *   | { type: "status"; status: string }
+ *   | { type: "rows"; summary: [string, string][]; rows: typeof ifcDemandSizes }
+ */
+function getIfcDemandBankPresentation() {
+  if (!ifcModel) {
+    return { type: "status", status: "no ifc loaded" };
+  }
+  if (ifcDemandSizes.length === 0) {
+    return { type: "status", status: "no measurable objects found" };
+  }
+
+  const shown = Math.min(IFC_DEMAND_TABLE_MAX_ROWS, ifcDemandSizes.length);
+  const slice = ifcDemandSizes.slice(0, shown);
+
+  let totalVolume = 0;
+  let sumLength = 0;
+  let minL = Infinity;
+  let maxL = -Infinity;
+  let minVol = Infinity;
+  let maxVol = -Infinity;
+  for (const row of slice) {
+    totalVolume += row.vol;
+    sumLength += row.l;
+    minL = Math.min(minL, row.l);
+    maxL = Math.max(maxL, row.l);
+    minVol = Math.min(minVol, row.vol);
+    maxVol = Math.max(maxVol, row.vol);
+  }
+
+  const summary = /** @type {[string, string][]} */ ([
+    ["elements (visible)", `${shown} / ${ifcDemandSizes.length}`],
+    ["total volume", fmtM3(totalVolume)],
+    ["Σ length (L)", fmtM(sumLength)],
+    ["length L (min → max)", `${fmtM(minL)} → ${fmtM(maxL)}`],
+    ["single volume (min → max)", `${fmtM3(minVol)} → ${fmtM3(maxVol)}`],
+    ["row span (X incl. gaps)", "—"],
+  ]);
+
+  return { type: "rows", summary, rows: slice };
+}
+
+/**
+ * @param {HTMLElement} summaryEl
+ * @param {HTMLTableSectionElement} tbodyEl
+ * @param {ReturnType<typeof getIfcDemandBankPresentation>} presentation
+ */
+function renderDemandBankIntoDom(summaryEl, tbodyEl, presentation) {
+  clearEl(summaryEl);
+  tbodyEl.replaceChildren();
+
+  if (presentation.type === "status") {
+    appendSummaryRow(summaryEl, "status", presentation.status);
+    return;
+  }
+
+  for (const [label, value] of presentation.summary) {
+    appendSummaryRow(summaryEl, label, value);
+  }
+
+  for (let i = 0; i < presentation.rows.length; i++) {
+    const { id, type, name, w, h, l, vol } = presentation.rows[i];
+    const tr = document.createElement("tr");
+    tr.dataset.objectId = id;
+    tr.title = `${type} · ${name}`;
+    for (const text of [
+      String(i + 1),
+      w.toFixed(2),
+      h.toFixed(2),
+      l.toFixed(2),
+      vol.toFixed(3),
+    ]) {
+      const td = document.createElement("td");
+      td.textContent = text;
+      tr.appendChild(td);
+    }
+    tbodyEl.appendChild(tr);
+  }
+}
+
+function syncDemandBankPopup() {
+  if (!demandBankPopupWindow || demandBankPopupWindow.closed) {
+    demandBankPopupWindow = null;
+    return;
+  }
+  const doc = demandBankPopupWindow.document;
+  const summaryEl = doc.getElementById("demand-bank-summary");
+  const tbodyEl = doc.getElementById("demand-bank-tbody");
+  if (!summaryEl || !tbodyEl) return;
+  renderDemandBankIntoDom(summaryEl, tbodyEl, getIfcDemandBankPresentation());
+}
+
+function openDemandBankWindow() {
+  if (demandBankPopupWindow && !demandBankPopupWindow.closed) {
+    demandBankPopupWindow.focus();
+    syncDemandBankPopup();
+    return;
+  }
+
+  demandBankPopupWindow = window.open(
+    "",
+    "xeokitDemandBank",
+    "width=560,height=720,scrollbars=yes,resizable=yes",
+  );
+  if (!demandBankPopupWindow) {
+    setStatus("Could not open window (popup blocked?).");
+    return;
+  }
+
+  const popupCss = `
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: #e8eef5;
+      background: #0f1419;
+      padding: 1rem 1.1rem 1.25rem;
+    }
+    .title {
+      margin: 0 0 0.35rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-transform: lowercase;
+      letter-spacing: 0.02em;
+      color: #d4e4f4;
+    }
+    .hint {
+      margin: 0 0 0.75rem;
+      font-size: 0.72rem;
+      line-height: 1.35;
+      color: #8aa8c4;
+    }
+    .summary {
+      margin: 0 0 0.75rem;
+      display: grid;
+      gap: 0.45rem 0.75rem;
+      grid-template-columns: auto 1fr;
+      font-size: 0.78rem;
+    }
+    .summary dt { margin: 0; color: #8aa8c4; text-transform: lowercase; }
+    .summary dd {
+      margin: 0;
+      font-variant-numeric: tabular-nums;
+      color: #e8eef5;
+      text-align: right;
+    }
+    .table-head {
+      font-size: 0.72rem;
+      text-transform: lowercase;
+      color: #8aa8c4;
+      margin-bottom: 0.35rem;
+    }
+    .table-wrap {
+      max-height: calc(100vh - 12rem);
+      overflow: auto;
+      border: 1px solid #2a3a50;
+      border-radius: 6px;
+      background: #0f1419;
+    }
+    .tbl {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .tbl th, .tbl td {
+      padding: 0.35rem 0.45rem;
+      text-align: right;
+      border-bottom: 1px solid #243044;
+    }
+    .tbl th:first-child, .tbl td:first-child {
+      text-align: left;
+      position: sticky;
+      left: 0;
+      background: #0f1419;
+      box-shadow: 1px 0 0 #243044;
+    }
+    .tbl thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #1a2332;
+      color: #9ecae8;
+      font-weight: 600;
+      text-transform: lowercase;
+    }
+    .tbl tbody tr:hover td { background: #151d2a; }
+    .tbl tbody tr { cursor: pointer; }
+  `;
+
+  const w = demandBankPopupWindow;
+  const d = w.document;
+  d.open();
+  d.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Demand bank (ifc)</title>
+<style>${popupCss}</style>
+</head>
+<body>
+  <h1 class="title">demand bank (ifc)</h1>
+  <p class="hint">same summary and columns as material bank · click a row to select that object in the main viewer</p>
+  <dl id="demand-bank-summary" class="summary"></dl>
+  <div class="table-head">visible elements · W, H, L in m · vol in m³</div>
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead><tr><th>#</th><th>W</th><th>H</th><th>L</th><th>vol</th></tr></thead>
+      <tbody id="demand-bank-tbody"></tbody>
+    </table>
+  </div>
+  <script>
+  (function () {
+    var tbody = document.getElementById("demand-bank-tbody");
+    if (!tbody) return;
+    tbody.addEventListener("click", function (e) {
+      var tr = e.target.closest("tr");
+      var id = tr && tr.getAttribute("data-object-id");
+      if (id && window.opener && typeof window.opener.__xeokitActivateDemandRow === "function") {
+        window.opener.__xeokitActivateDemandRow(id);
+      }
+    });
+  })();
+  <\/script>
+</body>
+</html>`);
+  d.close();
+  syncDemandBankPopup();
+}
+
+function onIfcDemandRowActivate(objectId) {
+  if (!objectId) return;
+
+  if (previewMode === "matching") {
+    selectDemandForMatching(objectId);
+    return;
+  }
+
+  if (ifcModel) setPreviewMode("building");
+  clearMaterialHighlight();
+  clearIfcHighlight();
+
+  const entity = viewer.scene.objects?.[objectId];
+  if (!entity) {
+    setStatus(`IFC object not found in scene: ${objectId}`);
+    return;
+  }
+  selectedIfcObjectId = objectId;
+  entity.highlighted = true;
+  flyToAABB(entity.aabb);
+}
+
+window.__xeokitActivateDemandRow = onIfcDemandRowActivate;
+
 function renderMaterialTable() {
   if (!materialSummary || !materialTableBody) return;
   clearEl(materialSummary);
@@ -726,56 +989,8 @@ function renderMaterialTable() {
 
 function renderIfcTable() {
   if (!ifcSummary || !ifcTableBody) return;
-  clearEl(ifcSummary);
-  ifcTableBody.replaceChildren();
-
-  if (!ifcModel) {
-    appendSummaryRow(ifcSummary, "status", "no ifc loaded");
-    return;
-  }
-
-  if (ifcDemandSizes.length === 0) {
-    appendSummaryRow(ifcSummary, "status", "no measurable objects found");
-    return;
-  }
-
-  let totalVolume = 0;
-  let sumLength = 0;
-  let minL = Infinity;
-  let maxL = -Infinity;
-  for (const row of ifcDemandSizes) {
-    totalVolume += row.vol;
-    sumLength += row.l;
-    minL = Math.min(minL, row.l);
-    maxL = Math.max(maxL, row.l);
-  }
-
-  appendSummaryRow(ifcSummary, "objects", String(ifcDemandSizes.length));
-  appendSummaryRow(ifcSummary, "total volume", fmtM3(totalVolume));
-  appendSummaryRow(ifcSummary, "Σ length (L)", fmtM(sumLength));
-  appendSummaryRow(ifcSummary, "length L (min → max)", `${fmtM(minL)} → ${fmtM(maxL)}`);
-  const maxRows = 800;
-  const shownRows = Math.min(maxRows, ifcDemandSizes.length);
-  appendSummaryRow(ifcSummary, "shown in table", `${shownRows} / ${ifcDemandSizes.length}`);
-
-  for (let i = 0; i < shownRows; i++) {
-    const { id, type, name, w, h, l, vol } = ifcDemandSizes[i];
-    const tr = document.createElement("tr");
-    tr.dataset.objectId = id;
-    tr.title = `${type} · ${name}`;
-    for (const text of [
-      String(i + 1),
-      w.toFixed(2),
-      h.toFixed(2),
-      l.toFixed(2),
-      vol.toFixed(3),
-    ]) {
-      const td = document.createElement("td");
-      td.textContent = text;
-      tr.appendChild(td);
-    }
-    ifcTableBody.appendChild(tr);
-  }
+  renderDemandBankIntoDom(ifcSummary, ifcTableBody, getIfcDemandBankPresentation());
+  syncDemandBankPopup();
 }
 
 function renderDashboard() {
@@ -1257,26 +1472,10 @@ ifcTableBody?.addEventListener("click", (event) => {
   const row = event.target instanceof Element ? event.target.closest("tr") : null;
   if (!row) return;
   const objectId = row.dataset.objectId;
-  if (!objectId) return;
-
-  if (previewMode === "matching") {
-    selectDemandForMatching(objectId);
-    return;
-  }
-
-  if (ifcModel) setPreviewMode("building");
-  clearMaterialHighlight();
-  clearIfcHighlight();
-
-  const entity = viewer.scene.objects?.[objectId];
-  if (!entity) {
-    setStatus(`IFC object not found in scene: ${objectId}`);
-    return;
-  }
-  selectedIfcObjectId = objectId;
-  entity.highlighted = true;
-  flyToAABB(entity.aabb);
+  onIfcDemandRowActivate(objectId);
 });
+
+openDemandBankWindowBtn?.addEventListener("click", () => openDemandBankWindow());
 
 dropZoneCsv.addEventListener("dragover", (ev) => {
   ev.preventDefault();

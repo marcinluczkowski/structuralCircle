@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Grasshopper.Kernel;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Components
@@ -47,11 +48,13 @@ namespace StructuralCircleNTNU.Components
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            SupplyBank supply = null;
-            DemandBank demand = null;
+            object rawSupply = null;
+            object rawDemand = null;
+            if (!DA.GetData(0, ref rawSupply)) return;
+            if (!DA.GetData(1, ref rawDemand)) return;
 
-            if (!DA.GetData(0, ref supply)) return;
-            if (!DA.GetData(1, ref demand)) return;
+            var supply = GrasshopperUnpack.AsSupplyBank(rawSupply);
+            var demand = GrasshopperUnpack.AsDemandBank(rawDemand);
 
             int mode = 1;
             DA.GetData(2, ref mode);

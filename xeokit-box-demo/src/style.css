@@ -139,6 +139,20 @@ body {
   margin-top: 0.75rem;
 }
 
+.analysis-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.analysis-card__head .analysis-card__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
 .analysis-card__title {
   margin: 0 0 0.5rem;
   font-size: 0.78rem;
@@ -395,6 +409,12 @@ body {
 
 .btn-clear:hover {
   background: #354c6a;
+}
+
+.btn-clear--compact {
+  padding: 0.28rem 0.55rem;
+  font-size: 0.68rem;
+  flex-shrink: 0;
 }
 
 .status {

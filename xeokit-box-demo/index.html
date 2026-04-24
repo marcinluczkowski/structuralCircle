@@ -84,10 +84,15 @@
           </div>
         </section>
         <section class="analysis-card" aria-label="Demand bank analysis from IFC">
-          <h3 class="analysis-card__title">demand bank (ifc)</h3>
+          <div class="analysis-card__head">
+            <h3 class="analysis-card__title">demand bank (ifc)</h3>
+            <button type="button" id="open-demand-bank-window" class="btn-clear btn-clear--compact">
+              new window…
+            </button>
+          </div>
           <dl id="ifc-summary" class="dashboard-summary"></dl>
           <div class="dashboard__table-head">
-            <span>ifc objects · W, H, L in m · vol in m³</span>
+            <span>visible elements · W, H, L in m · vol in m³</span>
           </div>
           <div class="dashboard__table-wrap">
             <table class="dashboard-table">

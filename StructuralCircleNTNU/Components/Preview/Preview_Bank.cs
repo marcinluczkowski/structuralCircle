@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Components.Preview
@@ -16,7 +17,7 @@ namespace StructuralCircleNTNU.Components.Preview
 
         public Preview_Bank()
             : base("Preview Bank", "PrevBank",
-                   "Lay out all elements from a SupplyBank or DemandBank along the X-axis.",
+                   "Lay out bank elements along +World Y: member along Y (axis notion in XY), cross-section shorter on X and longer on +Z, footprint in XY. Spacing uses each element's extent along Y plus optional Gap.",
                    "StructuralCircleNTNU", "Preview") { }
 
         public override Guid ComponentGuid => new Guid("8a531674-03b5-43d9-af82-8cad5f6e7b12");
@@ -25,9 +26,9 @@ namespace StructuralCircleNTNU.Components.Preview
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Bank",      "Bank",    "SupplyBank or DemandBank.",     GH_ParamAccess.item);
-            pManager.AddPointParameter  ("Origin",    "Pt",      "Start insertion point.",         GH_ParamAccess.item);
-            pManager.AddNumberParameter ("SpacingX",  "dX",      "Spacing between elements (m).",  GH_ParamAccess.item);
-            pManager.AddBooleanParameter("ShowLabels","Labels",   "Show element name labels.",      GH_ParamAccess.item);
+            pManager.AddPointParameter  ("Origin",    "Pt",      "Layout origin (start of first element along Y).", GH_ParamAccess.item);
+            pManager.AddNumberParameter ("Gap",       "Gap",     "Extra distance (m) added after each element's Y-stride (bbox-based). Default 0.", GH_ParamAccess.item, 0.0);
+            pManager.AddBooleanParameter("ShowLabels","Labels",  "Show element name labels.",      GH_ParamAccess.item);
 
             pManager[1].Optional = true;
             pManager[2].Optional = true;
@@ -49,42 +50,57 @@ namespace StructuralCircleNTNU.Components.Preview
             object raw = null;
             if (!DA.GetData(0, ref raw)) return;
 
-            var origin   = Point3d.Origin;
-            var spacingX = 0.5;
+            var origin = Point3d.Origin;
+            var gap = 0.0;
             var showLabels = true;
             DA.GetData(1, ref origin);
-            DA.GetData(2, ref spacingX);
+            DA.GetData(2, ref gap);
             DA.GetData(3, ref showLabels);
 
             List<Element> elements = null;
-            if (raw is SupplyBank supply) elements = supply.Elements;
-            else if (raw is DemandBank demand) elements = demand.Elements;
-            else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input must be a SupplyBank or DemandBank."); return; }
+            var supplyBank = GrasshopperUnpack.AsSupplyBank(raw);
+            var demandBank = GrasshopperUnpack.AsDemandBank(raw);
+            if (supplyBank != null) elements = supplyBank.Elements;
+            else if (demandBank != null) elements = demandBank.Elements;
+            else
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input must be a SupplyBank or DemandBank.");
+                return;
+            }
 
-            double cursorX = origin.X;
+            double cursorY = 0;
 
             foreach (var elem in elements)
             {
-                var pt   = new Point3d(cursorX, origin.Y, origin.Z);
-                var geom = GeometryBuilder.BuildElementGeometry(elem, pt);
-                _geometries.Add(geom);
+                var placement = new Point3d(origin.X, origin.Y + cursorY, origin.Z);
+                var geom = PreviewBankLayout.BuildGeometry(elem);
+                if (geom != null)
+                {
+                    var dup = geom.Duplicate();
+                    dup.Transform(Transform.Translation(new Vector3d(placement)));
+                    _geometries.Add(dup);
+                }
+                else
+                    _geometries.Add(null);
+
                 _isBeam.Add(elem is Beam);
+
+                double strideY = PreviewBankLayout.GetStrideAlongY(elem);
+                cursorY += strideY + gap;
 
                 if (showLabels)
                 {
                     _labels.Add(elem.Name ?? elem.Id.ToString());
-                    _labelPts.Add(GeometryBuilder.LabelPoint(elem, pt));
+                    if (PreviewBankLayout.TryGetLayoutExtents(elem, out double lenY, out double dimZ))
+                        _labelPts.Add(PreviewBankLayout.GetLabelPoint(placement, lenY, dimZ));
+                    else
+                        _labelPts.Add(placement);
                 }
                 else
                 {
                     _labels.Add(null);
                     _labelPts.Add(Point3d.Unset);
                 }
-
-                double elemLen = elem is Beam b ? b.Length
-                               : elem is Plate p ? p.Length
-                               : 0;
-                cursorX += elemLen + spacingX;
             }
 
             var output = new List<GeometryBase>();

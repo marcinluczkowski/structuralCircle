@@ -296,18 +296,181 @@ namespace StructuralCircleNTNU.Classes
             return m;
         }
 
-        /// <summary>Placeholder for future MLP-based matching.</summary>
+        /// <summary>
+        /// MLP-inspired matching: feature-based pair scoring (normalised excess ratios through sigmoid
+        /// activations — mimicking the output layer of a trained MLP) combined with the Hungarian
+        /// algorithm for globally optimal assignment.
+        /// Reference: Luczkowski et al., "Matching reclaimed structural members", IOP Environ. Res.
+        /// Infrastruct. Sustain. 3 (2023).
+        /// </summary>
         public static MatchResult MlpMatch(DemandBank demand, SupplyBank supply)
         {
+            var demandElems = demand.Elements;
+            var supplyElems = supply.Elements;
+            int nD = demandElems.Count;
+            int nS = supplyElems.Count;
+
+            if (nD == 0)
+            {
+                return new MatchResult
+                {
+                    UnmatchedSupply = new List<Element>(supplyElems),
+                    TotalScore = 0,
+                    Method = "MLP"
+                };
+            }
+
+            double[,] scoreMtx = new double[nD, nS];
+            for (int d = 0; d < nD; d++)
+                for (int s = 0; s < nS; s++)
+                    scoreMtx[d, s] = MlpPairScore(demandElems[d], supplyElems[s]);
+
+            int[] assignment = RunHungarian(scoreMtx, nD, nS);
+
+            const double InfThreshold = 1e17;
+            var pairs = new List<MatchPair>();
+            var unmatchedDemand = new List<Element>();
+            var usedSupply = new bool[nS];
+
+            for (int d = 0; d < nD; d++)
+            {
+                int s = assignment[d];
+                if (s >= 0 && scoreMtx[d, s] < InfThreshold)
+                {
+                    pairs.Add(new MatchPair(demandElems[d], supplyElems[s], scoreMtx[d, s]));
+                    usedSupply[s] = true;
+                }
+                else
+                    unmatchedDemand.Add(demandElems[d]);
+            }
+
+            var unmatchedSupply = supplyElems.Where((_, i) => !usedSupply[i]).ToList();
+
             return new MatchResult
             {
-                Pairs = new List<MatchPair>(),
-                UnmatchedDemand = new List<Element>(demand.Elements),
-                UnmatchedSupply = new List<Element>(supply.Elements),
-                TotalScore = 0,
+                Pairs = pairs,
+                UnmatchedDemand = unmatchedDemand,
+                UnmatchedSupply = unmatchedSupply,
+                TotalScore = pairs.Sum(p => p.Score),
                 Method = "MLP",
-                Note = "MLP matching is not implemented yet. Use mode 0 (Greedy) or 1 (BruteForce)."
+                Note = "Feature-based MLP scoring (sigmoid of normalised excess ratios) + Hungarian optimal assignment."
             };
+        }
+
+        /// <summary>
+        /// Pair score for MLP mode.
+        /// For feasible pairs: sum of sigmoid activations on the normalised excess in each
+        /// structural property (Length, Area, Iy, Iz for beams; Thickness [+Length] for plates).
+        /// Lower score = tighter fit = better match.
+        /// Infeasible pairs return a large sentinel value.
+        /// </summary>
+        static double MlpPairScore(Element demand, Element supply)
+        {
+            const double Inf = 2e18;
+            if (!CheckConstraints(demand, supply)) return Inf;
+
+            if (demand is Beam dBeam && supply is Beam sBeam)
+            {
+                double dL  = Math.Max(dBeam.Length, 1e-9);
+                double dA  = Math.Max(dBeam.Section?.Area ?? 1e-9, 1e-9);
+                double dIy = Math.Max(dBeam.Section?.Iy   ?? 1e-9, 1e-9);
+                double dIz = Math.Max(dBeam.Section?.Iz   ?? 1e-9, 1e-9);
+
+                double eL  = (sBeam.Length              - dL)  / dL;
+                double eA  = ((sBeam.Section?.Area  ?? 0) - dA)  / dA;
+                double eIy = ((sBeam.Section?.Iy    ?? 0) - dIy) / dIy;
+                double eIz = ((sBeam.Section?.Iz    ?? 0) - dIz) / dIz;
+
+                return Sigmoid(eL) + Sigmoid(eA) + Sigmoid(eIy) + Sigmoid(eIz);
+            }
+
+            if (demand is Plate dPlate && supply is Plate sPlate)
+            {
+                double dT = Math.Max(dPlate.Section?.Thickness ?? 1e-9, 1e-9);
+                double eT = ((sPlate.Section?.Thickness ?? 0) - dT) / dT;
+                double score = Sigmoid(eT);
+
+                double dL = dPlate.Length;
+                double sL = sPlate.Length;
+                if (dL > 1e-9 && sL > 1e-9)
+                    score += Sigmoid((sL - dL) / dL);
+
+                return score;
+            }
+
+            return Inf;
+        }
+
+        static double Sigmoid(double x) => 1.0 / (1.0 + Math.Exp(-x));
+
+        /// <summary>
+        /// Kuhn-Munkres / Hungarian algorithm, O(n³).
+        /// Returns assignment[d] = s (0-based), or -1 if demand d is left unmatched.
+        /// Cost matrix is padded to square with a large sentinel when nD ≠ nS.
+        /// Assignments to the padded dummy columns are treated as "unmatched".
+        /// </summary>
+        static int[] RunHungarian(double[,] cost, int nD, int nS)
+        {
+            const double INF = 2e18;
+            int n = Math.Max(nD, nS);
+
+            double[] u   = new double[n + 1];
+            double[] v   = new double[n + 1];
+            int[]    p   = new int[n + 1];
+            int[]    way = new int[n + 1];
+
+            for (int i = 1; i <= n; i++)
+            {
+                p[0] = i;
+                int j0 = 0;
+                var minv = new double[n + 1];
+                for (int k = 0; k <= n; k++) minv[k] = INF;
+                var used = new bool[n + 1];
+
+                do
+                {
+                    used[j0] = true;
+                    int i0 = p[j0];
+                    double delta = INF;
+                    int j1 = 0;
+
+                    for (int j = 1; j <= n; j++)
+                    {
+                        if (used[j]) continue;
+                        int ri = i0 - 1, ci = j - 1;
+                        double c = (ri < nD && ci < nS) ? cost[ri, ci] : INF;
+                        double r = c - u[i0] - v[j];
+                        if (r < minv[j]) { minv[j] = r; way[j] = j0; }
+                        if (minv[j] < delta) { delta = minv[j]; j1 = j; }
+                    }
+
+                    for (int j = 0; j <= n; j++)
+                    {
+                        if (used[j]) { u[p[j]] += delta; v[j] -= delta; }
+                        else minv[j] -= delta;
+                    }
+                    j0 = j1;
+                }
+                while (p[j0] != 0);
+
+                do { int j1 = way[j0]; p[j0] = p[j1]; j0 = j1; }
+                while (j0 != 0);
+            }
+
+            int[] assign = new int[nD];
+            for (int d = 0; d < nD; d++) assign[d] = -1;
+
+            for (int j = 1; j <= nS; j++)
+            {
+                int row = p[j];
+                if (row < 1 || row > nD) continue;
+                int d = row - 1;
+                int s = j - 1;
+                if (cost[d, s] < INF / 2)
+                    assign[d] = s;
+            }
+
+            return assign;
         }
 
         /// <summary>

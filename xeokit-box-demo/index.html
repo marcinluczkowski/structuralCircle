@@ -49,6 +49,7 @@
           </button>
           <button type="button" id="preview-building" class="toggle-btn">building (ifc)</button>
           <button type="button" id="preview-matching" class="toggle-btn">matching</button>
+          <button type="button" id="preview-results" class="toggle-btn">results</button>
         </div>
         <div class="btn-row">
           <button type="button" id="zoom-extents" class="btn-clear">zoom extents</button>
@@ -60,8 +61,9 @@
 
     <div class="content-row">
       <aside class="dashboard" aria-label="Element analysis">
-        <h2 class="dashboard__title">analysis</h2>
+        <h2 id="left-panel-title" class="dashboard__title">analysis</h2>
         <p id="dashboard-context" class="dashboard__context"></p>
+        <div id="left-panel-default" class="left-panel-default">
         <section class="analysis-card" aria-label="Material bank analysis">
           <h3 class="analysis-card__title">material bank</h3>
           <dl id="material-summary" class="dashboard-summary"></dl>
@@ -104,44 +106,74 @@
             </table>
           </div>
         </section>
+        </div>
+        <div id="left-panel-results" class="left-panel-results" hidden>
+          <p class="dashboard__context left-panel-results__text">
+            Use the matching properties panel on the right to choose how demand and supply are analyzed. The canvas shows
+            the connection view.
+          </p>
+        </div>
       </aside>
       <div class="main-column">
         <div class="viewport-header">preview</div>
         <main class="viewport">
           <canvas id="xeokit_canvas"></canvas>
+          <div id="results-canvas" class="results-canvas" hidden></div>
           <div id="hover-info" class="hover-info" hidden></div>
           <div class="viewer-version">Version_0.3</div>
         </main>
       </div>
       <aside id="matching-panel" class="matching-panel" aria-label="Matching candidates">
-        <h2 class="dashboard__title">matching v0.3</h2>
-        <p id="matching-status" class="dashboard__context">
-          Select matching mode, then click an IFC element in the viewer.
-        </p>
-        <dl id="matching-summary" class="dashboard-summary"></dl>
-        <div class="dashboard__table-head">
-          <span>candidate length lines (right-aligned)</span>
+        <h2 id="right-panel-title" class="dashboard__title">matching v0.3</h2>
+        <div id="right-panel-matching" class="right-panel-matching">
+          <p id="matching-status" class="dashboard__context">
+            Select matching mode, then click an IFC element in the viewer.
+          </p>
+          <dl id="matching-summary" class="dashboard-summary"></dl>
+          <div class="dashboard__table-head">
+            <span>candidate length lines (right-aligned)</span>
+          </div>
+          <div id="matching-viz" class="matching-viz"></div>
+          <div class="dashboard__table-head">
+            <span>available material elements for selected demand element</span>
+          </div>
+          <div class="dashboard__table-wrap">
+            <table class="dashboard-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>mat#</th>
+                  <th>W</th>
+                  <th>H</th>
+                  <th>L</th>
+                  <th>score</th>
+                  <th>Δvol%</th>
+                  <th>waste</th>
+                </tr>
+              </thead>
+              <tbody id="matching-table-body"></tbody>
+            </table>
+          </div>
         </div>
-        <div id="matching-viz" class="matching-viz"></div>
-        <div class="dashboard__table-head">
-          <span>available material elements for selected demand element</span>
-        </div>
-        <div class="dashboard__table-wrap">
-          <table class="dashboard-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>mat#</th>
-                <th>W</th>
-                <th>H</th>
-                <th>L</th>
-                <th>score</th>
-                <th>Δvol%</th>
-                <th>waste</th>
-              </tr>
-            </thead>
-            <tbody id="matching-table-body"></tbody>
-          </table>
+        <div id="right-panel-results" class="right-panel-results" hidden>
+          <h3 class="analysis-card__title">matching properties</h3>
+          <p class="dashboard__context">
+            Choose how the results canvas connects demand (IFC) to supply (CSV).
+          </p>
+          <div class="results-alg" role="group" aria-label="Result matching algorithm">
+            <button type="button" class="results-alg__btn" data-results-alg="all_pairs" title="Draw every (demand, supply) edge where the supply can cover the demand">
+              all feasible pair connections
+            </button>
+            <button
+              type="button"
+              class="results-alg__btn"
+              data-results-alg="greedy_unique"
+              title="Greedily pick at most one supply per demand and one demand per supply, preferring best score"
+            >
+              greedy one-to-one combination
+            </button>
+          </div>
+          <p id="results-alg-hint" class="dashboard__context results-alg__hint"></p>
         </div>
       </aside>
     </div>

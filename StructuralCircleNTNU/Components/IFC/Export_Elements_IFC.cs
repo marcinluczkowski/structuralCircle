@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Grasshopper.Kernel;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Components.IFC
@@ -61,7 +62,8 @@ namespace StructuralCircleNTNU.Components.IFC
             var elements = new List<Element>();
             foreach (var r in rawList)
             {
-                if (r is Element e) elements.Add(e);
+                var e = GrasshopperUnpack.AsElement(r);
+                if (e != null) elements.Add(e);
             }
 
             if (elements.Count == 0)

@@ -7,14 +7,14 @@ using StructuralCircleNTNU.Classes;
 namespace StructuralCircleNTNU.Components.Constructors
 {
     /// <summary>
-    /// Builds a <see cref="Beam"/> or <see cref="Plate"/> from a solid Brep: PCA axis, PCA-aligned box extents,
-    /// automatic beam vs plate classification. Material must be supplied; geometry is taken from the Brep.
+    /// Builds a <see cref="Beam"/> or <see cref="Plate"/> from a solid Brep: PCA axis, cross-section from perpendicular
+    /// plane cuts (25/50/75% along axis) with OBB fallback, automatic beam vs plate classification. Dimensions to 4 decimals.
     /// </summary>
     public class Construct_Element_FromBrep : GH_Component
     {
         public Construct_Element_FromBrep()
             : base("Element from Brep", "ElemBrep",
-                   "Create a Beam or Plate from a Brep using PCA axis, oriented bounding-box dimensions, and auto classification.",
+                   "Create a Beam or Plate from a Brep using PCA axis, plane-cut cross-section (OBB fallback), four-decimal dimensions.",
                    "StructuralCircleNTNU", "Construct")
         { }
 
@@ -32,9 +32,9 @@ namespace StructuralCircleNTNU.Components.Constructors
             pManager.AddGenericParameter("Element", "Elem", "Beam or Plate element.",           GH_ParamAccess.item);
             pManager.AddTextParameter   ("Type",    "T",    "Beam or Plate.",                   GH_ParamAccess.item);
             pManager.AddLineParameter   ("Axis",    "Ax",   "PCA structural axis.",             GH_ParamAccess.item);
-            pManager.AddNumberParameter ("Length",  "L",    "Length along PCA axis (m).",       GH_ParamAccess.item);
-            pManager.AddNumberParameter ("Dim1",    "D1",   "OBB extent along 2nd axis (m).",   GH_ParamAccess.item);
-            pManager.AddNumberParameter ("Dim2",    "D2",   "OBB extent along 3rd axis (m).",   GH_ParamAccess.item);
+            pManager.AddNumberParameter ("Length",  "L",    "Length along PCA axis (m, 4 d.p.).", GH_ParamAccess.item);
+            pManager.AddNumberParameter ("Dim1",    "D1",   "Section width from plane cuts (m, 4 d.p.); OBB if cuts failed.", GH_ParamAccess.item);
+            pManager.AddNumberParameter ("Dim2",    "D2",   "Section height from plane cuts (m, 4 d.p.); OBB if cuts failed.", GH_ParamAccess.item);
             pManager.AddTextParameter   ("Report",  "Info", "Summary of analysis.",             GH_ParamAccess.item);
         }
 

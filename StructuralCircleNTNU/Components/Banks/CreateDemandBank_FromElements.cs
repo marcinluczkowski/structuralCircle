@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Grasshopper.Kernel;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Components.Banks
@@ -25,8 +26,21 @@ namespace StructuralCircleNTNU.Components.Banks
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            var rawList = new List<object>();
+            if (!DA.GetDataList(0, rawList)) return;
+
             var elements = new List<Element>();
-            if (!DA.GetDataList(0, elements)) return;
+            foreach (var r in rawList)
+            {
+                var e = GrasshopperUnpack.AsElement(r);
+                if (e != null) elements.Add(e);
+            }
+
+            if (elements.Count == 0)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No valid elements in list.");
+                return;
+            }
 
             var bank = new DemandBank(elements);
             DA.SetData(0, bank);

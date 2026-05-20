@@ -1,5 +1,6 @@
 using System;
 using Grasshopper.Kernel;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Deconstructors
@@ -30,7 +31,7 @@ namespace StructuralCircleNTNU.Deconstructors
             object raw = null;
             if (!DA.GetData(0, ref raw)) return;
 
-            var mat = raw as Material;
+            var mat = GrasshopperUnpack.AsMaterial(raw);
             if (mat == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input is not a Material."); return; }
 
             DA.SetData(0, mat.Id);

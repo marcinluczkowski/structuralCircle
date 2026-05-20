@@ -1,6 +1,7 @@
 using System;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Deconstructors
@@ -37,7 +38,7 @@ namespace StructuralCircleNTNU.Deconstructors
             object raw = null;
             if (!DA.GetData(0, ref raw)) return;
 
-            var beam = raw as Beam;
+            var beam = GrasshopperUnpack.AsBeam(raw);
             if (beam == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input is not a Beam."); return; }
 
             DA.SetData(0, beam.Id);

@@ -1,5 +1,6 @@
 using System;
 using Grasshopper.Kernel;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Deconstructors
@@ -31,7 +32,7 @@ namespace StructuralCircleNTNU.Deconstructors
             object raw = null;
             if (!DA.GetData(0, ref raw)) return;
 
-            var pair = raw as MatchPair;
+            var pair = GrasshopperUnpack.AsMatchPair(raw);
             if (pair == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input is not a MatchPair."); return; }
 
             DA.SetData(0, pair.Supply);

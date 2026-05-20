@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Components.Preview
@@ -57,8 +58,10 @@ namespace StructuralCircleNTNU.Components.Preview
             DA.GetData(3, ref showLabels);
 
             List<Element> elements = null;
-            if (raw is SupplyBank supply) elements = supply.Elements;
-            else if (raw is DemandBank demand) elements = demand.Elements;
+            var supplyBank  = GrasshopperUnpack.AsSupplyBank(raw);
+            var demandBank  = GrasshopperUnpack.AsDemandBank(raw);
+            if      (supplyBank != null) elements = supplyBank.Elements;
+            else if (demandBank != null) elements = demandBank.Elements;
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input must be a SupplyBank or DemandBank."); return; }
 
             double cursorX = origin.X;

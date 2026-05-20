@@ -25,6 +25,63 @@ namespace StructuralCircleNTNU.Classes
     {
         static readonly double[] PlaneTParams = { 0.25, 0.5, 0.75 };
 
+        /// <summary>
+        /// Cross-section width/height from Brep ∩ planes at 25%, 50%, 75% along <paramref name="axis"/>,
+        /// in the frame spanned by <paramref name="e1"/> and <paramref name="e2"/> (same as Read Section from Brep).
+        /// </summary>
+        /// <param name="notes">Optional diagnostics (failed stations, etc.).</param>
+        public static bool TryPlaneCutSectionExtents(Brep brep, double tolerance, Line axis, Vector3d e1, Vector3d e2,
+            out double width, out double height, out string notes)
+        {
+            width = height = 0;
+            notes = null;
+            var notesList = new List<string>();
+
+            if (brep == null || !brep.IsValid || !axis.IsValid)
+                return false;
+
+            double tol = Math.Max(tolerance, 1e-9);
+            Brep brepDup = brep.DuplicateBrep();
+            var widths = new List<double>();
+            var heights = new List<double>();
+
+            foreach (double t in PlaneTParams)
+            {
+                Point3d p = axis.PointAt(t);
+                var pl = new Plane(p, e1, e2);
+                if (!Intersection.BrepPlane(brepDup, pl, tol, out Curve[] crvs, out _))
+                {
+                    notesList.Add($"t={t}: no intersection.");
+                    continue;
+                }
+                if (crvs == null || crvs.Length == 0)
+                {
+                    notesList.Add($"t={t}: empty curves.");
+                    continue;
+                }
+
+                if (!TrySectionRectangleDims(crvs, tol, pl.Origin, e1, e2, out double w, out double h, out string cutNote))
+                {
+                    notesList.Add($"t={t}: {cutNote}");
+                    continue;
+                }
+
+                widths.Add(w);
+                heights.Add(h);
+            }
+
+            if (widths.Count == 0)
+            {
+                notes = notesList.Count > 0 ? string.Join(" ", notesList) : "All plane cuts failed.";
+                return false;
+            }
+
+            FilterAndAverage(widths, heights, 0.5, out width, out height);
+            if (notesList.Count > 0)
+                notes = string.Join(" ", notesList);
+            return true;
+        }
+
         public static bool TryRead(Brep brep, double tolerance, out BrepSectionReadResult result, out string error)
         {
             result = new BrepSectionReadResult();
@@ -47,48 +104,23 @@ namespace StructuralCircleNTNU.Classes
             result.LengthAlongAxis = axis.Length;
 
             var notes = new List<string>();
-            var widths = new List<double>();
-            var heights = new List<double>();
-
-            Brep brepDup = brep.DuplicateBrep();
             double tol = Math.Max(tolerance, 1e-9);
 
-            foreach (double t in PlaneTParams)
+            if (TryPlaneCutSectionExtents(brep, tol, axis, e1, e2, out double aw, out double ah, out string planeNotes))
             {
-                Point3d p = axis.PointAt(t);
-                var pl = new Plane(p, e1, e2);
-                if (!Intersection.BrepPlane(brepDup, pl, tol, out Curve[] crvs, out _))
-                {
-                    notes.Add($"t={t}: no intersection.");
-                    continue;
-                }
-                if (crvs == null || crvs.Length == 0)
-                {
-                    notes.Add($"t={t}: empty curves.");
-                    continue;
-                }
-
-                if (!TrySectionRectangleDims(crvs, tol, pl.Origin, e1, e2, out double w, out double h, out string cutNote))
-                {
-                    notes.Add($"t={t}: {cutNote}");
-                    continue;
-                }
-
-                widths.Add(w);
-                heights.Add(h);
-            }
-
-            if (widths.Count > 0)
-            {
-                FilterAndAverage(widths, heights, 0.5, out double aw, out double ah);
                 result.WidthFromPlaneCuts = aw;
                 result.HeightFromPlaneCuts = ah;
                 result.PlaneCutsOk = true;
+                if (!string.IsNullOrEmpty(planeNotes))
+                    notes.Add(planeNotes);
             }
             else
             {
                 result.PlaneCutsOk = false;
-                notes.Add("All plane cuts failed.");
+                if (!string.IsNullOrEmpty(planeNotes))
+                    notes.Add(planeNotes);
+                else
+                    notes.Add("All plane cuts failed.");
             }
 
             if (BrepElementBuilder.TryMinimumVolumeOrientedBoxFromPoints(samples, out Box box, out string boxMsg) && box.IsValid)

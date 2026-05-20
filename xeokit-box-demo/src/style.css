@@ -24,6 +24,54 @@ body {
   align-items: stretch;
 }
 
+.left-panel-results__text {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.right-panel-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.results-alg {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.results-alg__btn {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.75rem;
+  text-transform: lowercase;
+  color: #d0e2f2;
+  background: #1a2638;
+  border: 1px solid #3d5675;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.3;
+}
+
+.results-alg__btn:hover {
+  background: #243451;
+  border-color: #5a7a9a;
+}
+
+.results-alg__btn--active {
+  background: #2a4a63;
+  border-color: #6eb0e0;
+  color: #f4f8fc;
+}
+
+.results-alg__hint {
+  margin: 0.25rem 0 0;
+  line-height: 1.4;
+  max-width: 20rem;
+}
+
 .main-column {
   flex: 1;
   min-width: 0;
@@ -65,51 +113,37 @@ body {
   border: 1px solid #2a3a50;
   border-radius: 6px;
   background: #0f1419;
-  max-height: 13rem;
+  max-height: 22rem;
   overflow: auto;
   padding: 0.35rem 0.4rem;
 }
 
-.match-line {
-  display: grid;
-  grid-template-columns: 2.3rem 1fr;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0.2rem 0;
+.matching-diagram {
+  display: block;
 }
 
-.match-line__rank {
-  font-size: 0.68rem;
-  color: #87a6c2;
-  text-align: right;
+.matching-diagram__demand {
+  fill: rgba(255, 215, 102, 0.2);
+  stroke: #ffd766;
+  stroke-width: 1.2;
 }
 
-.match-line__track {
-  position: relative;
-  height: 8px;
-  background: #172232;
-  border: 1px solid #233246;
-  border-radius: 999px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  overflow: hidden;
+.matching-diagram__supply {
+  fill: rgba(118, 194, 242, 0.16);
+  stroke: #76c2f2;
+  stroke-width: 1.1;
 }
 
-.match-line__bar {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #4d7ea8 0%, #8cd3ff 100%);
+.matching-diagram__link {
+  stroke: #365a79;
+  stroke-width: 1;
+  opacity: 0.8;
 }
 
-.match-line__demand {
-  position: absolute;
-  top: -1px;
-  bottom: -1px;
-  width: 2px;
-  right: 0;
-  background: #ffd766;
-  box-shadow: 0 0 0 1px rgba(255, 215, 102, 0.25);
+.matching-diagram__label {
+  fill: #a9c8e3;
+  font-size: 10px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 .dashboard__title {
@@ -430,6 +464,98 @@ body {
   height: 100%;
   display: block;
   background: radial-gradient(ellipse 120% 80% at 50% 100%, #1a2840, #0a0e14);
+}
+
+.results-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(180deg, #0e1523 0%, #0a111b 100%);
+  overflow: auto;
+  padding: 0.55rem 0.7rem 0.75rem;
+}
+
+.results-canvas__status {
+  margin: 0 0 0.45rem;
+  font-size: 0.75rem;
+  color: #9ecae8;
+}
+
+.results-svg {
+  display: block;
+  width: 100%;
+  min-width: 860px;
+  background: #0b1420;
+  border: 1px solid #24354b;
+  border-radius: 8px;
+}
+
+.results-node {
+  fill: #142335;
+  stroke: #3b5776;
+  stroke-width: 1;
+}
+
+.results-node--demand {
+  stroke: #ffd766;
+}
+
+.results-node--supply {
+  stroke: #76c2f2;
+}
+
+.results-link {
+  stroke: #385a78;
+  stroke-width: 1;
+  fill: none;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.results-link--active {
+  stroke: #ffd766;
+  stroke-width: 2;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.results-label {
+  fill: #cfe1f1;
+  font-size: 10px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  dominant-baseline: middle;
+}
+
+.results-title {
+  fill: #9ecae8;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.results-hit {
+  fill: transparent;
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.results-node--selected {
+  fill: #2a1f0d;
+  stroke: #ffdd88;
+  stroke-width: 1.4;
+}
+
+.results-oblong {
+  fill: none;
+  stroke: #ffe08a;
+  stroke-width: 1.3;
+  pointer-events: none;
+}
+
+.results-supply--linked {
+  fill: #1a2434;
+  stroke: #ffe08a;
+  stroke-width: 1.2;
 }
 
 .viewer-version {

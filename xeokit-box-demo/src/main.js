@@ -60,6 +60,7 @@ const pickIfcBtn = document.getElementById("pick-ifc");
 const previewMaterialsBtn = document.getElementById("preview-materials");
 const previewBuildingBtn = document.getElementById("preview-building");
 const previewMatchingBtn = document.getElementById("preview-matching");
+const previewResultsBtn = document.getElementById("preview-results");
 const dashboardContext = document.getElementById("dashboard-context");
 const materialSummary = document.getElementById("material-summary");
 const materialTableBody = document.getElementById("material-table-body");
@@ -71,24 +72,38 @@ const matchingSummary = document.getElementById("matching-summary");
 const matchingTableBody = document.getElementById("matching-table-body");
 const matchingViz = document.getElementById("matching-viz");
 const canvasEl = document.getElementById("xeokit_canvas");
+const resultsCanvas = document.getElementById("results-canvas");
 const hoverInfo = document.getElementById("hover-info");
+const leftPanelTitle = document.getElementById("left-panel-title");
+const leftPanelDefault = document.getElementById("left-panel-default");
+const leftPanelResults = document.getElementById("left-panel-results");
+const rightPanelTitle = document.getElementById("right-panel-title");
+const rightPanelMatching = document.getElementById("right-panel-matching");
+const rightPanelResults = document.getElementById("right-panel-results");
+const resultsAlgHint = document.getElementById("results-alg-hint");
 
-/** @type {"materials" | "building" | "matching"} */
+/** @type {"materials" | "building" | "matching" | "results"} */
 let previewMode = "materials";
+
+/** @type {"all_pairs" | "greedy_unique"} */
+let resultsMatchingAlgorithm = "all_pairs";
 
 /** @type {Mesh[]} */
 let demandMeshes = [];
 /** @type {{ w: number; h: number; l: number }[]} */
 let demandSizes = [];
-/** @type {{ id: string; type: string; name: string; w: number; h: number; l: number; vol: number }[]} */
+/** @type {{ id: string; type: string; name: string; w: number; h: number; l: number; vol: number; source: string }[]} */
 let ifcDemandSizes = [];
 const materialInfoById = new Map();
 const ifcInfoById = new Map();
 let selectedMaterialIndex = -1;
 let selectedIfcObjectId = null;
-/** @type {{ demandId: string; demand: { id: string; type: string; name: string; w: number; h: number; l: number; vol: number }; candidates: { materialIndex: number; w: number; h: number; l: number; waste: number; volDiffPct: number; similarityScore: number; rotated: boolean }[] } | null} */
+/** @type {{ demandId: string; demand: { id: string; type: string; name: string; w: number; h: number; l: number; vol: number; source: string }; candidates: { materialIndex: number; w: number; h: number; l: number; waste: number; volDiffPct: number; similarityScore: number; rotated: boolean }[] } | null} */
 let activeMatch = null;
 const bestCandidateByDemandId = new Map();
+/** Selected row in results diagram: demand index, or null */
+let resultsSelectedDemandIdx = null;
+let resultsCanvasListenersBound = false;
 
 /** @type {{ minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number } | null} */
 let sceneBounds = null;
@@ -365,9 +380,15 @@ function hideHoverInfo() {
   hoverInfo.hidden = true;
 }
 
+function getHoverPositionRoot() {
+  return canvasEl?.parentElement || canvasEl;
+}
+
 function positionHoverInfo(clientX, clientY) {
-  if (!hoverInfo || !canvasEl) return;
-  const rect = canvasEl.getBoundingClientRect();
+  if (!hoverInfo) return;
+  const root = getHoverPositionRoot();
+  if (!root) return;
+  const rect = root.getBoundingClientRect();
   const x = Math.min(rect.width - 12, Math.max(8, clientX - rect.left + 12));
   const y = Math.min(rect.height - 12, Math.max(8, clientY - rect.top + 12));
   hoverInfo.style.left = `${x}px`;
@@ -404,12 +425,171 @@ function flyToAABB(aabb) {
   }
 }
 
+function parseIfcNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string") return null;
+  const cleaned = value.replace(",", ".").match(/-?\d+(\.\d+)?/);
+  if (!cleaned) return null;
+  const num = Number.parseFloat(cleaned[0]);
+  return Number.isFinite(num) ? num : null;
+}
+
+function normalizeIfcDimMeters(value) {
+  if (!Number.isFinite(value) || value <= 0) return null;
+  if (value > 50) return value / 1000;
+  return value;
+}
+
+function propertyNameMatches(name, aliases) {
+  const n = String(name || "").toLowerCase().replace(/\s+/g, "");
+  return aliases.some((alias) => n.includes(alias));
+}
+
+function extractDimsFromIfcProperties(metaObject) {
+  if (!metaObject?.propertySets?.length) return null;
+
+  const widthAliases = ["width", "overallwidth", "flangewidth", "b"];
+  const heightAliases = ["height", "overallheight", "depth", "h"];
+  const lengthAliases = ["length", "overalllength", "span", "l"];
+
+  let w = null;
+  let h = null;
+  let l = null;
+
+  for (const pset of metaObject.propertySets) {
+    for (const prop of pset?.properties || []) {
+      const raw = parseIfcNumber(prop?.value);
+      if (raw == null) continue;
+      const num = normalizeIfcDimMeters(raw);
+      if (num == null) continue;
+
+      const propName = prop?.name || "";
+      if (w == null && propertyNameMatches(propName, widthAliases)) w = num;
+      else if (h == null && propertyNameMatches(propName, heightAliases)) h = num;
+      else if (l == null && propertyNameMatches(propName, lengthAliases)) l = num;
+    }
+  }
+
+  if (w == null && h == null && l == null) return null;
+  return { w, h, l };
+}
+
 function materialFitsDemand(material, demand) {
   const direct = material.w >= demand.w && material.h >= demand.h;
   const rotated = material.w >= demand.h && material.h >= demand.w;
   if (!direct && !rotated) return { fits: false, rotated: false };
   if (material.l < demand.l) return { fits: false, rotated: false };
   return { fits: true, rotated: !direct && rotated };
+}
+
+/**
+ * @param {{ w: number; h: number; l: number; vol: number }} supply
+ * @param {{ w: number; h: number; l: number; vol: number }} demand
+ * @returns {{ volDiffPct: number; waste: number; supplyVol: number; similarityScore: number; rotated: boolean } | null}
+ */
+function linkStats(supply, demand) {
+  const fit = materialFitsDemand(supply, demand);
+  if (!fit.fits) return null;
+  const supplyVol = supply.w * supply.h * supply.l;
+  const waste = supplyVol - demand.vol;
+  const volDiffPct = demand.vol > 0 ? (100 * waste) / demand.vol : 0;
+  return {
+    volDiffPct,
+    waste,
+    supplyVol,
+    similarityScore: Math.max(0, 100 - volDiffPct),
+    rotated: fit.rotated,
+  };
+}
+
+/**
+ * @param {{ demandIdx: number; supplyIdx: number }[]} allLinks
+ * @param {{ w: number; h: number; l: number; vol: number }[]} demands
+ * @param {{ w: number; h: number; l: number }[]} supplies
+ */
+function filterLinksByAlgorithm(allLinks, demands, supplies) {
+  if (resultsMatchingAlgorithm !== "greedy_unique") return allLinks;
+
+  /** @type {{ demandIdx: number; supplyIdx: number; similarityScore: number; waste: number }[]} */
+  const scored = [];
+  for (const link of allLinks) {
+    const d = demands[link.demandIdx];
+    const s = supplies[link.supplyIdx];
+    const st = linkStats(s, d);
+    if (!st) continue;
+    scored.push({
+      demandIdx: link.demandIdx,
+      supplyIdx: link.supplyIdx,
+      similarityScore: st.similarityScore,
+      waste: st.waste,
+    });
+  }
+  scored.sort((a, b) => {
+    if (b.similarityScore !== a.similarityScore) return b.similarityScore - a.similarityScore;
+    return a.waste - b.waste;
+  });
+  const usedD = new Set();
+  const usedS = new Set();
+  /** @type {{ demandIdx: number; supplyIdx: number }[]} */
+  const out = [];
+  for (const e of scored) {
+    if (usedD.has(e.demandIdx) || usedS.has(e.supplyIdx)) continue;
+    usedD.add(e.demandIdx);
+    usedS.add(e.supplyIdx);
+    out.push({ demandIdx: e.demandIdx, supplyIdx: e.supplyIdx });
+  }
+  return out;
+}
+
+function syncResultsAlgorithmButtons() {
+  if (!rightPanelResults) return;
+  for (const btn of rightPanelResults.querySelectorAll("[data-results-alg]")) {
+    btn.classList.toggle(
+      "results-alg__btn--active",
+      btn.getAttribute("data-results-alg") === resultsMatchingAlgorithm,
+    );
+  }
+}
+
+function updateResultsAlgorithmHint() {
+  if (!resultsAlgHint) return;
+  if (resultsMatchingAlgorithm === "greedy_unique") {
+    resultsAlgHint.textContent =
+      "Greedy one-to-one: at most one connection per demand and per supply, preferring highest score (lower waste). Not a global optimum.";
+  } else {
+    resultsAlgHint.textContent =
+      "All feasible pairs: every supply that can cover a demand gets a link; one supply may connect to many demands.";
+  }
+}
+
+function syncLayoutPanels() {
+  if (leftPanelTitle) {
+    leftPanelTitle.textContent = previewMode === "results" ? "matching properties" : "analysis";
+  }
+  if (leftPanelDefault) leftPanelDefault.hidden = previewMode === "results";
+  if (leftPanelResults) leftPanelResults.hidden = previewMode !== "results";
+  if (rightPanelTitle) {
+    rightPanelTitle.textContent = previewMode === "results" ? "matching properties" : "matching v0.3";
+  }
+  if (rightPanelMatching) rightPanelMatching.hidden = previewMode !== "matching";
+  if (rightPanelResults) rightPanelResults.hidden = previewMode !== "results";
+  syncResultsAlgorithmButtons();
+  updateResultsAlgorithmHint();
+}
+
+function ensureResultsAlgorithmClick() {
+  if (!rightPanelResults || rightPanelResults.dataset.bound) return;
+  rightPanelResults.dataset.bound = "1";
+  rightPanelResults.addEventListener("click", (e) => {
+    const btn = e.target instanceof Element ? e.target.closest("[data-results-alg]") : null;
+    if (!btn) return;
+    const alg = btn.getAttribute("data-results-alg");
+    if (alg !== "all_pairs" && alg !== "greedy_unique") return;
+    resultsMatchingAlgorithm = alg;
+    syncResultsAlgorithmButtons();
+    updateResultsAlgorithmHint();
+    renderResultsCanvas();
+  });
 }
 
 function buildCandidatesForDemand(demand) {
@@ -482,6 +662,7 @@ function createHoverMatchCard(demand, best) {
     ),
   );
   kv.append(...createKeyValueRow("Demand vol", `${demand.vol.toFixed(3)} m³`));
+  kv.append(...createKeyValueRow("Source", demand.source));
   card.appendChild(kv);
 
   const divider = document.createElement("div");
@@ -614,7 +795,7 @@ function buildIfcDemandFromModel() {
   ifcInfoById.clear();
   bestCandidateByDemandId.clear();
 
-  /** @type {{ id: string; type: string; name: string; w: number; h: number; l: number; vol: number }[]} */
+  /** @type {{ id: string; type: string; name: string; w: number; h: number; l: number; vol: number; source: string }[]} */
   const rows = [];
   for (const id of objectIds) {
     const meta = metaModel.metaObjects[id];
@@ -628,9 +809,13 @@ function buildIfcDemandFromModel() {
     const aabb = entity.aabb;
     if (!aabb || aabb.length < 6) continue;
 
-    const w = aabb[3] - aabb[0];
-    const h = aabb[4] - aabb[1];
-    const l = aabb[5] - aabb[2];
+    const aabbW = aabb[3] - aabb[0];
+    const aabbH = aabb[4] - aabb[1];
+    const aabbL = aabb[5] - aabb[2];
+    const fromIfc = extractDimsFromIfcProperties(meta);
+    const w = fromIfc?.w ?? aabbW;
+    const h = fromIfc?.h ?? aabbH;
+    const l = fromIfc?.l ?? aabbL;
     if (![w, h, l].every(Number.isFinite)) continue;
     if (w <= 0 || h <= 0 || l <= 0) continue;
 
@@ -642,6 +827,7 @@ function buildIfcDemandFromModel() {
       h,
       l,
       vol: w * h * l,
+      source: fromIfc ? "ifc-properties+fallback" : "aabb-fallback",
     };
     rows.push(row);
     ifcInfoById.set(id, row);
@@ -780,6 +966,8 @@ function renderIfcTable() {
 
 function renderDashboard() {
   if (!dashboardContext) return;
+  ensureResultsAlgorithmClick();
+  syncLayoutPanels();
 
   if (previewMode === "building") {
     dashboardContext.textContent = ifcModel
@@ -788,20 +976,37 @@ function renderDashboard() {
   } else if (previewMode === "matching") {
     dashboardContext.textContent =
       "Canvas: matching mode. Click IFC elements in the viewer to see all usable material-bank candidates on the right.";
+  } else if (previewMode === "results") {
+    dashboardContext.textContent =
+      "Results: graph in the canvas. Pick how connections are built in the right-hand matching properties panel (not the lists below in other modes).";
   } else {
     dashboardContext.textContent =
       "Canvas: material bank. Left table shows material elements; second table shows IFC demand bank when loaded.";
   }
 
-  renderMaterialTable();
-  renderIfcTable();
+  if (previewMode !== "results") {
+    renderMaterialTable();
+    renderIfcTable();
+  } else {
+    materialSummary && clearEl(materialSummary);
+    ifcSummary && clearEl(ifcSummary);
+    materialTableBody && materialTableBody.replaceChildren();
+    ifcTableBody && ifcTableBody.replaceChildren();
+  }
   renderMatchingPanel();
+  renderResultsCanvas();
 }
 
 function renderMatchingPanel() {
   if (!matchingPanel || !matchingStatus || !matchingSummary || !matchingTableBody || !matchingViz) return;
 
-  matchingPanel.classList.toggle("matching-panel--active", previewMode === "matching");
+  matchingPanel.classList.toggle(
+    "matching-panel--active",
+    previewMode === "matching" || previewMode === "results",
+  );
+  if (previewMode !== "matching") {
+    return;
+  }
   clearEl(matchingSummary);
   matchingTableBody.replaceChildren();
   matchingViz.replaceChildren();
@@ -838,42 +1043,79 @@ function renderMatchingPanel() {
   appendSummaryRow(matchingSummary, "candidates", String(candidates.length));
 
   const shown = Math.min(candidates.length, 300);
-  const vizShown = Math.min(candidates.length, 60);
+  const vizShown = Math.min(candidates.length, 14);
   appendSummaryRow(matchingSummary, "shown", `${shown} / ${candidates.length}`);
   appendSummaryRow(matchingSummary, "sorted by", "score (highest first)");
+  appendSummaryRow(matchingSummary, "dimension source", demand.source);
 
-  const maxLength = Math.max(
-    demand.l,
-    ...candidates.slice(0, vizShown).map((row) => row.l),
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svgWidth = 320;
+  const rowGap = 28;
+  const margin = 14;
+  const svgHeight = Math.max(120, margin * 2 + vizShown * rowGap);
+  const leftX = 86;
+  const rightX = 236;
+  const demandY = svgHeight / 2;
+  const glyphW = 40;
+  const glyphH = 20;
+
+  const maxW = Math.max(
+    demand.w,
+    ...candidates.slice(0, vizShown).map((r) => (r.rotated ? r.h : r.w)),
   );
+  const maxH = Math.max(
+    demand.h,
+    ...candidates.slice(0, vizShown).map((r) => (r.rotated ? r.w : r.h)),
+  );
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", String(svgHeight));
+  svg.classList.add("matching-diagram");
+
+  const demandRect = document.createElementNS(svgNS, "rect");
+  const dW = Math.max(8, (demand.w / maxW) * glyphW);
+  const dH = Math.max(6, (demand.h / maxH) * glyphH);
+  demandRect.setAttribute("x", String(leftX - dW / 2));
+  demandRect.setAttribute("y", String(demandY - dH / 2));
+  demandRect.setAttribute("width", String(dW));
+  demandRect.setAttribute("height", String(dH));
+  demandRect.setAttribute("class", "matching-diagram__demand");
+  svg.appendChild(demandRect);
+
   for (let i = 0; i < vizShown; i++) {
-    const row = candidates[i];
-    const line = document.createElement("div");
-    line.className = "match-line";
+    const c = candidates[i];
+    const y = margin + i * rowGap + rowGap / 2;
+    const cWRaw = c.rotated ? c.h : c.w;
+    const cHRaw = c.rotated ? c.w : c.h;
+    const cW = Math.max(8, (cWRaw / maxW) * glyphW);
+    const cH = Math.max(6, (cHRaw / maxH) * glyphH);
 
-    const rank = document.createElement("div");
-    rank.className = "match-line__rank";
-    rank.textContent = `#${i + 1}`;
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", String(leftX + dW / 2));
+    line.setAttribute("y1", String(demandY));
+    line.setAttribute("x2", String(rightX - cW / 2));
+    line.setAttribute("y2", String(y));
+    line.setAttribute("class", "matching-diagram__link");
+    svg.appendChild(line);
 
-    const track = document.createElement("div");
-    track.className = "match-line__track";
+    const rect = document.createElementNS(svgNS, "rect");
+    rect.setAttribute("x", String(rightX - cW / 2));
+    rect.setAttribute("y", String(y - cH / 2));
+    rect.setAttribute("width", String(cW));
+    rect.setAttribute("height", String(cH));
+    rect.setAttribute("class", "matching-diagram__supply");
+    svg.appendChild(rect);
 
-    const bar = document.createElement("div");
-    bar.className = "match-line__bar";
-    const widthPct = maxLength > 0 ? (100 * row.l) / maxLength : 0;
-    bar.style.width = `${Math.max(3, widthPct)}%`;
-    bar.style.opacity = `${0.45 + 0.55 * Math.max(0, Math.min(1, row.similarityScore / 100))}`;
-
-    const demandMarker = document.createElement("div");
-    demandMarker.className = "match-line__demand";
-
-    track.appendChild(bar);
-    track.appendChild(demandMarker);
-    line.appendChild(rank);
-    line.appendChild(track);
-    line.title = `mat#${row.materialIndex + 1} · L=${row.l.toFixed(2)}m · score ${row.similarityScore.toFixed(1)}%`;
-    matchingViz.appendChild(line);
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", String(rightX + 26));
+    label.setAttribute("y", String(y + 3));
+    label.setAttribute("class", "matching-diagram__label");
+    label.textContent = `#${c.materialIndex + 1}`;
+    svg.appendChild(label);
   }
+  matchingViz.appendChild(svg);
 
   for (let i = 0; i < shown; i++) {
     const row = candidates[i];
@@ -897,36 +1139,411 @@ function renderMatchingPanel() {
   }
 }
 
+function bindResultsCanvasEvents() {
+  if (resultsCanvasListenersBound || !resultsCanvas) return;
+  resultsCanvasListenersBound = true;
+  resultsCanvas.addEventListener("click", onResultsCanvasClick);
+  resultsCanvas.addEventListener("pointermove", onResultsCanvasPointerMove);
+  resultsCanvas.addEventListener("pointerleave", () => hideHoverInfo());
+}
+
+/**
+ * @param {MouseEvent} e
+ */
+function onResultsCanvasClick(e) {
+  if (previewMode !== "results") return;
+  if (!(e.target instanceof Element) || !e.target.closest?.(".results-svg")) return;
+  const demandG = e.target.closest?.("[data-results-demand]");
+  if (!demandG) return;
+  const idx = parseInt(demandG.getAttribute("data-results-demand") || "-1", 10);
+  if (!Number.isFinite(idx) || idx < 0) return;
+  resultsSelectedDemandIdx = resultsSelectedDemandIdx === idx ? null : idx;
+  renderResultsCanvas();
+  e.stopPropagation();
+}
+
+/**
+ * @param {PointerEvent} e
+ */
+function onResultsCanvasPointerMove(e) {
+  if (previewMode !== "results" || !resultsCanvas) return;
+  if (!(e.target instanceof Element) || !e.target.closest?.(".results-svg")) {
+    hideHoverInfo();
+    return;
+  }
+  const dem = e.target.closest?.("[data-results-demand]");
+  if (dem) {
+    const d = parseInt(dem.getAttribute("data-results-demand") || "-1", 10);
+    if (Number.isFinite(d) && d >= 0) showResultsDemandTooltip(e.clientX, e.clientY, d);
+    return;
+  }
+  const sup = e.target.closest?.("[data-results-supply]");
+  if (sup) {
+    const s = parseInt(sup.getAttribute("data-results-supply") || "-1", 10);
+    if (Number.isFinite(s) && s >= 0) showResultsSupplyTooltip(e.clientX, e.clientY, s);
+    return;
+  }
+  hideHoverInfo();
+}
+
+const MAX_RESULT_TOOLTIP_LINES = 16;
+
+function showResultsDemandTooltip(clientX, clientY, dIdx) {
+  const demand = ifcDemandSizes[dIdx];
+  if (!demand) return;
+  const card = document.createElement("div");
+  const t = document.createElement("div");
+  t.className = "hover-info__title";
+  t.textContent = `Demand #${dIdx + 1} ${demand.type}`;
+  card.appendChild(t);
+  const meta = document.createElement("div");
+  meta.className = "hover-info__meta";
+  meta.textContent = `${demand.w.toFixed(2)}×${demand.h.toFixed(2)}×${demand.l.toFixed(2)} m · vol ${demand.vol.toFixed(3)} m³ · ${demand.source}`;
+  card.appendChild(meta);
+  const div = document.createElement("div");
+  div.className = "hover-info__divider";
+  card.appendChild(div);
+  const sub = document.createElement("div");
+  sub.className = "hover-info__meta";
+  sub.textContent = "Feasible supply (sorted by least waste %)";
+  card.appendChild(sub);
+  /** @type {{ s: number; volDiffPct: number; waste: number; similarityScore: number }[]} */
+  const list = [];
+  for (let s = 0; s < demandSizes.length; s++) {
+    const st = linkStats(demandSizes[s], demand);
+    if (st) list.push({ s, ...st });
+  }
+  list.sort((a, b) => a.volDiffPct - b.volDiffPct);
+  const show = list.slice(0, MAX_RESULT_TOOLTIP_LINES);
+  for (const row of show) {
+    const line = document.createElement("div");
+    line.className = "hover-info__meta";
+    line.textContent = `Supply #${row.s + 1}: score ${row.similarityScore.toFixed(1)}% · Δvol ${row.volDiffPct.toFixed(1)}% · waste ${row.waste.toFixed(3)} m³${row.rotated ? " · 90°" : ""}`;
+    card.appendChild(line);
+  }
+  if (list.length > show.length) {
+    const more = document.createElement("div");
+    more.className = "hover-info__meta";
+    more.textContent = `+ ${list.length - show.length} more…`;
+    card.appendChild(more);
+  }
+  if (list.length === 0) {
+    const none = document.createElement("div");
+    none.className = "hover-info__meta";
+    none.textContent = "No supply element fits this demand.";
+    card.appendChild(none);
+  }
+  showHoverInfoNode(clientX, clientY, card);
+}
+
+function showResultsSupplyTooltip(clientX, clientY, sIdx) {
+  const mat = demandSizes[sIdx];
+  if (!mat) return;
+  const vol = mat.w * mat.h * mat.l;
+  const card = document.createElement("div");
+  const t = document.createElement("div");
+  t.className = "hover-info__title";
+  t.textContent = `Supply #${sIdx + 1}`;
+  card.appendChild(t);
+  const meta = document.createElement("div");
+  meta.className = "hover-info__meta";
+  meta.textContent = `${mat.w.toFixed(2)}×${mat.h.toFixed(2)}×${mat.l.toFixed(2)} m · vol ${vol.toFixed(3)} m³`;
+  card.appendChild(meta);
+  const div = document.createElement("div");
+  div.className = "hover-info__divider";
+  card.appendChild(div);
+  const sub = document.createElement("div");
+  sub.className = "hover-info__meta";
+  sub.textContent = "This supply can cover these demands (least waste first)";
+  card.appendChild(sub);
+  /** @type {{ d: number; volDiffPct: number; waste: number; similarityScore: number; demandVol: number }[]} */
+  const list = [];
+  for (let d = 0; d < ifcDemandSizes.length; d++) {
+    const st = linkStats(mat, ifcDemandSizes[d]);
+    if (st) list.push({ d, demandVol: ifcDemandSizes[d].vol, ...st });
+  }
+  list.sort((a, b) => a.volDiffPct - b.volDiffPct);
+  const show = list.slice(0, MAX_RESULT_TOOLTIP_LINES);
+  for (const row of show) {
+    const line = document.createElement("div");
+    line.className = "hover-info__meta";
+    const wastefrac = row.supplyVol > 0 ? (100 * row.waste) / row.supplyVol : 0;
+    line.textContent = `Demand #${row.d + 1}: score ${row.similarityScore.toFixed(1)}% · Δvol vs demand ${row.volDiffPct.toFixed(1)}% · waste of supply ${wastefrac.toFixed(1)}%${row.rotated ? " · 90°" : ""}`;
+    card.appendChild(line);
+  }
+  if (list.length > show.length) {
+    const more = document.createElement("div");
+    more.className = "hover-info__meta";
+    more.textContent = `+ ${list.length - show.length} more…`;
+    card.appendChild(more);
+  }
+  if (list.length === 0) {
+    const none = document.createElement("div");
+    none.className = "hover-info__meta";
+    none.textContent = "No demand element can be cut from this supply.";
+    card.appendChild(none);
+  }
+  showHoverInfoNode(clientX, clientY, card);
+}
+
+function renderResultsCanvas() {
+  if (!resultsCanvas) return;
+  resultsCanvas.replaceChildren();
+  bindResultsCanvasEvents();
+
+  if (previewMode !== "results") {
+    resultsCanvas.hidden = true;
+    return;
+  }
+
+  resultsCanvas.hidden = false;
+
+  if (
+    resultsSelectedDemandIdx != null &&
+    resultsSelectedDemandIdx >= (ifcDemandSizes?.length ?? 0)
+  ) {
+    resultsSelectedDemandIdx = null;
+  }
+
+  const status = document.createElement("p");
+  status.className = "results-canvas__status";
+
+  if (!ifcModel) {
+    status.textContent = "Load IFC to populate demand bank before viewing results.";
+    resultsCanvas.appendChild(status);
+    return;
+  }
+  if (ifcDemandSizes.length === 0) {
+    status.textContent = "No demand elements found in IFC.";
+    resultsCanvas.appendChild(status);
+    return;
+  }
+  if (demandSizes.length === 0) {
+    status.textContent = "Load material bank CSV to populate supply elements.";
+    resultsCanvas.appendChild(status);
+    return;
+  }
+
+  const demands = ifcDemandSizes;
+  const supplies = demandSizes.map((s, i) => ({ id: i + 1, w: s.w, h: s.h, l: s.l }));
+  /** @type {{ demandIdx: number; supplyIdx: number }[]} */
+  const allPairLinks = [];
+  for (let d = 0; d < demands.length; d++) {
+    for (let s = 0; s < supplies.length; s++) {
+      if (materialFitsDemand(supplies[s], demands[d]).fits) {
+        allPairLinks.push({ demandIdx: d, supplyIdx: s });
+      }
+    }
+  }
+
+  const links = filterLinksByAlgorithm(allPairLinks, demands, supplies);
+  const algLabel =
+    resultsMatchingAlgorithm === "greedy_unique"
+      ? "greedy one-to-one"
+      : "all feasible pairs";
+
+  const matchedDemandSet = new Set(links.map((l) => l.demandIdx));
+  const matchedSupplySet = new Set(links.map((l) => l.supplyIdx));
+  const activeSupplySet = new Set();
+  if (resultsSelectedDemandIdx != null) {
+    for (const link of links) {
+      if (link.demandIdx === resultsSelectedDemandIdx) {
+        activeSupplySet.add(link.supplyIdx);
+      }
+    }
+  }
+
+  let hint = "Click a demand row to highlight its supply matches.";
+  if (resultsSelectedDemandIdx != null) {
+    hint = `Selected demand #${resultsSelectedDemandIdx + 1} — ${activeSupplySet.size} supply link(s) highlighted.`;
+  }
+  status.textContent = `Algorithm: ${algLabel} · shown edges ${links.length} (all feasible pair edges ${allPairLinks.length}) · Demand ${demands.length} · Supply ${supplies.length} · Matchable demand ${matchedDemandSet.size}/${demands.length} · ${hint}`;
+  resultsCanvas.appendChild(status);
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const rowGap = 18;
+  const marginTop = 30;
+  const marginBottom = 20;
+  const height = Math.max(
+    260,
+    marginTop + Math.max(demands.length, supplies.length) * rowGap + marginBottom,
+  );
+  const width = 1080;
+  const demandX = 70;
+  const supplyX = 620;
+  const nodeW = 260;
+  const nodeH = 12;
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("class", "results-svg");
+
+  const titleDemand = document.createElementNS(svgNS, "text");
+  titleDemand.setAttribute("x", String(demandX));
+  titleDemand.setAttribute("y", "16");
+  titleDemand.setAttribute("class", "results-title");
+  titleDemand.textContent = "Demand bank (IFC)";
+  svg.appendChild(titleDemand);
+
+  const titleSupply = document.createElementNS(svgNS, "text");
+  titleSupply.setAttribute("x", String(supplyX));
+  titleSupply.setAttribute("y", "16");
+  titleSupply.setAttribute("class", "results-title");
+  titleSupply.textContent = "Supply bank (CSV)";
+  svg.appendChild(titleSupply);
+
+  for (const link of links) {
+    if (
+      resultsSelectedDemandIdx != null &&
+      link.demandIdx === resultsSelectedDemandIdx
+    ) {
+      continue;
+    }
+    const y1 = marginTop + link.demandIdx * rowGap;
+    const y2 = marginTop + link.supplyIdx * rowGap;
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", String(demandX + nodeW));
+    line.setAttribute("y1", String(y1));
+    line.setAttribute("x2", String(supplyX));
+    line.setAttribute("y2", String(y2));
+    line.setAttribute("class", "results-link");
+    svg.appendChild(line);
+  }
+
+  if (resultsSelectedDemandIdx != null) {
+    for (const link of links) {
+      if (link.demandIdx !== resultsSelectedDemandIdx) continue;
+      const y1 = marginTop + link.demandIdx * rowGap;
+      const y2 = marginTop + link.supplyIdx * rowGap;
+      const line = document.createElementNS(svgNS, "line");
+      line.setAttribute("x1", String(demandX + nodeW));
+      line.setAttribute("y1", String(y1));
+      line.setAttribute("x2", String(supplyX));
+      line.setAttribute("y2", String(y2));
+      line.setAttribute("class", "results-link results-link--active");
+      svg.appendChild(line);
+    }
+  }
+
+  for (let i = 0; i < demands.length; i++) {
+    const demand = demands[i];
+    const y = marginTop + i * rowGap;
+    const g = document.createElementNS(svgNS, "g");
+    g.setAttribute("data-results-demand", String(i));
+
+    const nodeClass = `results-node results-node--demand${
+      resultsSelectedDemandIdx === i ? " results-node--selected" : ""
+    }${matchedDemandSet.has(i) ? "" : ""}`;
+    const rect = document.createElementNS(svgNS, "rect");
+    rect.setAttribute("x", String(demandX));
+    rect.setAttribute("y", String(y - nodeH / 2));
+    rect.setAttribute("width", String(nodeW));
+    rect.setAttribute("height", String(nodeH));
+    rect.setAttribute("class", nodeClass);
+    g.appendChild(rect);
+
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", String(demandX + 4));
+    label.setAttribute("y", String(y));
+    label.setAttribute("class", "results-label");
+    label.textContent = `${i + 1}. ${demand.type} | ${demand.w.toFixed(2)}×${demand.h.toFixed(2)}×${demand.l.toFixed(2)}`;
+    g.appendChild(label);
+
+    const hit = document.createElementNS(svgNS, "rect");
+    hit.setAttribute("class", "results-hit");
+    hit.setAttribute("x", String(demandX - 2));
+    hit.setAttribute("y", String(y - 9));
+    hit.setAttribute("width", String(nodeW + 4));
+    hit.setAttribute("height", "18");
+    g.appendChild(hit);
+    svg.appendChild(g);
+  }
+
+  if (resultsSelectedDemandIdx != null) {
+    for (const sIdx of activeSupplySet) {
+      const y = marginTop + sIdx * rowGap;
+      const ell = document.createElementNS(svgNS, "ellipse");
+      ell.setAttribute("cx", String(supplyX + nodeW / 2));
+      ell.setAttribute("cy", String(y));
+      ell.setAttribute("rx", String(nodeW / 2 + 6));
+      ell.setAttribute("ry", "10");
+      ell.setAttribute("class", "results-oblong");
+      svg.appendChild(ell);
+    }
+  }
+
+  for (let i = 0; i < supplies.length; i++) {
+    const supply = supplies[i];
+    const y = marginTop + i * rowGap;
+    const g = document.createElementNS(svgNS, "g");
+    g.setAttribute("data-results-supply", String(i));
+    const linked = activeSupplySet.has(i);
+    const sc = `results-node results-node--supply${
+      linked ? " results-supply--linked" : ""
+    }`;
+    const rect = document.createElementNS(svgNS, "rect");
+    rect.setAttribute("x", String(supplyX));
+    rect.setAttribute("y", String(y - nodeH / 2));
+    rect.setAttribute("width", String(nodeW));
+    rect.setAttribute("height", String(nodeH));
+    rect.setAttribute("class", sc);
+    g.appendChild(rect);
+
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", String(supplyX + 4));
+    label.setAttribute("y", String(y));
+    label.setAttribute("class", "results-label");
+    label.textContent = `${supply.id}. ${supply.w.toFixed(2)}×${supply.h.toFixed(2)}×${supply.l.toFixed(2)}`;
+    g.appendChild(label);
+
+    const hit = document.createElementNS(svgNS, "rect");
+    hit.setAttribute("class", "results-hit");
+    hit.setAttribute("x", String(supplyX - 2));
+    hit.setAttribute("y", String(y - 9));
+    hit.setAttribute("width", String(nodeW + 4));
+    hit.setAttribute("height", "18");
+    g.appendChild(hit);
+    svg.appendChild(g);
+  }
+
+  resultsCanvas.appendChild(svg);
+}
+
 function syncSceneVisibility() {
   const showBoxes = previewMode === "materials";
   for (const mesh of demandMeshes) {
     mesh.visible = showBoxes;
   }
   if (ifcModel) {
-    ifcModel.visible = previewMode === "building" || previewMode === "matching";
+    ifcModel.visible =
+      previewMode === "building" || previewMode === "matching";
   }
 }
 
 /**
- * @param {"materials" | "building" | "matching"} mode
+ * @param {"materials" | "building" | "matching" | "results"} mode
  */
 function setPreviewMode(mode) {
-  if ((mode === "building" || mode === "matching") && !ifcModel) {
+  if ((mode === "building" || mode === "matching" || mode === "results") && !ifcModel) {
     setStatus("Load an IFC file first, then switch to building preview.");
     return;
   }
 
   previewMode = mode;
   hideHoverInfo();
+  if (mode !== "results") {
+    resultsSelectedDemandIdx = null;
+  }
   previewMaterialsBtn.classList.toggle("toggle-btn--active", mode === "materials");
   previewBuildingBtn.classList.toggle("toggle-btn--active", mode === "building");
   previewMatchingBtn.classList.toggle("toggle-btn--active", mode === "matching");
+  previewResultsBtn.classList.toggle("toggle-btn--active", mode === "results");
 
   syncSceneVisibility();
 
   if (mode === "materials") {
     if (sceneBounds) fitZoomExtents();
-  } else {
+  } else if (mode !== "results") {
     jumpCameraToIfc();
   }
 
@@ -1088,6 +1705,7 @@ async function loadIfcFromFile(file) {
       ifcInfoById.clear();
       bestCandidateByDemandId.clear();
       activeMatch = null;
+      resultsSelectedDemandIdx = null;
     }
 
     const ifcArrayBuffer = await file.arrayBuffer();
@@ -1167,6 +1785,7 @@ pickIfcBtn.addEventListener("click", (e) => {
 previewMaterialsBtn.addEventListener("click", () => setPreviewMode("materials"));
 previewBuildingBtn.addEventListener("click", () => setPreviewMode("building"));
 previewMatchingBtn.addEventListener("click", () => setPreviewMode("matching"));
+previewResultsBtn.addEventListener("click", () => setPreviewMode("results"));
 
 fileInput.addEventListener("change", () => {
   const list = fileInput.files ? Array.from(fileInput.files) : [];
@@ -1199,6 +1818,10 @@ canvasEl?.addEventListener("click", (event) => {
 });
 
 canvasEl?.addEventListener("mousemove", (event) => {
+  if (previewMode === "results") {
+    hideHoverInfo();
+    return;
+  }
   const rect = canvasEl.getBoundingClientRect();
   const pickResult = viewer.scene.pick({
     pickSurface: false,

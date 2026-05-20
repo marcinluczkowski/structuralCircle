@@ -1,5 +1,6 @@
 using System;
 using Grasshopper.Kernel;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Deconstructors
@@ -35,7 +36,7 @@ namespace StructuralCircleNTNU.Deconstructors
             object raw = null;
             if (!DA.GetData(0, ref raw)) return;
 
-            var s = raw as BeamSection;
+            var s = GrasshopperUnpack.AsBeamSection(raw);
             if (s == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input is not a BeamSection."); return; }
 
             DA.SetData(0, s.Id);

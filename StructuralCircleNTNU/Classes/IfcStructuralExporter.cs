@@ -8,7 +8,12 @@ namespace StructuralCircleNTNU.Classes
 {
     /// <summary>
     /// Exports StructuralCircleNTNU Beam / Plate elements to an IFC file.
-    /// Geometry is built from section dimensions and represented as IfcFacetedBrep.
+    ///
+    /// Geometry strategy:
+    ///   1. If the element has a <c>GeometryBrep</c>, tessellate it in place — the brep already
+    ///      carries the correct world position, no transform is applied.
+    ///   2. Otherwise build a rectangular box fully centred on the <c>AxisLine</c>: Y = ±w/2,
+    ///      Z = ±h/2, so the structural axis passes through the section centre of gravity.
     /// </summary>
     public static class IfcStructuralExporter
     {
@@ -30,7 +35,6 @@ namespace StructuralCircleNTNU.Classes
             db.Factory.ApplicationIdentifier = "StructuralCircleNTNU";
             db.Factory.ApplicationVersion    = "1.0";
 
-            // Spatial hierarchy: Site → Project with units → Building → Storey
             var site     = new IfcSite(db, "Site");
             var project  = new IfcProject(site, projectName, IfcUnitAssignment.Length.Metre);
             var building = new IfcBuilding(site, buildingName);
@@ -73,13 +77,7 @@ namespace StructuralCircleNTNU.Classes
 
         static void ExportBeam(DatabaseIfc db, IfcBuildingStorey storey, Beam beam)
         {
-            double w = beam.Section?.Width  > 0 ? beam.Section.Width  : 0.1;
-            double h = beam.Section?.Height > 0 ? beam.Section.Height : 0.2;
-            double L = beam.Length          > 0 ? beam.Length         : 1.0;
-
-            var axis = beam.AxisLine.IsValid ? beam.AxisLine
-                                             : new Line(Point3d.Origin, new Point3d(L, 0, 0));
-            var brep = BoxFromBeamSection(w, h, L, axis);
+            var brep = ElementGeometryBrep(beam);
 
             var shape     = new IfcShapeRepresentation(BrepToFacetedBrep(db, brep));
             var prodShape = new IfcProductDefinitionShape(shape);
@@ -97,13 +95,7 @@ namespace StructuralCircleNTNU.Classes
 
         static void ExportSlab(DatabaseIfc db, IfcBuildingStorey storey, Plate plate)
         {
-            double t = plate.Section?.Thickness > 0 ? plate.Section.Thickness : 0.1;
-            double w = plate.Section?.Width     > 0 ? plate.Section.Width     : 1.0;
-            double L = plate.Length             > 0 ? plate.Length            : 1.0;
-
-            var axis = plate.AxisLine.IsValid ? plate.AxisLine
-                                              : new Line(Point3d.Origin, new Point3d(L, 0, 0));
-            var brep = BoxFromPlateSection(w, t, L, axis);
+            var brep = ElementGeometryBrep(plate);
 
             var shape     = new IfcShapeRepresentation(BrepToFacetedBrep(db, brep));
             var prodShape = new IfcProductDefinitionShape(shape);
@@ -120,31 +112,70 @@ namespace StructuralCircleNTNU.Classes
             new IfcPropertySet(ifcSlab, "StructuralCircle_Properties", BuildProps(db, plate));
         }
 
-        // ── geometry helpers ──────────────────────────────────────────────
+        // ── geometry ─────────────────────────────────────────────────────
 
-        static Brep BoxFromBeamSection(double w, double h, double L, Line axis)
+        /// <summary>
+        /// Returns the Brep to export.
+        /// If the element already carries a valid <c>GeometryBrep</c> it is used as-is (world coordinates).
+        /// Otherwise an analytical box is built centred on the axis so the axis = neutral axis.
+        /// </summary>
+        static Brep ElementGeometryBrep(Element element)
+        {
+            if (element.GeometryBrep != null && element.GeometryBrep.IsValid)
+                return element.GeometryBrep;
+
+            var axis = element.AxisLine.IsValid
+                ? element.AxisLine
+                : new Line(Point3d.Origin, new Point3d(1, 0, 0));
+            double L = axis.Length > 1e-9 ? axis.Length : 1.0;
+
+            double w, h;
+            if (element is Beam beam)
+            {
+                w = beam.Section?.Width  > 0 ? beam.Section.Width  : 0.1;
+                h = beam.Section?.Height > 0 ? beam.Section.Height : 0.1;
+            }
+            else if (element is Plate plate)
+            {
+                w = plate.Section?.Width     > 0 ? plate.Section.Width     : 1.0;
+                h = plate.Section?.Thickness > 0 ? plate.Section.Thickness : 0.1;
+            }
+            else { w = 0.1; h = 0.1; }
+
+            return CentredBoxOnAxis(axis, w, h, L);
+        }
+
+        /// <summary>
+        /// Box fully centred on <paramref name="axis"/>: local X = [0, L], Y = [−w/2, +w/2], Z = [−h/2, +h/2].
+        /// A frame is built at <c>axis.From</c> with +X along the member so the axis line passes through
+        /// the section centre of gravity (the midpoint of both section dimensions).
+        /// </summary>
+        static Brep CentredBoxOnAxis(Line axis, double w, double h, double L)
         {
             var box = new Box(Plane.WorldXY,
-                new Interval(0, L), new Interval(-w / 2.0, w / 2.0), new Interval(0, h));
+                new Interval(0, L),
+                new Interval(-w / 2.0, w / 2.0),
+                new Interval(-h / 2.0, h / 2.0));
             var brep = box.ToBrep();
-            brep.Transform(TransformFromAxis(axis));
+
+            var dir = axis.Direction;
+            if (!dir.Unitize()) return brep;
+
+            // Stable Y: for horizontal/diagonal members keep section Z near world-up.
+            // For near-vertical members use world X as the reference.
+            Vector3d refUp = Math.Abs(dir * Vector3d.ZAxis) < 0.9
+                ? Vector3d.ZAxis
+                : Vector3d.XAxis;
+            var yAxis = Vector3d.CrossProduct(refUp, dir);
+            if (yAxis.Length < 1e-9) return brep;
+            yAxis.Unitize();
+
+            // Plane(origin, xAxis, yAxis): xAxis = dir (member), yAxis as computed above.
+            brep.Transform(Transform.PlaneToPlane(Plane.WorldXY, new Plane(axis.From, dir, yAxis)));
             return brep;
         }
 
-        static Brep BoxFromPlateSection(double w, double t, double L, Line axis)
-        {
-            var box = new Box(Plane.WorldXY,
-                new Interval(0, L), new Interval(-w / 2.0, w / 2.0), new Interval(-t / 2.0, t / 2.0));
-            var brep = box.ToBrep();
-            brep.Transform(TransformFromAxis(axis));
-            return brep;
-        }
-
-        static Transform TransformFromAxis(Line axis)
-        {
-            var dir = axis.Direction; dir.Unitize();
-            return Transform.PlaneToPlane(Plane.WorldXY, new Plane(axis.From, dir));
-        }
+        // ── IFC helpers ───────────────────────────────────────────────────
 
         static IfcFacetedBrep BrepToFacetedBrep(DatabaseIfc db, Brep brep)
         {

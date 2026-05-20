@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Rhino.Geometry;
 
 namespace StructuralCircleNTNU.Classes
@@ -7,7 +8,7 @@ namespace StructuralCircleNTNU.Classes
     /// <summary>
     /// Builds a <see cref="Beam"/> or <see cref="Plate"/> from a <see cref="Brep"/> by sampling surface points
     /// (area-weighted count per face, random triangle or UV), computing a dominant axis via PCA,
-    /// measuring a PCA-aligned bounding box, and classifying element type.
+    /// measuring cross-section via perpendicular plane cuts (or OBB sample extents as fallback), and classifying element type.
     /// </summary>
     public static class BrepElementBuilder
     {
@@ -16,15 +17,21 @@ namespace StructuralCircleNTNU.Classes
         /// <summary>Total number of random surface samples on the <see cref="Brep"/>, split across faces by face area.</summary>
         public const int TargetSurfaceSampleCount = 500;
 
+        static double RoundDim(double v)
+            => Math.Round(v, 4, MidpointRounding.AwayFromZero);
+
+        static string FormatDim(double v)
+            => RoundDim(v).ToString("0.0000", CultureInfo.InvariantCulture);
+
         public sealed class AnalysisResult
         {
             public bool Success;
             public string Message;
             public Element Element;
             public Line Axis;
-            /// <summary>Extent along first principal direction (m).</summary>
+            /// <summary>Length along PCA axis (m), rounded to 4 decimals.</summary>
             public double LengthAlongAxis;
-            /// <summary>Extents along second and third PCA frame axes (m).</summary>
+            /// <summary>Cross-section width/height (m): plane-cut averages when available, else PCA OBB extents; rounded to 4 decimals.</summary>
             public double Extent1, Extent2;
             public Vector3d AxisDirection;
             public bool ClassifiedAsPlate;
@@ -67,11 +74,24 @@ namespace StructuralCircleNTNU.Classes
                 return result;
             }
 
-            if (!TryComputePcaGeometry(brep, out Line axisLine, out double L, out double w, out double h, out Vector3d e0, out string geomMsg, out _, out _))
+            if (!TryGetPcaAxisAndFrame(brep, out Line axisLine, out Vector3d e0, out Vector3d e1, out Vector3d e2,
+                    out List<Point3d> samples, out string geomMsg))
             {
                 result.Message = geomMsg;
                 return result;
             }
+
+            double tol = Math.Max(1e-9, brep.GetBoundingBox(true).Diagonal.Length * 1e-6);
+            bool fromPlanes = BrepSectionFromBrep.TryPlaneCutSectionExtents(brep, tol, axisLine, e1, e2, out double w, out double h, out _);
+            if (!fromPlanes)
+            {
+                ComputeCovariance(samples, out Point3d centroid, out _);
+                AxisExtents(samples, centroid, e0, e1, e2, out _, out w, out h, out _, out _);
+            }
+
+            double L = RoundDim(axisLine.Length);
+            w = RoundDim(w);
+            h = RoundDim(h);
 
             bool geomPlate = ClassifyGeometryPlate(L, w, h);
             bool geomBeam  = ClassifyGeometryBeam(L, w, h);
@@ -89,14 +109,18 @@ namespace StructuralCircleNTNU.Classes
             result.Extent2 = h;
             result.ClassifiedAsPlate = usePlate;
 
+            string sectionSrc = fromPlanes
+                ? "plane-cut section (25/50/75% axis)"
+                : "PCA OBB sample extents (plane cuts failed)";
+
             string safeName = string.IsNullOrWhiteSpace(elementName)
                 ? (usePlate ? "Plate_FromBrep" : "Beam_FromBrep")
                 : elementName;
 
             if (usePlate)
             {
-                double thickness = Math.Min(w, h);
-                double panelW    = Math.Max(w, h);
+                double thickness = RoundDim(Math.Min(w, h));
+                double panelW    = RoundDim(Math.Max(w, h));
                 var section = new PlateSection(elementId, $"T{thickness * 1000.0:0}mm", thickness, panelW);
                 var plate = new Plate(elementId, safeName, location ?? "", material, section, null)
                 {
@@ -106,7 +130,7 @@ namespace StructuralCircleNTNU.Classes
                 result.Element = plate;
                 result.Success = true;
                 result.Message =
-                    $"Plate: L={L:F4} m, T={thickness:F4} m, W={panelW:F4} m (PCA extents w×h={w:F4}×{h:F4}).";
+                    $"Plate: L={FormatDim(L)} m, T={FormatDim(thickness)} m, W={FormatDim(panelW)} m ({sectionSrc}: w×h={FormatDim(w)}×{FormatDim(h)} m).";
             }
             else
             {
@@ -118,7 +142,7 @@ namespace StructuralCircleNTNU.Classes
                 result.Element = beam;
                 result.Success = true;
                 result.Message =
-                    $"Beam: L={L:F4} m, section {w:F4}×{h:F4} m (along PCA axis).";
+                    $"Beam: L={FormatDim(L)} m, section {FormatDim(w)}×{FormatDim(h)} m ({sectionSrc}).";
             }
 
             return result;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Grasshopper.Kernel;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Deconstructors
@@ -33,7 +34,7 @@ namespace StructuralCircleNTNU.Deconstructors
             object raw = null;
             if (!DA.GetData(0, ref raw)) return;
 
-            var bank = raw as SupplyBank;
+            var bank = GrasshopperUnpack.AsSupplyBank(raw);
             if (bank == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input is not a SupplyBank."); return; }
 
             DA.SetDataList(0, bank.Elements);

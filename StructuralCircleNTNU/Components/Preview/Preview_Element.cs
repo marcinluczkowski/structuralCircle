@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Components.Preview
@@ -49,7 +50,7 @@ namespace StructuralCircleNTNU.Components.Preview
             bool showLabel = true;
             DA.GetData(2, ref showLabel);
 
-            var element = raw as Element;
+            var element = GrasshopperUnpack.AsElement(raw);
             if (element == null)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input is not an Element.");

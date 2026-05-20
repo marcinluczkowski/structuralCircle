@@ -1,5 +1,6 @@
 using System;
 using Grasshopper.Kernel;
+using StructuralCircleNTNU;
 using StructuralCircleNTNU.Classes;
 
 namespace StructuralCircleNTNU.Deconstructors
@@ -32,7 +33,7 @@ namespace StructuralCircleNTNU.Deconstructors
             object raw = null;
             if (!DA.GetData(0, ref raw)) return;
 
-            var bank = raw as DemandBank;
+            var bank = GrasshopperUnpack.AsDemandBank(raw);
             if (bank == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input is not a DemandBank."); return; }
 
             DA.SetDataList(0, bank.Elements);

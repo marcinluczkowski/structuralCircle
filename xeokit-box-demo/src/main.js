@@ -6,6 +6,7 @@ import {
   PhongMaterial,
   DirLight,
   WebIFCLoaderPlugin,
+  AnnotationsPlugin,
 } from "@xeokit/xeokit-sdk";
 
 const viewer = new Viewer({
@@ -81,6 +82,7 @@ const rightPanelTitle = document.getElementById("right-panel-title");
 const rightPanelMatching = document.getElementById("right-panel-matching");
 const rightPanelResults = document.getElementById("right-panel-results");
 const resultsAlgHint = document.getElementById("results-alg-hint");
+const ifcLabelsToggle = document.getElementById("ifc-labels-toggle");
 
 /** @type {"materials" | "building" | "matching" | "results"} */
 let previewMode = "materials";
@@ -92,13 +94,15 @@ let resultsMatchingAlgorithm = "all_pairs";
 let demandMeshes = [];
 /** @type {{ w: number; h: number; l: number }[]} */
 let demandSizes = [];
-/** @type {{ id: string; type: string; name: string; w: number; h: number; l: number; vol: number; source: string }[]} */
+/** @type {{ id: string; type: string; name: string; material: string; w: number; h: number; l: number; vol: number; source: string }[]} */
 let ifcDemandSizes = [];
+
+const MATCHING_MATERIAL = "Timber";
 const materialInfoById = new Map();
 const ifcInfoById = new Map();
 let selectedMaterialIndex = -1;
 let selectedIfcObjectId = null;
-/** @type {{ demandId: string; demand: { id: string; type: string; name: string; w: number; h: number; l: number; vol: number; source: string }; candidates: { materialIndex: number; w: number; h: number; l: number; waste: number; volDiffPct: number; similarityScore: number; rotated: boolean }[] } | null} */
+/** @type {{ demandId: string; demand: { id: string; type: string; name: string; material: string; w: number; h: number; l: number; vol: number; source: string }; candidates: { materialIndex: number; w: number; h: number; l: number; waste: number; volDiffPct: number; similarityScore: number; rotated: boolean }[] } | null} */
 let activeMatch = null;
 const bestCandidateByDemandId = new Map();
 /** Selected row in results diagram: demand index, or null */
@@ -114,6 +118,21 @@ let ifcLoader = null;
 let ifcLoaderPromise = null;
 /** Loaded IFC scene model (xeokit SceneModel). */
 let ifcModel = null;
+
+const MAX_IFC_LABELS = 500;
+let ifcLabelsVisible = false;
+/** @type {AnnotationsPlugin | null} */
+let annotationsPlugin = null;
+/** @type {string[]} */
+let ifcLabelAnnotationIds = [];
+
+const IFC_SKIP_TYPES = new Set([
+  "IfcProject",
+  "IfcSite",
+  "IfcBuilding",
+  "IfcBuildingStorey",
+  "IfcSpace",
+]);
 
 function destroyDemandMeshesOnly() {
   for (const mesh of demandMeshes) {
@@ -445,6 +464,222 @@ function propertyNameMatches(name, aliases) {
   return aliases.some((alias) => n.includes(alias));
 }
 
+const materialPropertyAliases = ["material", "materialtype"];
+
+function normalizeMaterialLabel(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
+}
+
+function isTimberMaterial(material) {
+  return normalizeMaterialLabel(material) === normalizeMaterialLabel(MATCHING_MATERIAL);
+}
+
+function extractMaterialFromIfcProperties(metaObject) {
+  if (!metaObject?.propertySets?.length) return "";
+  for (const pset of metaObject.propertySets) {
+    for (const prop of pset?.properties || []) {
+      const propName = prop?.name || "";
+      if (!propertyNameMatches(propName, materialPropertyAliases)) continue;
+      const label = String(prop?.value ?? "").trim();
+      if (label) return label;
+    }
+  }
+  return "";
+}
+
+function formatIfcType(type) {
+  const t = String(type || "IfcElement");
+  return t.startsWith("Ifc") ? t.slice(3) : t;
+}
+
+function getIfcMetaModel() {
+  if (!ifcModel) return null;
+  return viewer.metaScene.metaModels[ifcModel.id] ?? null;
+}
+
+function collectIfcLeafObjectIds(metaModel) {
+  const objectIds = new Set();
+  for (const root of metaModel.rootMetaObjects || []) {
+    for (const id of viewer.metaScene.getObjectIDsInSubtree(root.id)) {
+      objectIds.add(id);
+    }
+  }
+  if (objectIds.size === 0) {
+    for (const id of Object.keys(metaModel.metaObjects || {})) {
+      objectIds.add(id);
+    }
+  }
+  return objectIds;
+}
+
+function aabbCenter(aabb) {
+  return [
+    (aabb[0] + aabb[3]) / 2,
+    (aabb[1] + aabb[4]) / 2,
+    (aabb[2] + aabb[5]) / 2,
+  ];
+}
+
+function aabbVolume(aabb) {
+  return (aabb[3] - aabb[0]) * (aabb[4] - aabb[1]) * (aabb[5] - aabb[2]);
+}
+
+function ensureAnnotationsPlugin() {
+  if (annotationsPlugin) return annotationsPlugin;
+  annotationsPlugin = new AnnotationsPlugin(viewer, {
+    markerHTML: "",
+    labelHTML:
+      "<div class='ifc-annotation-label'>" +
+      "<span class='ifc-annotation-type'>{{type}}</span>" +
+      "<span class='ifc-annotation-material'>{{material}}</span>" +
+      "</div>",
+    values: {
+      type: "Element",
+      material: "—",
+    },
+  });
+  return annotationsPlugin;
+}
+
+function clearIfcLabelAnnotations() {
+  if (annotationsPlugin) {
+    annotationsPlugin.clear();
+  }
+  ifcLabelAnnotationIds = [];
+}
+
+function setIfcLabelsVisible(visible) {
+  ifcLabelsVisible = visible;
+  if (!annotationsPlugin) return;
+  for (const id of ifcLabelAnnotationIds) {
+    const ann = annotationsPlugin.annotations[id];
+    if (ann) {
+      ann.markerShown = false;
+      ann.labelShown = visible;
+    }
+  }
+}
+
+function syncIfcLabelsToggleUi() {
+  if (!ifcLabelsToggle) return;
+  const showControl =
+    !!ifcModel && (previewMode === "building" || previewMode === "matching");
+  ifcLabelsToggle.hidden = !showControl;
+  if (!showControl) return;
+  ifcLabelsToggle.classList.toggle("ifc-labels-toggle--on", ifcLabelsVisible);
+  ifcLabelsToggle.setAttribute("aria-pressed", ifcLabelsVisible ? "true" : "false");
+  ifcLabelsToggle.textContent = ifcLabelsVisible ? "labels on" : "labels off";
+}
+
+/**
+ * @returns {{ id: string; type: string; material: string; vol: number; entity: object; worldPos: number[] }[]}
+ */
+function buildIfcLabelCandidates() {
+  const metaModel = getIfcMetaModel();
+  if (!metaModel) return [];
+
+  /** @type {{ id: string; type: string; material: string; vol: number; entity: object; worldPos: number[] }[]} */
+  const rows = [];
+  for (const id of collectIfcLeafObjectIds(metaModel)) {
+    const meta = metaModel.metaObjects[id];
+    const type = meta?.type || "IfcElement";
+    if (IFC_SKIP_TYPES.has(type)) continue;
+    if (meta?.children?.length) continue;
+
+    const entity = viewer.scene.objects?.[id];
+    if (!entity) continue;
+    const aabb = entity.aabb;
+    if (!aabb || aabb.length < 6) continue;
+    const vol = aabbVolume(aabb);
+    if (!Number.isFinite(vol) || vol <= 0) continue;
+
+    const material = extractMaterialFromIfcProperties(meta);
+    rows.push({
+      id,
+      type: formatIfcType(type),
+      material: material || "—",
+      vol,
+      entity,
+      worldPos: aabbCenter(aabb),
+    });
+  }
+
+  rows.sort((a, b) => b.vol - a.vol);
+  return rows;
+}
+
+function rebuildIfcLabelAnnotations() {
+  clearIfcLabelAnnotations();
+  if (!ifcModel) {
+    syncIfcLabelsToggleUi();
+    return;
+  }
+
+  const plugin = ensureAnnotationsPlugin();
+  const candidates = buildIfcLabelCandidates();
+  const capped = candidates.slice(0, MAX_IFC_LABELS);
+
+  for (const row of capped) {
+    const annId = `ifc-label-${row.id}`;
+    plugin.createAnnotation({
+      id: annId,
+      entity: row.entity,
+      worldPos: row.worldPos,
+      occludable: true,
+      markerShown: false,
+      labelShown: ifcLabelsVisible,
+      values: {
+        type: row.type,
+        material: row.material,
+      },
+    });
+    ifcLabelAnnotationIds.push(annId);
+  }
+
+  syncIfcLabelsToggleUi();
+}
+
+function getIfcMetaForObject(objectId) {
+  const metaModel = getIfcMetaModel();
+  return metaModel?.metaObjects?.[objectId] ?? null;
+}
+
+function createIfcElementHoverCard(objectId) {
+  const meta = getIfcMetaForObject(objectId);
+  const type = formatIfcType(meta?.type);
+  const material = extractMaterialFromIfcProperties(meta) || "—";
+  const name = meta?.name || objectId;
+  const info = ifcInfoById.get(objectId);
+
+  const card = document.createElement("div");
+  const title = document.createElement("div");
+  title.className = "hover-info__title";
+  title.textContent = type;
+  card.appendChild(title);
+
+  const metaEl = document.createElement("div");
+  metaEl.className = "hover-info__meta";
+  metaEl.textContent = name;
+  card.appendChild(metaEl);
+
+  const kv = document.createElement("div");
+  kv.className = "hover-info__kv";
+  kv.append(...createKeyValueRow("Material", material));
+  if (info) {
+    kv.append(
+      ...createKeyValueRow(
+        "Size",
+        `${info.w.toFixed(2)}×${info.h.toFixed(2)}×${info.l.toFixed(2)} m`,
+      ),
+    );
+    kv.append(...createKeyValueRow("Volume", `${info.vol.toFixed(3)} m³`));
+  }
+  card.appendChild(kv);
+  return card;
+}
+
 function extractDimsFromIfcProperties(metaObject) {
   if (!metaObject?.propertySets?.length) return null;
 
@@ -655,6 +890,9 @@ function createHoverMatchCard(demand, best) {
   const kv = document.createElement("div");
   kv.className = "hover-info__kv";
   kv.append(...createKeyValueRow("Demand ID", demand.id));
+  if (demand.material) {
+    kv.append(...createKeyValueRow("Material", demand.material));
+  }
   kv.append(
     ...createKeyValueRow(
       "Demand",
@@ -742,7 +980,18 @@ function countMatchableDemandObjects() {
 function selectDemandForMatching(objectId) {
   const demand = ifcDemandSizes.find((row) => row.id === objectId);
   if (!demand) {
-    setStatus("Clicked object is not in demand bank.");
+    const metaModel = ifcModel ? viewer.metaScene.metaModels[ifcModel.id] : null;
+    const meta = metaModel?.metaObjects?.[objectId];
+    const material = meta ? extractMaterialFromIfcProperties(meta) : "";
+    if (material && !isTimberMaterial(material)) {
+      setStatus(
+        `Matching is limited to ${MATCHING_MATERIAL} elements (this object: ${material}).`,
+      );
+    } else {
+      setStatus(
+        `Clicked object is not in the ${MATCHING_MATERIAL} demand bank (missing or unknown Material property).`,
+      );
+    }
     return;
   }
   const entity = viewer.scene.objects?.[objectId];
@@ -768,40 +1017,22 @@ function selectDemandForMatching(objectId) {
 function buildIfcDemandFromModel() {
   if (!ifcModel) return [];
 
-  const metaModel = viewer.metaScene.metaModels[ifcModel.id];
+  const metaModel = getIfcMetaModel();
   if (!metaModel) return [];
-
-  const objectIds = new Set();
-  for (const root of metaModel.rootMetaObjects || []) {
-    for (const id of viewer.metaScene.getObjectIDsInSubtree(root.id)) {
-      objectIds.add(id);
-    }
-  }
-
-  if (objectIds.size === 0) {
-    for (const id of Object.keys(metaModel.metaObjects || {})) {
-      objectIds.add(id);
-    }
-  }
-
-  const skipTypes = new Set([
-    "IfcProject",
-    "IfcSite",
-    "IfcBuilding",
-    "IfcBuildingStorey",
-    "IfcSpace",
-  ]);
 
   ifcInfoById.clear();
   bestCandidateByDemandId.clear();
 
-  /** @type {{ id: string; type: string; name: string; w: number; h: number; l: number; vol: number; source: string }[]} */
+  /** @type {{ id: string; type: string; name: string; material: string; w: number; h: number; l: number; vol: number; source: string }[]} */
   const rows = [];
-  for (const id of objectIds) {
+  for (const id of collectIfcLeafObjectIds(metaModel)) {
     const meta = metaModel.metaObjects[id];
     const type = meta?.type || "IfcElement";
-    if (skipTypes.has(type)) continue;
+    if (IFC_SKIP_TYPES.has(type)) continue;
     if (meta?.children?.length) continue;
+
+    const material = extractMaterialFromIfcProperties(meta);
+    if (!isTimberMaterial(material)) continue;
 
     const entity = viewer.scene.objects?.[id];
     if (!entity) continue;
@@ -823,6 +1054,7 @@ function buildIfcDemandFromModel() {
       id,
       type,
       name: meta?.name || id,
+      material,
       w,
       h,
       l,
@@ -921,9 +1153,15 @@ function renderIfcTable() {
   }
 
   if (ifcDemandSizes.length === 0) {
-    appendSummaryRow(ifcSummary, "status", "no measurable objects found");
+    appendSummaryRow(
+      ifcSummary,
+      "status",
+      `no measurable ${MATCHING_MATERIAL} objects found`,
+    );
     return;
   }
+
+  appendSummaryRow(ifcSummary, "material filter", MATCHING_MATERIAL);
 
   let totalVolume = 0;
   let sumLength = 0;
@@ -971,11 +1209,11 @@ function renderDashboard() {
 
   if (previewMode === "building") {
     dashboardContext.textContent = ifcModel
-      ? "Canvas: building (IFC). Material table shows supply bank slice; IFC table shows demand bank objects from the loaded model."
+      ? "Canvas: building (IFC). Use labels in the viewer to show each element's type and material (up to 500 largest elements)."
       : "Canvas: building (IFC). Load an IFC file to populate the demand bank table.";
   } else if (previewMode === "matching") {
     dashboardContext.textContent =
-      "Canvas: matching mode. Click IFC elements in the viewer to see all usable material-bank candidates on the right.";
+      `Canvas: matching mode. Only IFC elements with Material=${MATCHING_MATERIAL} are in the demand bank. Click one to see material-bank candidates on the right.`;
   } else if (previewMode === "results") {
     dashboardContext.textContent =
       "Results: graph in the canvas. Pick how connections are built in the right-hand matching properties panel (not the lists below in other modes).";
@@ -995,6 +1233,7 @@ function renderDashboard() {
   }
   renderMatchingPanel();
   renderResultsCanvas();
+  syncIfcLabelsToggleUi();
 }
 
 function renderMatchingPanel() {
@@ -1015,7 +1254,7 @@ function renderMatchingPanel() {
   const demandCount = ifcDemandSizes.length;
   const coverage = demandCount > 0 ? (100 * matchableCount) / demandCount : 0;
   appendSummaryRow(matchingSummary, "material elements", String(demandSizes.length));
-  appendSummaryRow(matchingSummary, "demand elements", String(demandCount));
+  appendSummaryRow(matchingSummary, "demand elements", `${demandCount} (${MATCHING_MATERIAL} only)`);
   appendSummaryRow(matchingSummary, "matchable demand", `${matchableCount} (${coverage.toFixed(1)}%)`);
 
   if (!ifcModel) {
@@ -1314,7 +1553,7 @@ function renderResultsCanvas() {
     return;
   }
   if (ifcDemandSizes.length === 0) {
-    status.textContent = "No demand elements found in IFC.";
+    status.textContent = `No ${MATCHING_MATERIAL} demand elements found in IFC.`;
     resultsCanvas.appendChild(status);
     return;
   }
@@ -1706,6 +1945,8 @@ async function loadIfcFromFile(file) {
       bestCandidateByDemandId.clear();
       activeMatch = null;
       resultsSelectedDemandIdx = null;
+      clearIfcLabelAnnotations();
+      syncIfcLabelsToggleUi();
     }
 
     const ifcArrayBuffer = await file.arrayBuffer();
@@ -1729,9 +1970,19 @@ async function loadIfcFromFile(file) {
 
     ifcModel.on("loaded", () => {
       ifcDemandSizes = buildIfcDemandFromModel();
+      rebuildIfcLabelAnnotations();
       activeMatch = null;
       syncSceneVisibility();
-      setStatus(`IFC loaded: ${file.name} · ${ifcDemandSizes.length} demand objects`);
+      const labelTotal = buildIfcLabelCandidates().length;
+      const labelNote =
+        labelTotal > MAX_IFC_LABELS
+          ? ` · labels for ${MAX_IFC_LABELS}/${labelTotal} elements`
+          : labelTotal > 0
+            ? ` · ${labelTotal} label targets`
+            : "";
+      setStatus(
+        `IFC loaded: ${file.name} · ${ifcDemandSizes.length} ${MATCHING_MATERIAL} demand objects${labelNote}`,
+      );
       if (previewMode === "building") {
         jumpCameraToIfc();
       }
@@ -1786,6 +2037,18 @@ previewMaterialsBtn.addEventListener("click", () => setPreviewMode("materials"))
 previewBuildingBtn.addEventListener("click", () => setPreviewMode("building"));
 previewMatchingBtn.addEventListener("click", () => setPreviewMode("matching"));
 previewResultsBtn.addEventListener("click", () => setPreviewMode("results"));
+
+ifcLabelsToggle?.addEventListener("click", () => {
+  if (!ifcModel) return;
+  setIfcLabelsVisible(!ifcLabelsVisible);
+  syncIfcLabelsToggleUi();
+  const n = ifcLabelAnnotationIds.length;
+  setStatus(
+    ifcLabelsVisible
+      ? `IFC labels on (${n} element${n === 1 ? "" : "s"})`
+      : "IFC labels off",
+  );
+});
 
 fileInput.addEventListener("change", () => {
   const list = fileInput.files ? Array.from(fileInput.files) : [];
@@ -1847,14 +2110,24 @@ canvasEl?.addEventListener("mousemove", (event) => {
     return;
   }
 
-  const ifcInfo = ifcInfoById.get(objectId);
-  if (!ifcInfo) {
+  if (!ifcModel || !getIfcMetaForObject(objectId)) {
     hideHoverInfo();
     return;
   }
-  const best = getBestCandidateForDemand(ifcInfo);
-  const card = createHoverMatchCard(ifcInfo, best);
-  showHoverInfoNode(event.clientX, event.clientY, card);
+
+  const ifcInfo = ifcInfoById.get(objectId);
+  if (ifcInfo && demandSizes.length > 0) {
+    const best = getBestCandidateForDemand(ifcInfo);
+    const card = createHoverMatchCard(ifcInfo, best);
+    showHoverInfoNode(event.clientX, event.clientY, card);
+    return;
+  }
+
+  showHoverInfoNode(
+    event.clientX,
+    event.clientY,
+    createIfcElementHoverCard(objectId),
+  );
 });
 
 canvasEl?.addEventListener("mouseleave", () => {

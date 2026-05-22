@@ -558,6 +558,62 @@ body {
   stroke-width: 1.2;
 }
 
+.ifc-labels-toggle {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.6rem;
+  z-index: 5;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid #3a4f6a;
+  border-radius: 999px;
+  background: rgba(12, 18, 28, 0.85);
+  color: #9ecae8;
+  font-size: 0.68rem;
+  font-family: inherit;
+  text-transform: lowercase;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+
+.ifc-labels-toggle:hover {
+  border-color: #5a7a9a;
+  color: #d9ecff;
+}
+
+.ifc-labels-toggle--on {
+  border-color: #6eb0e0;
+  background: rgba(42, 74, 99, 0.92);
+  color: #f4f8fc;
+}
+
+.ifc-annotation-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.18rem 0.38rem;
+  border-radius: 4px;
+  border: 1px solid rgba(70, 110, 150, 0.85);
+  background: rgba(10, 16, 26, 0.88);
+  color: #e2eef8;
+  font-size: 0.62rem;
+  line-height: 1.25;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ifc-annotation-type {
+  font-weight: 600;
+  color: #ffe08a;
+}
+
+.ifc-annotation-material {
+  color: #a9c7e1;
+}
+
 .viewer-version {
   position: absolute;
   right: 0.75rem;
